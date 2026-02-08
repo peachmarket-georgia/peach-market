@@ -5,131 +5,126 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * 피치마켓 (Peach Market) 커스텀 테마
+ * 피치마켓 (Peach Market) - 당근 스타일 테마
  *
  * Color Palette:
- * - #FFCDB2 (Light Peach) - accent, card
- * - #FFB4A2 (Coral Pink) - primary
- * - #E5989B (Dusty Rose) - secondary
- * - #B5828C (Muted Mauve) - muted, border
+ * - #FF8C42 (Peach Orange) - primary
+ * - #FFFFFF (White) - background, card
+ * - #191919 (Near Black) - text
+ * - #8B8B8B (Gray) - muted text
+ * - #EEEEEE (Light Gray) - border
  */
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.75rem;
 
-  /* Background & Foreground */
-  --background: oklch(0.99 0.01 60);
-  --foreground: oklch(0.2 0.02 30);
+  /* Background & Foreground - Clean White */
+  --background: #FFFFFF;
+  --foreground: #191919;
 
-  /* Card - Light Peach tint (#FFCDB2) */
-  --card: oklch(0.98 0.02 55);
-  --card-foreground: oklch(0.2 0.02 30);
+  /* Card - Pure White */
+  --card: #FFFFFF;
+  --card-foreground: #191919;
 
   /* Popover */
-  --popover: oklch(0.99 0.01 60);
-  --popover-foreground: oklch(0.2 0.02 30);
+  --popover: #FFFFFF;
+  --popover-foreground: #191919;
 
-  /* Primary - Coral Pink (#FFB4A2) */
-  --primary: oklch(0.82 0.09 35);
-  --primary-foreground: oklch(0.15 0.02 30);
+  /* Primary - Peach Orange */
+  --primary: #FF8C42;
+  --primary-foreground: #FFFFFF;
 
-  /* Secondary - Dusty Rose (#E5989B) */
-  --secondary: oklch(0.74 0.07 15);
-  --secondary-foreground: oklch(0.15 0.02 30);
+  /* Secondary - Soft Gray */
+  --secondary: #F5F5F5;
+  --secondary-foreground: #191919;
 
-  /* Muted - Lighter Muted Mauve */
-  --muted: oklch(0.92 0.02 15);
-  --muted-foreground: oklch(0.5 0.04 15);
+  /* Muted - Light Gray */
+  --muted: #F7F7F7;
+  --muted-foreground: #8B8B8B;
 
-  /* Accent - Light Peach (#FFCDB2) */
-  --accent: oklch(0.89 0.06 55);
-  --accent-foreground: oklch(0.2 0.02 30);
+  /* Accent - Light Peach */
+  --accent: #FFF4ED;
+  --accent-foreground: #191919;
 
-  /* Destructive - Keep red for safety UX */
-  --destructive: oklch(0.55 0.22 25);
+  /* Destructive */
+  --destructive: #DC2626;
 
-  /* Border & Input - Muted Mauve (#B5828C) */
-  --border: oklch(0.85 0.03 15);
-  --input: oklch(0.85 0.03 15);
-  --ring: oklch(0.82 0.09 35);
+  /* Border & Input */
+  --border: #EEEEEE;
+  --input: #EEEEEE;
+  --ring: #FF8C42;
 
-  /* Chart colors - Peach palette variations */
-  --chart-1: oklch(0.82 0.09 35);
-  --chart-2: oklch(0.89 0.06 55);
-  --chart-3: oklch(0.74 0.07 15);
-  --chart-4: oklch(0.63 0.05 10);
-  --chart-5: oklch(0.7 0.1 45);
+  /* Chart colors */
+  --chart-1: #FF8C42;
+  --chart-2: #FFB07C;
+  --chart-3: #FFD4B8;
+  --chart-4: #8B8B8B;
+  --chart-5: #191919;
 
-  /* Sidebar */
-  --sidebar: oklch(0.97 0.02 55);
-  --sidebar-foreground: oklch(0.2 0.02 30);
-  --sidebar-primary: oklch(0.82 0.09 35);
-  --sidebar-primary-foreground: oklch(0.15 0.02 30);
-  --sidebar-accent: oklch(0.89 0.06 55);
-  --sidebar-accent-foreground: oklch(0.2 0.02 30);
-  --sidebar-border: oklch(0.85 0.03 15);
-  --sidebar-ring: oklch(0.82 0.09 35);
-
-  /* Custom Peach Market brand colors */
-  --peach-lightest: #FFCDB2;
-  --peach-light: #FFB4A2;
-  --peach: #E5989B;
-  --peach-dark: #B5828C;
+  /* Sidebar - not used in new design but kept for compatibility */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #191919;
+  --sidebar-primary: #FF8C42;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #FFF4ED;
+  --sidebar-accent-foreground: #191919;
+  --sidebar-border: #EEEEEE;
+  --sidebar-ring: #FF8C42;
 }
 
 .dark {
   /* Background & Foreground */
-  --background: oklch(0.15 0.02 30);
-  --foreground: oklch(0.95 0.01 60);
+  --background: #191919;
+  --foreground: #F5F5F5;
 
   /* Card */
-  --card: oklch(0.2 0.02 30);
-  --card-foreground: oklch(0.95 0.01 60);
+  --card: #262626;
+  --card-foreground: #F5F5F5;
 
   /* Popover */
-  --popover: oklch(0.2 0.02 30);
-  --popover-foreground: oklch(0.95 0.01 60);
+  --popover: #262626;
+  --popover-foreground: #F5F5F5;
 
-  /* Primary - Coral Pink (slightly muted for dark mode) */
-  --primary: oklch(0.78 0.08 35);
-  --primary-foreground: oklch(0.15 0.02 30);
+  /* Primary - Peach Orange */
+  --primary: #FF9F5A;
+  --primary-foreground: #191919;
 
   /* Secondary */
-  --secondary: oklch(0.35 0.04 15);
-  --secondary-foreground: oklch(0.95 0.01 60);
+  --secondary: #333333;
+  --secondary-foreground: #F5F5F5;
 
   /* Muted */
-  --muted: oklch(0.25 0.02 15);
-  --muted-foreground: oklch(0.65 0.02 60);
+  --muted: #333333;
+  --muted-foreground: #A0A0A0;
 
-  /* Accent - warm peach glow */
-  --accent: oklch(0.35 0.05 55);
-  --accent-foreground: oklch(0.95 0.01 60);
+  /* Accent */
+  --accent: #3D2E26;
+  --accent-foreground: #F5F5F5;
 
   /* Destructive */
-  --destructive: oklch(0.5 0.2 25);
+  --destructive: #EF4444;
 
   /* Border & Input */
-  --border: oklch(0.3 0.02 15);
-  --input: oklch(0.3 0.02 15);
-  --ring: oklch(0.78 0.08 35);
+  --border: #333333;
+  --input: #333333;
+  --ring: #FF9F5A;
 
   /* Chart colors - dark mode */
-  --chart-1: oklch(0.78 0.08 35);
-  --chart-2: oklch(0.6 0.06 55);
-  --chart-3: oklch(0.65 0.06 15);
-  --chart-4: oklch(0.55 0.04 10);
-  --chart-5: oklch(0.6 0.08 45);
+  --chart-1: #FF9F5A;
+  --chart-2: #FFB07C;
+  --chart-3: #CC7A3D;
+  --chart-4: #A0A0A0;
+  --chart-5: #F5F5F5;
 
   /* Sidebar */
-  --sidebar: oklch(0.18 0.02 30);
-  --sidebar-foreground: oklch(0.95 0.01 60);
-  --sidebar-primary: oklch(0.78 0.08 35);
-  --sidebar-primary-foreground: oklch(0.15 0.02 30);
-  --sidebar-accent: oklch(0.35 0.05 55);
-  --sidebar-accent-foreground: oklch(0.95 0.01 60);
-  --sidebar-border: oklch(0.3 0.02 15);
-  --sidebar-ring: oklch(0.78 0.08 35);
+  --sidebar: #1F1F1F;
+  --sidebar-foreground: #F5F5F5;
+  --sidebar-primary: #FF9F5A;
+  --sidebar-primary-foreground: #191919;
+  --sidebar-accent: #3D2E26;
+  --sidebar-accent-foreground: #F5F5F5;
+  --sidebar-border: #333333;
+  --sidebar-ring: #FF9F5A;
 }
 
 @theme inline {
@@ -172,12 +167,6 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-
-  /* Custom Peach Market colors for direct use */
-  --color-peach-lightest: var(--peach-lightest);
-  --color-peach-light: var(--peach-light);
-  --color-peach: var(--peach);
-  --color-peach-dark: var(--peach-dark);
 }
 
 @layer base {
@@ -186,5 +175,6 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   }
 }
