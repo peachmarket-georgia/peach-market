@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+import Link from "next/link";
 import { Search, Plus, MessageCircle, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +11,16 @@ export const DesktopHeader = () => {
     <header className="hidden md:block sticky top-0 z-40 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-8">
         {/* 로고 */}
-        <h1 className="text-xl font-bold text-primary shrink-0">피치마켓</h1>
+        <Link href="/" className="flex items-center gap-2 shrink-0">
+          <Image
+            src="/peach_logo_transparent.png"
+            alt="피치마켓"
+            width={36}
+            height={36}
+            className="w-9 h-9"
+          />
+          <span className="text-lg font-bold text-primary">피치마켓</span>
+        </Link>
 
         {/* 검색바 */}
         <div className="flex-1 max-w-xl">
