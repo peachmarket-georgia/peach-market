@@ -1,102 +1,85 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+/**
+ * 🍑 피치마켓 홈 피드
+ * 
+ * 조지아 한인 중고거래 플랫폼의 메인 페이지입니다.
+ */
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
-
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
-
+const HomePage = () => {
   return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+    <main className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
+      {/* 헤더 */}
+      <header className="flex items-center justify-between px-4 py-3 bg-white shadow-sm">
+        <h1 className="text-xl font-bold text-orange-500">🍑 피치마켓</h1>
+        <span className="text-sm text-gray-600">둘루스, GA</span>
+      </header>
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.dev/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+      {/* 메인 콘텐츠 */}
+      <div className="px-4 py-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-800">
+          주변 매물
+        </h2>
+        
+        {/* 상품 그리드 - 추후 구현 */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* 샘플 상품 카드 */}
+          <div className="overflow-hidden bg-white rounded-lg shadow-md">
+            <div className="h-32 bg-gray-200" />
+            <div className="p-3">
+              <span className="inline-block px-2 py-1 mb-2 text-xs font-medium text-green-800 bg-green-100 rounded">
+                판매중
+              </span>
+              <p className="text-sm font-medium text-gray-800 truncate">
+                샘플 상품
+              </p>
+              <p className="text-sm font-bold text-orange-500">$50</p>
+            </div>
+          </div>
+          
+          <div className="overflow-hidden bg-white rounded-lg shadow-md">
+            <div className="h-32 bg-gray-200" />
+            <div className="p-3">
+              <span className="inline-block px-2 py-1 mb-2 text-xs font-medium text-yellow-800 bg-yellow-100 rounded">
+                예약중
+              </span>
+              <p className="text-sm font-medium text-gray-800 truncate">
+                샘플 상품 2
+              </p>
+              <p className="text-sm font-bold text-orange-500">$30</p>
+            </div>
+          </div>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.dev?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.dev →
-        </a>
-      </footer>
-    </div>
+      </div>
+
+      {/* 플로팅 버튼 */}
+      <button className="fixed flex items-center justify-center w-14 h-14 text-2xl text-white bg-orange-500 rounded-full shadow-lg bottom-20 right-4 hover:bg-orange-600">
+        +
+      </button>
+
+      {/* 하단 네비게이션 */}
+      <nav className="fixed bottom-0 left-0 right-0 flex justify-around py-3 bg-white border-t border-gray-200">
+        <button className="flex flex-col items-center text-orange-500">
+          <span className="text-xl">🏠</span>
+          <span className="text-xs">홈</span>
+        </button>
+        <button className="flex flex-col items-center text-gray-400">
+          <span className="text-xl">🔍</span>
+          <span className="text-xs">검색</span>
+        </button>
+        <button className="flex flex-col items-center text-gray-400">
+          <span className="text-xl">💬</span>
+          <span className="text-xs">채팅</span>
+        </button>
+        <button className="flex flex-col items-center text-gray-400">
+          <span className="text-xl">❤️</span>
+          <span className="text-xs">관심</span>
+        </button>
+        <button className="flex flex-col items-center text-gray-400">
+          <span className="text-xl">👤</span>
+          <span className="text-xs">MY</span>
+        </button>
+      </nav>
+    </main>
   );
-}
+};
+
+export default HomePage;

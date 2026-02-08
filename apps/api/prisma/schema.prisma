@@ -1,0 +1,175 @@
+// ===========================================
+// 🍑 피치마켓 데이터베이스 스키마
+// ===========================================
+//
+// 📌 스키마 변경 후 마이그레이션 명령어:
+//    $ npx prisma migrate dev --name 변경_설명
+//
+// 📌 Prisma Client 재생성:
+//    $ npx prisma generate
+//
+// 📌 DB 시각화 (Prisma Studio):
+//    $ npx prisma studio
+//
+// ===========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===========================================
+// 사용자 (Users)
+// ===========================================
+
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String // bcrypt 해시
+  nickname    String
+  avatarUrl   String?
+  location    String // 활동 지역 (둘루스, 애틀랜타 등)
+  mannerScore Float    @default(0.0) // 매너 점수 (0.0 ~ 5.0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계
+  products        Product[]  @relation("SellerProducts")
+  reviewsGiven    Review[]   @relation("ReviewsGiven")
+  reviewsReceived Review[]   @relation("ReviewsReceived")
+  buyerChatRooms  ChatRoom[] @relation("BuyerChatRooms")
+  sellerChatRooms ChatRoom[] @relation("SellerChatRooms")
+  messages        Message[]
+  favorites       Favorite[]
+
+  @@map("users")
+}
+
+// ===========================================
+// 상품 (Products)
+// ===========================================
+
+enum ProductStatus {
+  SELLING // 판매중 (🟢)
+  RESERVED // 예약중 (🟡)
+  SOLD // 판매완료 (⚫)
+}
+
+model Product {
+  id          String        @id @default(uuid())
+  sellerId    String
+  title       String
+  description String
+  price       Int // USD 센트 단위 (예: 5000 = $50.00)
+  status      ProductStatus @default(SELLING)
+  images      String[] // 이미지 URL 배열 (최대 10장)
+  location    String // 거래 희망 지역
+  viewCount   Int           @default(0)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // 관계
+  seller    User       @relation("SellerProducts", fields: [sellerId], references: [id], onDelete: Cascade)
+  reviews   Review[]
+  chatRooms ChatRoom[]
+  favorites Favorite[]
+
+  @@index([sellerId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("products")
+}
+
+// ===========================================
+// 리뷰/매너 평가 (Reviews)
+// ===========================================
+
+model Review {
+  id         String   @id @default(uuid())
+  reviewerId String // 평가자
+  revieweeId String // 평가 대상자
+  productId  String // 거래 상품
+  score      Int // 1 ~ 5점
+  comment    String? // 선택적 코멘트
+  createdAt  DateTime @default(now())
+
+  // 관계
+  reviewer User    @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee User    @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  product  Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // 한 거래당 한 번만 평가 가능
+  @@unique([reviewerId, productId])
+  @@index([revieweeId])
+  @@map("reviews")
+}
+
+// ===========================================
+// 채팅방 (ChatRooms)
+// ===========================================
+
+model ChatRoom {
+  id          String   @id @default(uuid())
+  productId   String
+  buyerId     String
+  sellerId    String
+  lastMessage String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // 관계
+  product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  buyer    User      @relation("BuyerChatRooms", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller   User      @relation("SellerChatRooms", fields: [sellerId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  // 같은 상품에 대해 구매자-판매자 채팅방은 하나만
+  @@unique([productId, buyerId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@map("chat_rooms")
+}
+
+// ===========================================
+// 채팅 메시지 (Messages)
+// ===========================================
+
+model Message {
+  id         String   @id @default(uuid())
+  chatRoomId String
+  senderId   String
+  content    String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // 관계
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatRoomId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ===========================================
+// 관심 상품 (Favorites)
+// ===========================================
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  // 관계
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  // 중복 관심 등록 방지
+  @@unique([userId, productId])
+  @@index([userId])
+  @@map("favorites")
+}
