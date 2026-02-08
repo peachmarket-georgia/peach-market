@@ -5,14 +5,17 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * 피치마켓 (Peach Market) - 당근 스타일 테마
+ * 피치마켓 (Peach Market) - Peach Fuzz 2024 테마
  *
- * Color Palette:
- * - #FF8C42 (Peach Orange) - primary
- * - #FFFFFF (White) - background, card
- * - #191919 (Near Black) - text
- * - #8B8B8B (Gray) - muted text
- * - #EEEEEE (Light Gray) - border
+ * Color Palette (Pantone 2024 - Peach Fuzz):
+ * - #FFBE98 (Peach Fuzz) - primary
+ * - #FE995C (Deep Peach) - primary hover
+ * - #FEE7D8 (Cream Peach) - accent, light bg
+ * - #FED5BC (Light Peach) - secondary
+ * - #FEAC7A (Warm Peach) - chart accent
+ * - #FFFFFF (White) - background
+ * - #1A1A1A (Near Black) - text
+ * - #6B6B6B (Gray) - muted text
  */
 
 :root {
@@ -20,111 +23,111 @@
 
   /* Background & Foreground - Clean White */
   --background: #FFFFFF;
-  --foreground: #191919;
+  --foreground: #1A1A1A;
 
   /* Card - Pure White */
   --card: #FFFFFF;
-  --card-foreground: #191919;
+  --card-foreground: #1A1A1A;
 
   /* Popover */
   --popover: #FFFFFF;
-  --popover-foreground: #191919;
+  --popover-foreground: #1A1A1A;
 
-  /* Primary - Peach Orange */
-  --primary: #FF8C42;
-  --primary-foreground: #FFFFFF;
+  /* Primary - Peach Fuzz */
+  --primary: #FFBE98;
+  --primary-foreground: #1A1A1A;
 
-  /* Secondary - Soft Gray */
-  --secondary: #F5F5F5;
-  --secondary-foreground: #191919;
+  /* Secondary - Light Peach */
+  --secondary: #FED5BC;
+  --secondary-foreground: #1A1A1A;
 
-  /* Muted - Light Gray */
-  --muted: #F7F7F7;
-  --muted-foreground: #8B8B8B;
+  /* Muted - Soft Gray */
+  --muted: #F5F5F5;
+  --muted-foreground: #6B6B6B;
 
-  /* Accent - Light Peach */
-  --accent: #FFF4ED;
-  --accent-foreground: #191919;
+  /* Accent - Cream Peach */
+  --accent: #FEE7D8;
+  --accent-foreground: #1A1A1A;
 
   /* Destructive */
-  --destructive: #DC2626;
+  --destructive: #E54D4D;
 
   /* Border & Input */
-  --border: #EEEEEE;
-  --input: #EEEEEE;
-  --ring: #FF8C42;
+  --border: #EAEAEA;
+  --input: #EAEAEA;
+  --ring: #FFBE98;
 
-  /* Chart colors */
-  --chart-1: #FF8C42;
-  --chart-2: #FFB07C;
-  --chart-3: #FFD4B8;
-  --chart-4: #8B8B8B;
-  --chart-5: #191919;
+  /* Chart colors - Peach gradient */
+  --chart-1: #FE995C;
+  --chart-2: #FFBE98;
+  --chart-3: #FED5BC;
+  --chart-4: #FEAC7A;
+  --chart-5: #FEE7D8;
 
-  /* Sidebar - not used in new design but kept for compatibility */
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #191919;
-  --sidebar-primary: #FF8C42;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #FFF4ED;
-  --sidebar-accent-foreground: #191919;
-  --sidebar-border: #EEEEEE;
-  --sidebar-ring: #FF8C42;
+  /* Sidebar */
+  --sidebar: #FFFBF8;
+  --sidebar-foreground: #1A1A1A;
+  --sidebar-primary: #FFBE98;
+  --sidebar-primary-foreground: #1A1A1A;
+  --sidebar-accent: #FEE7D8;
+  --sidebar-accent-foreground: #1A1A1A;
+  --sidebar-border: #EAEAEA;
+  --sidebar-ring: #FFBE98;
 }
 
 .dark {
   /* Background & Foreground */
-  --background: #191919;
+  --background: #1A1A1A;
   --foreground: #F5F5F5;
 
   /* Card */
-  --card: #262626;
+  --card: #252525;
   --card-foreground: #F5F5F5;
 
   /* Popover */
-  --popover: #262626;
+  --popover: #252525;
   --popover-foreground: #F5F5F5;
 
-  /* Primary - Peach Orange */
-  --primary: #FF9F5A;
-  --primary-foreground: #191919;
+  /* Primary - Peach Fuzz (brighter for dark) */
+  --primary: #FFBE98;
+  --primary-foreground: #1A1A1A;
 
   /* Secondary */
-  --secondary: #333333;
+  --secondary: #3A3028;
   --secondary-foreground: #F5F5F5;
 
   /* Muted */
-  --muted: #333333;
-  --muted-foreground: #A0A0A0;
+  --muted: #2A2A2A;
+  --muted-foreground: #999999;
 
   /* Accent */
-  --accent: #3D2E26;
+  --accent: #3A3028;
   --accent-foreground: #F5F5F5;
 
   /* Destructive */
-  --destructive: #EF4444;
+  --destructive: #E54D4D;
 
   /* Border & Input */
   --border: #333333;
   --input: #333333;
-  --ring: #FF9F5A;
+  --ring: #FFBE98;
 
   /* Chart colors - dark mode */
-  --chart-1: #FF9F5A;
-  --chart-2: #FFB07C;
-  --chart-3: #CC7A3D;
-  --chart-4: #A0A0A0;
+  --chart-1: #FE995C;
+  --chart-2: #FFBE98;
+  --chart-3: #FEAC7A;
+  --chart-4: #999999;
   --chart-5: #F5F5F5;
 
   /* Sidebar */
   --sidebar: #1F1F1F;
   --sidebar-foreground: #F5F5F5;
-  --sidebar-primary: #FF9F5A;
-  --sidebar-primary-foreground: #191919;
-  --sidebar-accent: #3D2E26;
+  --sidebar-primary: #FFBE98;
+  --sidebar-primary-foreground: #1A1A1A;
+  --sidebar-accent: #3A3028;
   --sidebar-accent-foreground: #F5F5F5;
   --sidebar-border: #333333;
-  --sidebar-ring: #FF9F5A;
+  --sidebar-ring: #FFBE98;
 }
 
 @theme inline {
