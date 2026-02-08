@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { cn } from "@/lib/utils";
 import "./globals.css";
 
 /**
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#ff8c42",
+  themeColor: "#FFB4A2",
 };
 
 const RootLayout = ({
@@ -32,12 +33,12 @@ const RootLayout = ({
   children: React.ReactNode;
 }>) => {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
       <head>
         {/* PWA iOS 지원 */}
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
-      <body className="font-sans antialiased">
+      <body className={cn("min-h-screen bg-background font-sans antialiased")}>
         {children}
       </body>
     </html>
