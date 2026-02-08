@@ -1,6 +1,6 @@
 /**
  * 🍑 피치마켓 공유 타입 정의
- * 
+ *
  * 프론트엔드(Next.js)와 백엔드(NestJS)에서 공통으로 사용하는 타입들입니다.
  * 여기에 정의한 타입은 API 응답, 요청 DTO 등에서 재사용됩니다.
  */
@@ -13,7 +13,7 @@
  * - RESERVED: 예약중 (🟡 노란색 배지)
  * - SOLD: 판매완료 (⚫ 회색 배지)
  */
-export type ProductStatus = 'SELLING' | 'RESERVED' | 'SOLD';
+export type ProductStatus = "SELLING" | "RESERVED" | "SOLD";
 
 /**
  * 상품 목록/카드에 표시되는 기본 정보
