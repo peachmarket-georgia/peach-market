@@ -2,6 +2,7 @@
  * 피치마켓 랜딩페이지
  */
 
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -11,7 +12,16 @@ const LandingPage = () => {
       {/* 헤더 */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
-          <span className="text-lg font-bold text-primary">피치마켓</span>
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/peach_logo_transparent.png"
+              alt="피치마켓"
+              width={32}
+              height={32}
+              className="w-8 h-8"
+            />
+            <span className="text-lg font-bold text-primary">피치마켓</span>
+          </Link>
           <div className="flex items-center gap-2">
             <Link href="/marketplace">
               <Button variant="ghost" size="sm">
