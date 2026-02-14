@@ -1,0 +1,30 @@
+# NestJS API 개발용 Dockerfile
+FROM node:22-alpine
+
+# pnpm 설치
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+# 작업 디렉토리 설정
+WORKDIR /app
+
+# package.json 및 pnpm 관련 파일 복사
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/shared/package.json ./packages/shared/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+
+# 의존성 설치
+RUN pnpm install --frozen-lockfile
+
+# 소스 코드 복사 (볼륨 마운트로 덮어씌워질 예정)
+COPY . .
+
+# Prisma 클라이언트 생성
+RUN cd apps/api && pnpm prisma generate
+
+# 포트 노출
+EXPOSE 4000
+
+# 개발 서버 시작 (docker-compose에서 override 가능)
+CMD ["pnpm", "--filter", "@peachmarket/api", "dev"]

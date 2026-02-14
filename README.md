@@ -1,137 +1,223 @@
-# 🍑 피치마켓 (Peach Market)
+# 🍑 Peach Market (피치마켓)
 
-조지아 한인 커뮤니티의 신뢰할 수 있는 중고거래 플랫폼
+조지아 한인 커뮤니티를 위한 중고거래 플랫폼
 
-> 카카오톡방, 페이스북에 흩어진 매물을 한곳에서
+## 📋 프로젝트 개요
 
-## 해결하는 문제
+피치마켓은 미국 조지아주 거주 한인들을 위한 신뢰할 수 있는 중고거래 플랫폼입니다. 카카오톡과 페이스북에 흩어져 있던 중고거래를 하나의 플랫폼에 모아, 체계적인 거래 관리와 안전한 거래 환경을 제공합니다.
 
-- 거래 히스토리 추적 불가
-- 거래 상태(판매중/예약중/완료) 관리 불가
-- 게시글이 대화에 묻힘
-- 외부 채널(개인톡)로 전환 필요
+### 핵심 기능 (Phase 1)
 
-## Tech Stack
+- 🔐 **회원제 기반**: 이메일/비밀번호, Google OAuth 2.0 로그인
+- 📝 **게시글 관리**: CRUD, 이미지 업로드, 거래 상태 관리
+- 💬 **실시간 1:1 채팅**: Socket.io 기반 실시간 메시징
+- 🔍 **검색 및 필터**: 한국어 키워드 검색, 카테고리 필터
+- 🔔 **알림 시스템**: 인앱 실시간 알림
+- 📱 **모바일 최적화**: 반응형 디자인, 모바일 퍼스트
 
-| Category     | Technology                                      |
-| ------------ | ----------------------------------------------- |
-| **Frontend** | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui |
-| **Backend**  | NestJS 11, Prisma ORM, PostgreSQL               |
-| **Chat**     | Socket.IO (예정)                                |
-| **Auth**     | NextAuth.js (Google OAuth)                      |
-| **Infra**    | Turborepo, pnpm, Docker, Vercel (FE), GCP (BE)  |
+## 🛠 기술 스택
 
-## Project Structure
+### Monorepo 구조
 
-```
-peachmarket/
-├── apps/
-│   ├── web/                 # Next.js 프론트엔드 (:3000)
-│   │   ├── app/
-│   │   │   ├── (marketing)/ # 랜딩페이지 (비회원)
-│   │   │   └── (app)/       # 메인 앱 (회원)
-│   │   └── components/
-│   └── api/                 # NestJS 백엔드 (:4000)
-│       ├── src/
-│       └── prisma/
-├── packages/
-│   ├── shared/              # 공유 TypeScript 타입
-│   ├── eslint-config/
-│   └── typescript-config/
-└── docker-compose.yml
-```
+- **Turborepo** + **pnpm workspace**
 
-## Getting Started
+### Frontend ([apps/web](apps/web/README.md))
 
-### Prerequisites
+- Next.js 16 (App Router, Turbopack)
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- shadcn/ui (Radix UI)
+- Lucide React
 
-- Node.js 18+
-- pnpm 9+
-- Docker Desktop
+### Backend ([apps/api](apps/api/README.md))
 
-### Installation
+- NestJS 11
+- TypeScript
+- PostgreSQL 17
+- Prisma 7
+- Socket.io
+- JWT + OAuth 2.0
+
+### Deployment
+
+- Frontend: Vercel
+- Backend/DB: Railway
+- Storage: Supabase Storage
+- Analytics: Mixpanel, Google Analytics 4
+
+## 🚀 Quick Start
+
+### 사전 요구사항
+
+- Node.js 18 이상
+- pnpm 9.0.0
+- Docker & Docker Compose (로컬 개발 시)
+
+### 설치
 
 ```bash
+# 저장소 클론
+git clone https://github.com/peachmarket-georgia/peach-market.git
+cd peach-market
+
 # 의존성 설치
 pnpm install
 
 # 환경변수 설정
 cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+```
 
-# DB 실행
-docker compose up -d
+### 로컬 개발 환경 실행
 
-# Prisma 마이그레이션
-cd apps/api && npx prisma migrate dev
+#### 1. Docker Compose로 PostgreSQL 실행
 
-# 개발 서버 실행
+```bash
+docker-compose -f docker/docker-compose.local.yml up -d
+```
+
+#### 2. 데이터베이스 마이그레이션
+
+```bash
+cd apps/api
+pnpm prisma migrate dev
+pnpm prisma generate
+```
+
+#### 3. 개발 서버 실행
+
+```bash
+# 루트 디렉토리에서 모든 앱 동시 실행
 pnpm dev
+
+# 또는 개별 실행
+pnpm dev --filter=@peachmarket/web    # Frontend (포트 3000)
+pnpm dev --filter=@peachmarket/api    # Backend (포트 4000)
 ```
 
-## Development
+### 접속
+
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:4000
+- PostgreSQL: localhost:95432
+
+## 📁 프로젝트 구조
+
+```
+peach-market/
+├── apps/
+│   ├── web/              # Next.js 프론트엔드
+│   └── api/              # NestJS 백엔드
+├── packages/
+│   ├── shared/           # 공유 타입 및 유틸리티
+│   ├── eslint-config/    # ESLint 공유 설정
+│   └── typescript-config/# TypeScript 공유 설정
+├── docker/
+│   └── docker-compose.local.yml  # 로컬 개발용 Docker 설정
+├── .claude/
+│   └── PRD.md            # Product Requirements Document
+├── CLAUDE.md             # Claude AI 작업 가이드
+├── package.json          # 루트 패키지 설정
+├── pnpm-workspace.yaml   # pnpm workspace 설정
+└── turbo.json            # Turborepo 설정
+```
+
+## 📜 사용 가능한 스크립트
 
 ```bash
-pnpm dev              # 전체 앱 실행
-pnpm build            # 빌드
-pnpm lint             # 린트
-pnpm format           # 코드 포맷팅
-pnpm check-types      # 타입 체크
+# 개발 모드 실행
+pnpm dev
+
+# 프로덕션 빌드
+pnpm build
+
+# 린트 체크
+pnpm lint
+pnpm lint:web    # Web만
+pnpm lint:api    # API만
+
+# 코드 포매팅
+pnpm format
+pnpm format:check
+
+# 타입 체크
+pnpm check-types
 ```
 
-### Database
+## 🎨 컬러 팔레트 (Pantone Peach Fuzz)
 
-```bash
-docker compose up -d      # DB 시작
-docker compose down       # DB 중지
-docker compose down -v    # DB 초기화
+| 역할           | 색상        | Hex       |
+| -------------- | ----------- | --------- |
+| Primary        | 피치 오렌지 | `#FF6B35` |
+| Secondary      | 라이트 피치 | `#FFB347` |
+| Success        | 그린        | `#4CAF50` |
+| Warning        | 옐로우      | `#FFC107` |
+| Muted          | 그레이      | `#9E9E9E` |
+| Background     | 오프화이트  | `#FAFAFA` |
+| Surface        | 화이트      | `#FFFFFF` |
+| Text Primary   | 블랙        | `#212121` |
+| Text Secondary | 그레이      | `#757575` |
 
-# Prisma
-cd apps/api
-npx prisma studio         # DB GUI
-npx prisma migrate dev    # 마이그레이션
-```
+## 📐 반응형 브레이크포인트
 
-### Testing (API)
+| 디바이스      | 브레이크포인트 | 우선순위   |
+| ------------- | -------------- | ---------- |
+| 모바일 (세로) | 320px - 767px  | **최우선** |
+| 태블릿        | 768px - 1023px | 중간       |
+| 데스크톱      | 1024px 이상    | 하         |
 
-```bash
-cd apps/api
-pnpm test             # 단위 테스트
-pnpm test:e2e         # E2E 테스트
-```
+## 🔒 보안
 
-## MVP Features
+- JWT 인증 (httpOnly cookie)
+- bcrypt 비밀번호 해싱
+- Rate Limiting (NestJS Throttler)
+- CORS 설정
+- SQL Injection 방지 (Prisma)
+- XSS 방지 (React 자동 이스케이프)
 
-### P0 (필수)
+## 📊 성능 목표
 
-- Google OAuth 로그인 + 프로필 온보딩
-- 게시글 CRUD (이미지 최대 5장)
-- 거래 상태: 판매중 / 예약중 / 판매완료 / 드림(무료)
-- 카테고리 10종: 가구, 유아/아동, 의류, 도서/교육, 생활용품, 전자기기, 운동/레저, 식품, 자동차, 기타
-- 검색 및 필터 (카테고리, 가격대, 지역)
-- 1:1 채팅
+- Lighthouse Performance 점수 90점 이상 (모바일)
+- Core Web Vitals 통과:
+  - LCP < 2.5초
+  - FID < 100ms
+  - CLS < 0.1
 
-### P1
+## 📖 문서
 
-- 프로필 및 거래 내역
-- 찜(북마크) 기능
-- 드림(무료) 태그/필터
+- [PRD (Product Requirements Document)](.claude/PRD.md)
+- [Frontend README](apps/web/README.md)
+- [Backend README](apps/api/README.md)
+- [Claude AI 작업 가이드](CLAUDE.md)
 
-## Target Regions
+## 🤝 기여 가이드
 
-스와니, 둘루스, 뷰포드, 슈가힐, 존스크릭, 알파레타, 로렌스빌, 애틀랜타, 도라빌, 브룩헤이븐
+1. 브랜치 생성: `git checkout -b feature/amazing-feature`
+2. 변경사항 커밋: `git commit -m 'feat: Add amazing feature'`
+3. 브랜치 푸시: `git push origin feature/amazing-feature`
+4. Pull Request 생성
 
-## Design System
+### 커밋 컨벤션
 
-Pantone 2024 "Peach Fuzz" 컬러 팔레트
+- `feat`: 새로운 기능
+- `fix`: 버그 수정
+- `docs`: 문서 변경
+- `style`: 코드 포매팅 (기능 변경 없음)
+- `refactor`: 리팩토링
+- `test`: 테스트 추가/수정
+- `chore`: 빌드 프로세스 또는 도구 변경
 
-- Primary: `#FFBE98`
-- Secondary: `#FED5BC`
-- Accent: `#FEE7D8`
+## 📄 라이선스
 
-## Documentation
+This project is private and proprietary.
 
-- [PRD v1.1](.claude/docs/peachmarket-prd-v1.1.md)
+## 📞 문의
 
-## License
+- 프로젝트: [GitHub Repository](https://github.com/peachmarket-georgia/peach-market)
+- 이슈: [GitHub Issues](https://github.com/peachmarket-georgia/peach-market/issues)
 
-Private
+---
+
+**최종 업데이트**: 2026-02-15
+**버전**: Phase 1 v1.0
