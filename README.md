@@ -1,135 +1,137 @@
-# Turborepo starter
+# 🍑 피치마켓 (Peach Market)
 
-This Turborepo starter is maintained by the Turborepo core team.
+조지아 한인 커뮤니티의 신뢰할 수 있는 중고거래 플랫폼
 
-## Using this example
+> 카카오톡방, 페이스북에 흩어진 매물을 한곳에서
 
-Run the following command:
+## 해결하는 문제
 
-```sh
-npx create-turbo@latest
-```
+- 거래 히스토리 추적 불가
+- 거래 상태(판매중/예약중/완료) 관리 불가
+- 게시글이 대화에 묻힘
+- 외부 채널(개인톡)로 전환 필요
 
-## What's inside?
+## Tech Stack
 
-This Turborepo includes the following packages/apps:
+| Category     | Technology                                      |
+| ------------ | ----------------------------------------------- |
+| **Frontend** | Next.js 16, React 19, Tailwind CSS 4, shadcn/ui |
+| **Backend**  | NestJS 11, Prisma ORM, PostgreSQL               |
+| **Chat**     | Socket.IO (예정)                                |
+| **Auth**     | NextAuth.js (Google OAuth)                      |
+| **Infra**    | Turborepo, pnpm, Docker, Vercel (FE), GCP (BE)  |
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
+## Project Structure
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+peachmarket/
+├── apps/
+│   ├── web/                 # Next.js 프론트엔드 (:3000)
+│   │   ├── app/
+│   │   │   ├── (marketing)/ # 랜딩페이지 (비회원)
+│   │   │   └── (app)/       # 메인 앱 (회원)
+│   │   └── components/
+│   └── api/                 # NestJS 백엔드 (:4000)
+│       ├── src/
+│       └── prisma/
+├── packages/
+│   ├── shared/              # 공유 TypeScript 타입
+│   ├── eslint-config/
+│   └── typescript-config/
+└── docker-compose.yml
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+## Getting Started
 
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+### Prerequisites
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+- Node.js 18+
+- pnpm 9+
+- Docker Desktop
 
-### Develop
+### Installation
 
-To develop all apps and packages, run the following command:
+```bash
+# 의존성 설치
+pnpm install
 
-```
-cd my-turborepo
+# 환경변수 설정
+cp apps/api/.env.example apps/api/.env
 
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+# DB 실행
+docker compose up -d
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+# Prisma 마이그레이션
+cd apps/api && npx prisma migrate dev
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+# 개발 서버 실행
+pnpm dev
 ```
 
-### Remote Caching
+## Development
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```bash
+pnpm dev              # 전체 앱 실행
+pnpm build            # 빌드
+pnpm lint             # 린트
+pnpm format           # 코드 포맷팅
+pnpm check-types      # 타입 체크
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+### Database
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+```bash
+docker compose up -d      # DB 시작
+docker compose down       # DB 중지
+docker compose down -v    # DB 초기화
 
+# Prisma
+cd apps/api
+npx prisma studio         # DB GUI
+npx prisma migrate dev    # 마이그레이션
 ```
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+### Testing (API)
+
+```bash
+cd apps/api
+pnpm test             # 단위 테스트
+pnpm test:e2e         # E2E 테스트
 ```
 
-## Useful Links
+## MVP Features
 
-Learn more about the power of Turborepo:
+### P0 (필수)
 
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+- Google OAuth 로그인 + 프로필 온보딩
+- 게시글 CRUD (이미지 최대 5장)
+- 거래 상태: 판매중 / 예약중 / 판매완료 / 드림(무료)
+- 카테고리 10종: 가구, 유아/아동, 의류, 도서/교육, 생활용품, 전자기기, 운동/레저, 식품, 자동차, 기타
+- 검색 및 필터 (카테고리, 가격대, 지역)
+- 1:1 채팅
+
+### P1
+
+- 프로필 및 거래 내역
+- 찜(북마크) 기능
+- 드림(무료) 태그/필터
+
+## Target Regions
+
+스와니, 둘루스, 뷰포드, 슈가힐, 존스크릭, 알파레타, 로렌스빌, 애틀랜타, 도라빌, 브룩헤이븐
+
+## Design System
+
+Pantone 2024 "Peach Fuzz" 컬러 팔레트
+
+- Primary: `#FFBE98`
+- Secondary: `#FED5BC`
+- Accent: `#FEE7D8`
+
+## Documentation
+
+- [PRD v1.1](.claude/docs/peachmarket-prd-v1.1.md)
+
+## License
+
+Private
