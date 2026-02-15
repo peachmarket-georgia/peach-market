@@ -1,48 +1,83 @@
 import { Injectable } from '@nestjs/common'
 import { ChatRoom, Message } from '@prisma/client'
-import { ChatRoomsRepository } from './chat-rooms.repository'
-import { MessagesRepository } from './messages.repository'
+import { PrismaService } from '../prisma/prisma.service'
 
 @Injectable()
 export class ChatService {
-  constructor(
-    private readonly chatRoomsRepository: ChatRoomsRepository,
-    private readonly messagesRepository: MessagesRepository
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   // ChatRoom 관련 메서드
   async findChatRoomById(id: string): Promise<ChatRoom | null> {
-    return this.chatRoomsRepository.findById(id)
+    return this.prisma.chatRoom.findUnique({ where: { id } })
   }
 
   async findChatRoomByIdWithMessages(id: string) {
-    return this.chatRoomsRepository.findByIdWithMessages(id)
+    return this.prisma.chatRoom.findUnique({
+      where: { id },
+      include: {
+        messages: { orderBy: { createdAt: 'asc' } },
+        buyer: true,
+        seller: true,
+        product: true,
+      },
+    })
   }
 
   async findChatRoomsByUserId(userId: string): Promise<ChatRoom[]> {
-    return this.chatRoomsRepository.findByUserId(userId)
+    return this.prisma.chatRoom.findMany({
+      where: {
+        OR: [{ buyerId: userId }, { sellerId: userId }],
+      },
+      include: {
+        buyer: true,
+        seller: true,
+        product: true,
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
   }
 
   async findChatRoomByProductAndBuyer(
     productId: string,
     buyerId: string
   ): Promise<ChatRoom | null> {
-    return this.chatRoomsRepository.findByProductAndBuyer(productId, buyerId)
+    return this.prisma.chatRoom.findUnique({
+      where: {
+        productId_buyerId: { productId, buyerId },
+      },
+    })
   }
 
   // Message 관련 메서드
   async findMessagesByChatRoomId(chatRoomId: string): Promise<Message[]> {
-    return this.messagesRepository.findByChatRoomId(chatRoomId)
+    return this.prisma.message.findMany({
+      where: { chatRoomId },
+      include: { sender: true },
+      orderBy: { createdAt: 'asc' },
+    })
   }
 
   async markMessagesAsRead(chatRoomId: string, userId: string): Promise<void> {
-    return this.messagesRepository.markAsRead(chatRoomId, userId)
+    await this.prisma.message.updateMany({
+      where: {
+        chatRoomId,
+        senderId: { not: userId },
+        isRead: false,
+      },
+      data: { isRead: true },
+    })
   }
 
   async countUnreadMessages(
     chatRoomId: string,
     userId: string
   ): Promise<number> {
-    return this.messagesRepository.countUnread(chatRoomId, userId)
+    return this.prisma.message.count({
+      where: {
+        chatRoomId,
+        senderId: { not: userId },
+        isRead: false,
+      },
+    })
   }
 }
