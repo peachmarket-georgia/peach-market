@@ -1,25 +1,26 @@
-import Image from "next/image";
-import Link from "next/link";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { Product } from "@/lib/data";
+import Image from 'next/image'
+import Link from 'next/link'
+import { Skeleton } from '@/components/ui/skeleton'
+import type { Product } from '@/lib/data'
+import { STATUS_LABEL } from '@/lib/data'
 
 interface ProductCardProps {
-  product: Product;
+  product: Product
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
-  const isSold = product.status === "판매완료";
-  const isReserved = product.status === "예약중";
+  const isSold = product.status === 'SOLD'
+  const isReserved = product.status === 'RESERVED'
 
   return (
     <Link href={`/marketplace/${product.id}`}>
       <article className="group cursor-pointer">
         {/* 이미지 - 1:1 정사각형 */}
         <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-          {product.imageUrl ? (
+          {product.thumbnailUrl ? (
             <Image
-              src={product.imageUrl}
-              alt={product.name}
+              src={product.thumbnailUrl}
+              alt={product.title}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
               className="object-cover transition-transform group-hover:scale-105"
@@ -30,15 +31,17 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
           {/* 예약중 뱃지 */}
           {isReserved && (
-            <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium bg-black/70 text-white rounded">
-              예약중
+            <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium bg-amber-500 text-white rounded">
+              {STATUS_LABEL.RESERVED}
             </span>
           )}
 
           {/* 판매완료 오버레이 */}
           {isSold && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white font-medium">판매완료</span>
+              <span className="text-white font-medium">
+                {STATUS_LABEL.SOLD}
+              </span>
             </div>
           )}
         </div>
@@ -47,14 +50,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <div className="mt-2 px-0.5">
           {/* 제목 */}
           <h3 className="text-[15px] font-normal text-foreground line-clamp-2 leading-snug">
-            {product.name}
+            {product.title}
           </h3>
 
           {/* 위치 · 시간 */}
           {(product.location || product.timeAgo) && (
             <p className="mt-1 text-xs text-muted-foreground">
               {product.location}
-              {product.location && product.timeAgo && " · "}
+              {product.location && product.timeAgo && ' · '}
               {product.timeAgo}
             </p>
           )}
@@ -62,13 +65,13 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {/* 가격 */}
           <p
             className={`mt-1 text-[15px] font-bold ${
-              isSold ? "text-muted-foreground" : "text-foreground"
+              isSold ? 'text-muted-foreground' : 'text-foreground'
             }`}
           >
-            {product.price.toLocaleString()}원
+            ${product.price.toLocaleString()}
           </p>
         </div>
       </article>
     </Link>
-  );
-};
+  )
+}
