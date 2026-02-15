@@ -13,6 +13,7 @@
   "dependencies": {
     "@peachmarket/shared": "workspace:*",
     "@tailwindcss/postcss": "^4.1.18",
+    "@vercel/analytics": "^1.6.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.563.0",
