@@ -384,7 +384,7 @@
 
 - **React Error Boundary**: 렌더링 오류 시 폴백 UI
 - **Toast 알림**: 사용자 친화적 에러 메시지
-- **네트워크 오류 처리**: 재시도 로직 (axios interceptor)
+- **네트워크 오류 처리**: 재시도 로직
 
 ---
 
