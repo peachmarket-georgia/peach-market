@@ -65,7 +65,7 @@
 - TypeScript
 - Tailwind CSS 4
 - shadcn/ui (Radix UI)
-- Lucide React
+- @tabler/icons-react
 
 ### 백엔드
 
@@ -74,10 +74,7 @@
 - PostgreSQL 17
 - Prisma 7
 - Socket.io (실시간 채팅)
-- Auth:
-  - 이메일/비밀번호 인증 (bcrypt 해싱)
-  - Google OAuth 2.0 (소셜 로그인)
-  - 모든 API는 NestJS 서버에서 처리 (Next.js는 UI만 담당)
+- 모든 API는 NestJS 서버에서 처리 (Next.js는 UI만 담당)
 
 ### 인프라
 
@@ -384,7 +381,7 @@
 
 - **React Error Boundary**: 렌더링 오류 시 폴백 UI
 - **Toast 알림**: 사용자 친화적 에러 메시지
-- **네트워크 오류 처리**: 재시도 로직 (axios interceptor)
+- **네트워크 오류 처리**: 재시도 로직
 
 ---
 
