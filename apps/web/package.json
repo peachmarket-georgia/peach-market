@@ -12,7 +12,9 @@
   },
   "dependencies": {
     "@next/third-parties": "^16.1.6",
+    "@base-ui/react": "^1.2.0",
     "@peachmarket/shared": "workspace:*",
+    "@tabler/icons-react": "^3.36.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@vercel/analytics": "^1.6.1",
     "class-variance-authority": "^0.7.1",
