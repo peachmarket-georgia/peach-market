@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 import { GoogleAnalytics } from '@next/third-parties/google'
-import mixpanel from 'mixpanel'
+import mixpanel from 'mixpanel-browser'
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_ID || ''
 const MIXPANEL_TOKEN = process.env.NEXT_PUBLIC_MIXPANEL_TOKEN || ''
