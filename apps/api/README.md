@@ -20,23 +20,17 @@ apps/api/
 ├── src/
 │   ├── main.ts              # 앱 엔트리포인트
 │   ├── app.module.ts        # 루트 모듈
-│   ├── auth/                # 인증 모듈
-│   │   ├── auth.controller.ts
-│   │   ├── auth.service.ts
-│   │   ├── auth.module.ts
-│   │   ├── guards/          # JWT Guard, OAuth Guard
-│   │   └── strategies/      # JWT Strategy, Google Strategy
-│   ├── users/               # 사용자 모듈
-│   ├── listings/            # 게시글 모듈
-│   ├── chat/                # 채팅 모듈 (Socket.io Gateway)
-│   ├── notifications/       # 알림 모듈
-│   ├── reports/             # 신고 모듈
 │   ├── common/              # 공통 모듈
-│   │   ├── filters/         # Exception Filters
-│   │   ├── interceptors/    # Interceptors
-│   │   ├── decorators/      # Custom Decorators
-│   │   └── pipes/           # Validation Pipes
+│   │   └── repositories/    # Repository 패턴 베이스
+│   │       └── base.repository.ts
+│   ├── chat/                # 채팅 모듈
+│   │   ├── chat.module.ts
+│   │   ├── chat.controller.ts
+│   │   ├── chat.service.ts
+│   │   ├── chat-rooms.repository.ts
+│   │   └── messages.repository.ts
 │   └── prisma/              # Prisma 서비스
+│       ├── prisma.module.ts
 │       └── prisma.service.ts
 ├── prisma/
 │   ├── schema.prisma        # Prisma 스키마
@@ -49,6 +43,70 @@ apps/api/
 ├── package.json
 ├── tsconfig.json
 └── nest-cli.json
+```
+
+## 🏛️ 아키텍처: Repository 패턴
+
+이 프로젝트는 **Repository 패턴**을 사용하여 데이터 접근 로직을 분리합니다.
+
+### 레이어 구조
+
+```
+Controller → Service → Repository → Prisma (DB)
+```
+
+- **Controller**: HTTP 요청/응답 처리
+- **Service**: 비즈니스 로직
+- **Repository**: 데이터 접근 로직 (Prisma 쿼리 캡슐화)
+
+### BaseRepository 인터페이스
+
+모든 Repository는 `BaseRepository` 인터페이스를 구현합니다:
+
+```typescript
+// common/repositories/base.repository.ts
+export interface BaseRepository<T, CreateInput, UpdateInput> {
+  findById(id: string): Promise<T | null>
+  findAll(): Promise<T[]>
+  create(data: CreateInput): Promise<T>
+  update(id: string, data: UpdateInput): Promise<T>
+  delete(id: string): Promise<T>
+}
+```
+
+### Repository 구현 예시
+
+```typescript
+// chat/chat-rooms.repository.ts
+@Injectable()
+export class ChatRoomsRepository implements BaseRepository<
+  ChatRoom,
+  Prisma.ChatRoomCreateInput,
+  Prisma.ChatRoomUpdateInput
+> {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findById(id: string): Promise<ChatRoom | null> {
+    return this.prisma.chatRoom.findUnique({ where: { id } })
+  }
+
+  // 기본 메서드 외 도메인 특화 메서드 추가
+  async findByUserId(userId: string): Promise<ChatRoom[]> {
+    return this.prisma.chatRoom.findMany({
+      where: { OR: [{ buyerId: userId }, { sellerId: userId }] },
+    })
+  }
+}
+```
+
+### 새 모듈 추가 시 구조
+
+```
+src/[module-name]/
+├── [module-name].module.ts       # 모듈 정의
+├── [module-name].controller.ts   # HTTP 엔드포인트
+├── [module-name].service.ts      # 비즈니스 로직
+└── [model-name].repository.ts    # 데이터 접근
 ```
 
 ## 🚀 시작하기
@@ -132,7 +190,22 @@ pnpm test:e2e
 
 ## 📡 API 엔드포인트
 
-### 인증 (Auth)
+### 구현 완료
+
+#### 채팅 (Chat)
+
+```
+GET    /chat/rooms               # 채팅방 목록
+GET    /chat/rooms/:id           # 채팅방 조회 (메시지 포함)
+POST   /chat/rooms               # 채팅방 생성
+GET    /chat/rooms/:id/messages  # 메시지 목록
+POST   /chat/rooms/:id/messages  # 메시지 전송
+PATCH  /chat/rooms/:id/read      # 메시지 읽음 처리
+```
+
+### 구현 예정
+
+#### 인증 (Auth)
 
 ```
 POST   /auth/signup              # 회원가입
@@ -140,75 +213,24 @@ POST   /auth/login               # 로그인
 POST   /auth/logout              # 로그아웃
 POST   /auth/refresh             # Access Token 갱신
 GET    /auth/me                  # 현재 사용자 정보
-POST   /auth/forgot-password     # 비밀번호 재설정 요청
-POST   /auth/reset-password      # 비밀번호 재설정
-
-# Google OAuth
-GET    /auth/google              # Google 로그인 시작
-GET    /auth/google/callback     # Google 콜백
-POST   /auth/google/onboarding   # OAuth 사용자 온보딩
+GET    /auth/google              # Google OAuth 로그인
 ```
 
-### 사용자 (Users)
+#### 사용자 (Users)
 
 ```
 GET    /users/:id                # 사용자 프로필 조회
 PATCH  /users/me                 # 내 프로필 수정
-GET    /users/:id/listings       # 사용자의 판매 목록
 ```
 
-### 게시글 (Listings)
+#### 게시글 (Listings)
 
 ```
-GET    /listings                 # 게시글 목록 (필터, 검색, 정렬)
+GET    /listings                 # 게시글 목록
 GET    /listings/:id             # 게시글 상세
-POST   /listings                 # 게시글 작성 (인증 필요)
-PATCH  /listings/:id             # 게시글 수정 (본인만)
-DELETE /listings/:id             # 게시글 삭제 (본인만)
-PATCH  /listings/:id/status      # 거래 상태 변경 (본인만)
-POST   /listings/:id/bookmark    # 찜하기
-DELETE /listings/:id/bookmark    # 찜 취소
-GET    /listings/me/bookmarks    # 내 찜 목록
-```
-
-### 채팅 (Chat - Socket.io)
-
-```
-WebSocket /socket.io
-
-Events:
-- connection                     # 연결
-- disconnect                     # 연결 해제
-- join_room                      # 채팅방 입장
-- leave_room                     # 채팅방 퇴장
-- send_message                   # 메시지 전송
-- typing                         # 타이핑 중
-- stop_typing                    # 타이핑 중지
-- message_read                   # 메시지 읽음
-
-REST API:
-GET    /chat/rooms               # 채팅방 목록
-GET    /chat/rooms/:id           # 채팅방 조회
-POST   /chat/rooms               # 채팅방 생성
-GET    /chat/rooms/:id/messages  # 메시지 목록
-```
-
-### 알림 (Notifications)
-
-```
-GET    /notifications            # 알림 목록
-PATCH  /notifications/:id/read   # 알림 읽음 처리
-PATCH  /notifications/read-all   # 모든 알림 읽음 처리
-DELETE /notifications/:id        # 알림 삭제
-```
-
-### 신고 (Reports)
-
-```
-POST   /reports/listings/:id    # 게시글 신고
-POST   /reports/users/:id       # 사용자 신고
-GET    /reports                 # 신고 목록 (관리자만)
-PATCH  /reports/:id             # 신고 상태 변경 (관리자만)
+POST   /listings                 # 게시글 작성
+PATCH  /listings/:id             # 게시글 수정
+DELETE /listings/:id             # 게시글 삭제
 ```
 
 ## 🗄️ 데이터베이스 (Prisma)
