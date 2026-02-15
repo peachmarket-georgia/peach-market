@@ -100,7 +100,7 @@ pnpm dev --filter=@peachmarket/api    # Backend (포트 4000)
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:4000
-- PostgreSQL: localhost:95432
+- PostgreSQL: localhost:5433
 
 ## 📁 프로젝트 구조
 

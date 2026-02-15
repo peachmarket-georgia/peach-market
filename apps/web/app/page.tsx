@@ -1,10 +1,6 @@
-/**
- * 피치마켓 랜딩페이지
- */
-
-import Image from "next/image";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Image from 'next/image'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 const LandingPage = () => {
   return (
@@ -200,7 +196,7 @@ const LandingPage = () => {
         </p>
       </footer>
     </div>
-  );
-};
+  )
+}
 
-export default LandingPage;
+export default LandingPage
