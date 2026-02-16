@@ -80,4 +80,21 @@ export class ChatService {
       },
     })
   }
+
+  async saveMessage(
+    chatRoomId: string,
+    senderId: string,
+    content: string
+  ): Promise<Message> {
+    return this.prisma.message.create({
+      data: {
+        chatRoomId,
+        senderId,
+        content,
+      },
+      include: {
+        sender: true,
+      },
+    })
+  }
 }

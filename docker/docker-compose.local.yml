@@ -1,5 +1,3 @@
-version: '3.8'
-
 name: peach-market
 
 services:
@@ -8,7 +6,7 @@ services:
     container_name: peachmarket-postgres
     restart: unless-stopped
     ports:
-      - '95432:5432'
+      - '5432:5432'
     env_file:
       - ../apps/api/.env
     volumes:
