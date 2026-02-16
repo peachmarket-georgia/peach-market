@@ -64,7 +64,7 @@ const MarketplacePage = () => {
   }, [fetchProducts])
 
   return (
-    <div className="flex flex-col gap-4 container mx-auto md:mt-10">
+    <div className="flex flex-col gap-4 container mx-auto px-4 md:px-6 md:mt-10">
       {/* 검색 + 등록 */}
       <div className="flex gap-2">
         <div className="relative flex-1">

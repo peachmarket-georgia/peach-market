@@ -1,16 +1,11 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import {
   IconChevronLeft,
   IconCurrencyDollar,
   IconLoader2,
-  IconPhoto,
-  IconX,
-  IconCrown,
-  IconGripVertical,
 } from '@tabler/icons-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -20,10 +15,9 @@ import { Label } from '@/components/ui/label'
 import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import { createProduct } from '@/lib/products-api'
+import { ImageUpload } from '@/components/product/image-upload'
+import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
-
-const MAX_IMAGES = 5
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 const GEORGIA_LOCATIONS = [
   'Atlanta',
@@ -61,12 +55,6 @@ const DESCRIPTION_PLACEHOLDER = `예시)
 거래 가능 시간: 평일 19시 이후 / 주말 협의
 하자/특이사항: 정품 박스 포함, 환불 불가`
 
-type ImageItem = {
-  id: string
-  file: File
-  preview: string
-}
-
 type FieldErrors = {
   title?: string
   category?: string
@@ -86,10 +74,6 @@ const ProductCreatePage = () => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [dragOverZone, setDragOverZone] = useState(false)
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
 
   const numericPrice = Number(price.replaceAll(',', ''))
   const normalizedLocation = location.trim().toLowerCase()
@@ -104,84 +88,6 @@ const ProductCreatePage = () => {
     Number.isFinite(numericPrice) &&
     numericPrice >= 0 &&
     location.trim()
-
-  const addImages = useCallback(
-    (files: FileList | File[]) => {
-      const validFiles = Array.from(files).filter((f) =>
-        ACCEPTED_TYPES.includes(f.type)
-      )
-      const remaining = MAX_IMAGES - images.length
-      const toAdd = validFiles.slice(0, remaining)
-
-      const newItems: ImageItem[] = toAdd.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
-      }))
-
-      setImages((prev) => [...prev, ...newItems])
-    },
-    [images.length]
-  )
-
-  const removeImage = (id: string) => {
-    setImages((prev) => {
-      const item = prev.find((i) => i.id === id)
-      if (item) URL.revokeObjectURL(item.preview)
-      return prev.filter((i) => i.id !== id)
-    })
-  }
-
-  // 드래그 앤 드롭 순서 변경
-  const handleDragStart = (idx: number) => {
-    setDragIndex(idx)
-  }
-
-  const handleDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault()
-    setDragOverIndex(idx)
-  }
-
-  const handleDrop = (e: React.DragEvent, dropIdx: number) => {
-    e.preventDefault()
-    if (dragIndex === null || dragIndex === dropIdx) {
-      setDragIndex(null)
-      setDragOverIndex(null)
-      return
-    }
-
-    setImages((prev) => {
-      const next = [...prev]
-      const [moved] = next.splice(dragIndex, 1)
-      next.splice(dropIdx, 0, moved!)
-      return next
-    })
-    setDragIndex(null)
-    setDragOverIndex(null)
-  }
-
-  const handleDragEnd = () => {
-    setDragIndex(null)
-    setDragOverIndex(null)
-  }
-
-  // 드롭존 (파일 추가용)
-  const handleZoneDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOverZone(true)
-  }
-
-  const handleZoneDragLeave = () => {
-    setDragOverZone(false)
-  }
-
-  const handleZoneDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOverZone(false)
-    if (e.dataTransfer.files.length > 0) {
-      addImages(e.dataTransfer.files)
-    }
-  }
 
   const handlePriceChange = (value: string) => {
     const digitsOnly = value.replace(/\D/g, '')
@@ -229,7 +135,7 @@ const ProductCreatePage = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto pb-20 md:pb-8 md:mt-10">
+    <div className="max-w-2xl mx-auto px-4 md:px-6 pb-20 md:pb-8 md:mt-10">
       {/* 헤더 */}
       <div className="mb-6 flex items-center gap-3">
         <Link
@@ -250,111 +156,7 @@ const ProductCreatePage = () => {
         )}
 
         {/* 이미지 업로드 */}
-        <div className="flex flex-col gap-1.5">
-          <Label>
-            상품 이미지{' '}
-            <span className="text-muted-foreground font-normal">
-              ({images.length}/{MAX_IMAGES})
-            </span>
-          </Label>
-
-          {/* 이미지 프리뷰 그리드 */}
-          {images.length > 0 && (
-            <div className="grid grid-cols-5 gap-2 mb-2">
-              {images.map((img, idx) => (
-                <div
-                  key={img.id}
-                  draggable
-                  onDragStart={() => handleDragStart(idx)}
-                  onDragOver={(e) => handleDragOver(e, idx)}
-                  onDrop={(e) => handleDrop(e, idx)}
-                  onDragEnd={handleDragEnd}
-                  className={cn(
-                    'relative aspect-square rounded-lg overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
-                    dragIndex === idx && 'opacity-40 scale-95',
-                    dragOverIndex === idx &&
-                      dragIndex !== idx &&
-                      'ring-2 ring-primary'
-                  )}
-                >
-                  <Image
-                    src={img.preview}
-                    alt={`상품 이미지 ${idx + 1}`}
-                    fill
-                    sizes="100px"
-                    className="object-cover"
-                  />
-
-                  {/* 대표이미지 마크 */}
-                  {idx === 0 && (
-                    <span className="absolute top-0 left-0 right-0 bg-primary/90 text-primary-foreground text-[10px] font-semibold text-center py-0.5 flex items-center justify-center gap-0.5">
-                      <IconCrown className="h-2.5 w-2.5" />
-                      대표
-                    </span>
-                  )}
-
-                  {/* 드래그 핸들 */}
-                  <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/40 to-transparent p-1 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex justify-center">
-                    <IconGripVertical className="h-3.5 w-3.5 text-white" />
-                  </div>
-
-                  {/* 삭제 버튼 */}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(img.id)}
-                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80"
-                  >
-                    <IconX className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* 드롭존 */}
-          {images.length < MAX_IMAGES && (
-            <div
-              onDragOver={handleZoneDragOver}
-              onDragLeave={handleZoneDragLeave}
-              onDrop={handleZoneDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={cn(
-                'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 cursor-pointer transition-colors',
-                dragOverZone
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-muted-foreground/50'
-              )}
-            >
-              <IconPhoto className="h-8 w-8 text-muted-foreground" />
-              <div className="text-center">
-                <p className="text-sm font-medium text-muted-foreground">
-                  클릭 또는 드래그하여 이미지 추가
-                </p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  JPG, PNG, WebP, GIF · 최대 {MAX_IMAGES - images.length}장
-                </p>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files) addImages(e.target.files)
-                  e.target.value = ''
-                }}
-              />
-            </div>
-          )}
-
-          {images.length > 1 && (
-            <p className="text-xs text-muted-foreground">
-              드래그하여 순서를 변경할 수 있습니다. 첫 번째 이미지가
-              대표이미지로 사용됩니다.
-            </p>
-          )}
-        </div>
+        <ImageUpload images={images} onChange={setImages} />
 
         {/* 제목 */}
         <div className="flex flex-col gap-1.5">
@@ -448,7 +250,7 @@ const ProductCreatePage = () => {
           <Label htmlFor="location">
             거래 희망 지역 <span className="text-destructive">*</span>
           </Label>
-          <div>
+          <div className="relative">
             <Input
               id="location"
               placeholder="예: Duluth"
@@ -464,7 +266,7 @@ const ProductCreatePage = () => {
               className={cn(fieldErrors.location && 'border-destructive')}
             />
             {isLocationFocused && filteredLocations.length > 0 && (
-              <div className="mt-1 w-full rounded-md border bg-popover shadow-md">
+              <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-md border bg-popover shadow-md">
                 <ul className="max-h-48 overflow-y-auto p-1">
                   {filteredLocations.map((item) => (
                     <li key={item}>

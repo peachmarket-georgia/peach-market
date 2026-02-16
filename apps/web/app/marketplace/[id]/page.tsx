@@ -58,7 +58,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const isSelling = product.status === 'SELLING'
 
   return (
-    <div className="max-w-4xl mx-auto pb-24 md:pb-8 md:mt-10">
+    <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
       {/* 뒤로가기 */}
       <div className="mb-4 flex items-center gap-3">
         <Link
