@@ -1,15 +1,14 @@
 import {
-  SignupRequest,
-  SignupResponse,
-  LoginRequest,
-  LoginResponse,
-  MessageResponse,
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
-  ResendVerificationRequest,
-  UserProfile,
-  CheckEmailResponse,
-  CheckNicknameResponse,
+  SignupDto,
+  SignupResponseDto,
+  LoginDto,
+  LoginResponseDto,
+  MessageResponseDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ResendVerificationDto,
+  UserProfileResponseDto,
+  CheckAvailabilityResponseDto,
 } from '@/types/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
@@ -102,8 +101,8 @@ export const authApi = {
   /**
    * 회원가입
    */
-  signup: (data: SignupRequest) =>
-    apiRequest<SignupResponse>('/api/auth/signup', {
+  signup: (data: SignupDto) =>
+    apiRequest<SignupResponseDto>('/api/auth/signup', {
       method: 'POST',
       body: data,
     }),
@@ -111,8 +110,8 @@ export const authApi = {
   /**
    * 로그인
    */
-  login: (data: LoginRequest) =>
-    apiRequest<LoginResponse>('/api/auth/login', {
+  login: (data: LoginDto) =>
+    apiRequest<LoginResponseDto>('/api/auth/login', {
       method: 'POST',
       body: data,
     }),
@@ -121,20 +120,20 @@ export const authApi = {
    * 로그아웃
    */
   logout: () =>
-    apiRequest<MessageResponse>('/api/auth/logout', {
+    apiRequest<MessageResponseDto>('/api/auth/logout', {
       method: 'POST',
     }),
 
   /**
    * 이메일 인증
    */
-  verifyEmail: (token: string) => apiRequest<MessageResponse>(`/api/auth/verify-email/${token}`),
+  verifyEmail: (token: string) => apiRequest<MessageResponseDto>(`/api/auth/verify-email/${token}`),
 
   /**
    * 이메일 재발송
    */
-  resendVerification: (data: ResendVerificationRequest) =>
-    apiRequest<MessageResponse>('/api/auth/resend-verification', {
+  resendVerification: (data: ResendVerificationDto) =>
+    apiRequest<MessageResponseDto>('/api/auth/resend-verification', {
       method: 'POST',
       body: data,
     }),
@@ -142,8 +141,8 @@ export const authApi = {
   /**
    * 비밀번호 찾기
    */
-  forgotPassword: (data: ForgotPasswordRequest) =>
-    apiRequest<MessageResponse>('/api/auth/forgot-password', {
+  forgotPassword: (data: ForgotPasswordDto) =>
+    apiRequest<MessageResponseDto>('/api/auth/forgot-password', {
       method: 'POST',
       body: data,
     }),
@@ -151,8 +150,8 @@ export const authApi = {
   /**
    * 비밀번호 재설정
    */
-  resetPassword: (token: string, data: ResetPasswordRequest) =>
-    apiRequest<MessageResponse>(`/api/auth/reset-password/${token}`, {
+  resetPassword: (token: string, data: ResetPasswordDto) =>
+    apiRequest<MessageResponseDto>(`/api/auth/reset-password/${token}`, {
       method: 'POST',
       body: data,
     }),
@@ -161,7 +160,7 @@ export const authApi = {
    * 토큰 갱신
    */
   refresh: () =>
-    apiRequest<MessageResponse>('/api/auth/refresh', {
+    apiRequest<MessageResponseDto>('/api/auth/refresh', {
       method: 'POST',
     }),
 };
@@ -173,13 +172,13 @@ export const userApi = {
    * 내 프로필 조회
    * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
    */
-  getMe: (cookies?: string) => apiRequest<UserProfile>('/api/users/me', undefined, cookies),
+  getMe: (cookies?: string) => apiRequest<UserProfileResponseDto>('/api/users/me', undefined, cookies),
 
   /**
    * 이메일 중복 체크
    */
   checkEmail: (email: string) =>
-    apiRequest<CheckEmailResponse>('/api/users/check-email', {
+    apiRequest<CheckAvailabilityResponseDto>('/api/users/check-email', {
       method: 'POST',
       body: { email },
     }),
@@ -188,7 +187,7 @@ export const userApi = {
    * 닉네임 중복 체크
    */
   checkNickname: (nickname: string) =>
-    apiRequest<CheckNicknameResponse>('/api/users/check-nickname', {
+    apiRequest<CheckAvailabilityResponseDto>('/api/users/check-nickname', {
       method: 'POST',
       body: { nickname },
     }),
