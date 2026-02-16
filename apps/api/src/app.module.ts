@@ -8,6 +8,7 @@ import { AppLoggerModule } from './core/logger/logger.module';
 import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { UsersModule } from './modules/users/users.module';
     // Feature modules (비즈니스 도메인)
     AuthModule,
     UsersModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [
