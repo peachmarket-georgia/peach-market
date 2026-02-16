@@ -4,11 +4,10 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'placehold.co',
-        pathname: '/**',
+        hostname: '**',
       },
     ],
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

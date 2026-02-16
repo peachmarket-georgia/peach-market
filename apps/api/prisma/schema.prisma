@@ -7,26 +7,29 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String? // bcrypt 해시 (OAuth 사용자는 NULL)
-  nickname    String   @unique // 닉네임 중복 불가
-  avatarUrl   String?
-  location    String // 활동 지역 (둘루스, 애틀랜타 등)
-  mannerScore Float    @default(0.0) // 매너 점수 (0.0 ~ 5.0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  email           String   @unique
+  password        String? // bcrypt 해시 (OAuth 사용자는 NULL)
+  nickname        String   @unique // 닉네임 중복 불가
+  avatarUrl       String?
+  location        String // 활동 지역 (둘루스, 애틀랜타 등)
+  mannerScore     Float    @default(0.0) // 매너 점수 (0.0 ~ 5.0)
+  isEmailVerified Boolean  @default(false) // 이메일 인증 여부
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   // 관계
-  products        Product[]  @relation("SellerProducts")
-  reviewsGiven    Review[]   @relation("ReviewsGiven")
-  reviewsReceived Review[]   @relation("ReviewsReceived")
-  buyerChatRooms  ChatRoom[] @relation("BuyerChatRooms")
-  sellerChatRooms ChatRoom[] @relation("SellerChatRooms")
-  messages        Message[]
-  favorites       Favorite[]
-  sessions        Session[] // 여러 디바이스 로그인 지원
-  accounts        Account[] // OAuth 계정 연결 (Google, Facebook 등)
+  products              Product[]            @relation("SellerProducts")
+  reviewsGiven          Review[]             @relation("ReviewsGiven")
+  reviewsReceived       Review[]             @relation("ReviewsReceived")
+  buyerChatRooms        ChatRoom[]           @relation("BuyerChatRooms")
+  sellerChatRooms       ChatRoom[]           @relation("SellerChatRooms")
+  messages              Message[]
+  favorites             Favorite[]
+  sessions              Session[] // 여러 디바이스 로그인 지원
+  accounts              Account[] // OAuth 계정 연결 (Google, Facebook 등)
+  emailVerifications    EmailVerification[] // 이메일 인증 토큰
+  passwordResetRequests PasswordReset[] // 비밀번호 재설정 요청
 
   @@map("users")
 }
@@ -68,6 +71,39 @@ model Account {
   @@unique([provider, providerAccountId])
   @@index([userId])
   @@map("accounts")
+}
+
+// 이메일 인증 토큰
+model EmailVerification {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique // 인증 토큰
+  expiresAt DateTime // 만료 시간 (24시간)
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt]) // 만료된 토큰 정리용
+  @@map("email_verifications")
+}
+
+// 비밀번호 재설정 요청
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique // 재설정 토큰
+  expiresAt DateTime // 만료 시간 (1시간)
+  used      Boolean  @default(false) // 사용 여부
+  createdAt DateTime @default(now())
+
+  // 관계
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt]) // 만료된 토큰 정리용
+  @@map("password_resets")
 }
 
 // 상품 상태

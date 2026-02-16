@@ -97,6 +97,7 @@
 - 필수 입력: 이메일, 비밀번호, 비밀번호 확인, 닉네임, 거주 지역
 - 이메일 형식 검증 (정규식)
 - 이메일 중복 체크 (실시간)
+- 이메일 인증
 - 닉네임 중복 체크 (실시간)
 - 비밀번호 규칙: 최소 8자, 영문/숫자/특수문자 조합 권장
 - 비밀번호 해싱: bcrypt (salt rounds: 10)
@@ -116,10 +117,10 @@
 
 - [Google로 시작하기] 버튼 제공
 - **OAuth 플로우 (NestJS 처리)**:
-  1. Next.js에서 NestJS `/auth/google` 엔드포인트 호출
+  1. Next.js에서 NestJS `/api/auth/google` 엔드포인트 호출
   2. NestJS PassportJS Google Strategy로 OAuth 인증
   3. Google 인증 화면 표시 및 사용자 동의
-  4. Google 콜백 → NestJS `/auth/google/callback`
+  4. Google 콜백 → NestJS `/api/auth/google/callback`
   5. 사용자 정보 조회 (이메일, 이름, 프로필 이미지)
   6. DB에서 이메일로 사용자 검색:
      - 기존 사용자: JWT 발급 및 리다이렉트
@@ -128,8 +129,8 @@
 - Google 이메일은 고유 식별자로 사용
 - 비밀번호 필드는 NULL (OAuth 사용자)
 - **환경별 Redirect URI 설정 필요**:
-  - 로컬: `http://localhost:4000/auth/google/callback`
-  - 프로덕션: `https://api.peachmarket.com/auth/google/callback`
+  - 로컬: `http://localhost:3003/api/auth/google/callback`
+  - 프로덕션: `https://api.peachmarket.com/api/auth/google/callback`
 
 **4. 프로필**
 
@@ -258,14 +259,14 @@
 #### 요구사항
 
 - 히어로 섹션 + 더미 매물 리스트 (6-8개)
-- 모든 CTA → 로그인 모달
+- 모든 CTA → 로그인 페이지
 - 더미 데이터는 정적 JSON 파일로 관리
 
 #### 수락 기준
 
 - [ ] 비회원이 랜딩페이지에서 더미 매물 확인 가능
-- [ ] 더미 카드 클릭 시 로그인 모달 표시
-- [ ] 히어로 섹션 CTA 클릭 시 로그인 모달 표시
+- [ ] 더미 카드 클릭 시 로그인 페이지로 이동
+- [ ] 히어로 섹션 CTA 클릭 시 로그인 페이지로 이동
 
 ---
 
@@ -353,7 +354,6 @@
 - [ ] NestJS CORS 설정
 - [ ] 허용 도메인 화이트리스트:
   - 로컬: `http://localhost:3000`
-  - 프로덕션: `https://peachmarket.com`
 - [ ] credentials: true (쿠키 전송 허용)
 
 ### 5.2 에러 처리 전략
