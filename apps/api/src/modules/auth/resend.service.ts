@@ -79,7 +79,7 @@ export class ResendService {
     }
 
     try {
-      await this.resend.emails.send({
+      const res = await this.resend.emails.send({
         from: this.fromEmail,
         to: email,
         subject: '[피치마켓] 비밀번호 재설정 안내',
@@ -100,6 +100,11 @@ export class ResendService {
           </div>
         `,
       });
+
+      if (res.error) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
+        throw res.error.message;
+      }
 
       this.logger.log(`Password reset email sent to ${email}`);
     } catch (error) {

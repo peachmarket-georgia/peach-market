@@ -17,16 +17,22 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  /* Primary - Peach Fuzz */
-  --primary: #ffbe98;
+  /* Primary - Peach Orange (PRD) */
+  --primary: #ff6b35;
   --primary-foreground: oklch(0.985 0 0);
 
-  /* Secondary - Light Peach */
-  --secondary: oklch(0.97 0 0);
+  /* Secondary - Light Peach (PRD) */
+  --secondary: #ffb347;
   --secondary-foreground: oklch(0.205 0 0);
 
-  /* Muted - Soft Gray */
-  --muted: oklch(0.97 0 0);
+  /* Success - Green (PRD) */
+  --success: #4caf50;
+
+  /* Warning - Yellow (PRD) */
+  --warning: #ffc107;
+
+  /* Muted - Gray (PRD) */
+  --muted: #9e9e9e;
   --muted-foreground: oklch(0.556 0 0);
 
   /* Accent - Cream Peach */
