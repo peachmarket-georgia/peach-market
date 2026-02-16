@@ -4,6 +4,7 @@ import { Analytics } from '@vercel/analytics/next';
 import { GoogleAnalytics } from '@next/third-parties/google';
 import { Inter } from 'next/font/google';
 import { MixpanelProvider } from '@/components/mixpanel-provider';
+import { SocketProvider } from '@/context/socket-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -20,7 +21,9 @@ const RootLayout = ({
   return (
     <html lang="ko" className={inter.variable}>
       <body className="antialiased">
-        <MixpanelProvider>{children}</MixpanelProvider>
+        <SocketProvider>
+          <MixpanelProvider>{children}</MixpanelProvider>
+        </SocketProvider>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ''} />
         <Analytics />
       </body>
