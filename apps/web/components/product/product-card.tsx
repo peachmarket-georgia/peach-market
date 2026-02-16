@@ -1,8 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
-import { STATUS_LABEL } from '@/lib/types'
-import type { Product } from '@/lib/types'
+import { STATUS_LABEL } from '@/lib/product-types'
+import type { Product } from '@/lib/product-types'
 
 type ProductCardProps = {
   product: Product

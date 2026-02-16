@@ -1,18 +1,25 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import {
   IconSearch,
   IconAdjustmentsHorizontal,
   IconChevronDown,
   IconLoader2,
+  IconPlus,
 } from '@tabler/icons-react'
-import { ProductCreateModal, ProductGrid } from '@/components/product'
-import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/types'
+import { ProductGrid } from '@/components/product'
+import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { getProducts, toProduct } from '@/lib/api'
-import type { ProductStatus, Category, Product, SortOption } from '@/lib/types'
+import { getProducts, toProduct } from '@/lib/products-api'
+import type {
+  ProductStatus,
+  Category,
+  Product,
+  SortOption,
+} from '@/lib/product-types'
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
@@ -33,8 +40,6 @@ const MarketplacePage = () => {
   const [showSortDropdown, setShowSortDropdown] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
-  const [modal, setModal] = useState(false)
-
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
@@ -56,22 +61,29 @@ const MarketplacePage = () => {
   useEffect(() => {
     const timer = setTimeout(fetchProducts, 300)
     return () => clearTimeout(timer)
-  }, [fetchProducts, modal])
+  }, [fetchProducts])
 
   return (
-    <div className="flex flex-col gap-4 container mx-auto">
-      <ProductCreateModal open={modal} onOpenChange={setModal} />
-      {/* 검색 */}
-      <div className="relative">
-        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="상품명, 설명으로 검색"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 h-10 rounded-full bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary"
-        />
+    <div className="flex flex-col gap-4 container mx-auto md:mt-10">
+      {/* 검색 + 등록 */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="상품명, 설명으로 검색"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 h-10 rounded-full bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary"
+          />
+        </div>
+        <Link
+          href="/marketplace/new"
+          className="flex items-center gap-1 shrink-0 h-10 px-4 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+        >
+          <IconPlus className="h-4 w-4" />
+          <span className="hidden sm:inline">등록</span>
+        </Link>
       </div>
-      <button onClick={() => setModal(true)}>등록</button>
       {/* 카테고리 필터 - 가로 스크롤 칩 */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <button

@@ -9,6 +9,22 @@ const SELLER_SELECT = {
   mannerScore: true,
 } as const
 
+const VIEW_COOLDOWN_MS = 24 * 60 * 60 * 1000
+const recentViews = new Map<string, number>()
+
+// 만료된 항목 주기적 정리 (5분마다)
+setInterval(
+  () => {
+    const now = Date.now()
+    for (const [key, timestamp] of recentViews) {
+      if (now - timestamp > VIEW_COOLDOWN_MS) {
+        recentViews.delete(key)
+      }
+    }
+  },
+  5 * 60 * 1000
+)
+
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -65,7 +81,7 @@ export class ProductsService {
     })
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, ip?: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       select: {
@@ -89,11 +105,19 @@ export class ProductsService {
       throw new NotFoundException(`Product ${id} not found`)
     }
 
-    // 조회수 증가
-    await this.prisma.product.update({
-      where: { id },
-      data: { viewCount: { increment: 1 } },
-    })
+    // 조회수 증가 (같은 IP의 중복 조회 무시)
+    const viewKey = `${ip ?? 'unknown'}:${id}`
+    const lastViewed = recentViews.get(viewKey)
+    const now = Date.now()
+
+    if (!lastViewed || now - lastViewed > VIEW_COOLDOWN_MS) {
+      recentViews.set(viewKey, now)
+      await this.prisma.product.update({
+        where: { id },
+        data: { viewCount: { increment: 1 } },
+      })
+      product.viewCount += 1
+    }
 
     return product
   }

@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Param, Query, Body } from '@nestjs/common'
+import { Controller, Get, Post, Param, Query, Body, Req } from '@nestjs/common'
+import type { Request } from 'express'
 import { ProductsService } from './products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 
@@ -17,8 +18,13 @@ export class ProductsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.productsService.findOne(id)
+  findOne(@Param('id') id: string, @Req() req: Request) {
+    // 조회수 중복 방지
+    const ip =
+      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+      req.ip ||
+      'unknown'
+    return this.productsService.findOne(id, ip)
   }
 
   @Post()
