@@ -70,14 +70,29 @@ pnpm dev
 
 # 또는 개별 실행
 pnpm dev --filter=@peachmarket/web    # Frontend (포트 3000)
-pnpm dev --filter=@peachmarket/api    # Backend (포트 4000)
+pnpm dev --filter=@peachmarket/api    # Backend (포트 3003)
 ```
 
 ### 접속
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:4000
+- Backend API: http://localhost:3003
 - PostgreSQL: localhost:5433
+
+## 🔧 개발 도구
+
+### Swagger to TypeScript 타입 생성
+
+백엔드 API의 Swagger/OpenAPI 스펙에서 자동으로 TypeScript 타입을 생성합니다.
+
+```bash
+# 기본 사용법
+pnpm swagger-to-type --url "http://localhost:3003/api/docs-json" -o ./apps/web/src/types/api.ts
+```
+
+**주의사항:**
+
+- 백엔드 API 서버가 실행 중이어야 합니다
 
 ## 📁 프로젝트 구조
 
