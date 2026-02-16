@@ -1,10 +1,10 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Skeleton } from '@/components/ui/skeleton'
-import type { Product } from '@/lib/data'
-import { STATUS_LABEL } from '@/lib/data'
+import { STATUS_LABEL } from '@/lib/types'
+import type { Product } from '@/lib/types'
 
-interface ProductCardProps {
+type ProductCardProps = {
   product: Product
 }
 
@@ -31,7 +31,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
           {/* 예약중 뱃지 */}
           {isReserved && (
-            <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium bg-amber-500 text-white rounded">
+            <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium bg-[#FFC107] text-white rounded">
               {STATUS_LABEL.RESERVED}
             </span>
           )}
@@ -48,12 +48,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
         {/* 정보 */}
         <div className="mt-2 px-0.5">
-          {/* 제목 */}
           <h3 className="text-[15px] font-normal text-foreground line-clamp-2 leading-snug">
             {product.title}
           </h3>
 
-          {/* 위치 · 시간 */}
           {(product.location || product.timeAgo) && (
             <p className="mt-1 text-xs text-muted-foreground">
               {product.location}
@@ -62,7 +60,6 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             </p>
           )}
 
-          {/* 가격 */}
           <p
             className={`mt-1 text-[15px] font-bold ${
               isSold ? 'text-muted-foreground' : 'text-foreground'

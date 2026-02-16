@@ -1,20 +1,18 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { Search, SlidersHorizontal, ChevronDown } from 'lucide-react'
-import { ProductGrid } from '@/components/product'
-import { products, CATEGORIES, STATUS_LABEL } from '@/lib/data'
+import { useState, useEffect, useCallback } from 'react'
+import {
+  IconSearch,
+  IconAdjustmentsHorizontal,
+  IconChevronDown,
+  IconLoader2,
+} from '@tabler/icons-react'
+import { ProductCreateModal, ProductGrid } from '@/components/product'
+import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/types'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import type { ProductStatus, Category } from '@/lib/data'
-
-type SortOption = 'latest' | 'price_asc' | 'price_desc'
-
-const SORT_LABELS: Record<SortOption, string> = {
-  latest: '최신순',
-  price_asc: '낮은 가격순',
-  price_desc: '높은 가격순',
-}
+import { getProducts, toProduct } from '@/lib/api'
+import type { ProductStatus, Category, Product, SortOption } from '@/lib/types'
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
@@ -33,51 +31,39 @@ const MarketplacePage = () => {
   )
   const [sortBy, setSortBy] = useState<SortOption>('latest')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [modal, setModal] = useState(false)
 
-  const filteredProducts = useMemo(() => {
-    let result = [...products]
+  const fetchProducts = useCallback(async () => {
+    setLoading(true)
+    try {
+      const params: Record<string, string> = {}
+      if (searchQuery.trim()) params.search = searchQuery.trim()
+      if (selectedCategory !== 'ALL') params.category = selectedCategory
+      if (selectedStatus !== 'ALL') params.status = selectedStatus
+      if (sortBy !== 'latest') params.sort = sortBy
 
-    // 검색
-    if (searchQuery.trim()) {
-      const query = searchQuery.trim().toLowerCase()
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(query) ||
-          p.description.toLowerCase().includes(query)
-      )
+      const data = await getProducts(params)
+      setProducts(data.map(toProduct))
+    } catch (e) {
+      console.error('Failed to fetch products:', e)
+    } finally {
+      setLoading(false)
     }
-
-    // 카테고리 필터
-    if (selectedCategory !== 'ALL') {
-      result = result.filter((p) => p.category === selectedCategory)
-    }
-
-    // 상태 필터
-    if (selectedStatus !== 'ALL') {
-      result = result.filter((p) => p.status === selectedStatus)
-    }
-
-    // 정렬
-    switch (sortBy) {
-      case 'price_asc':
-        result.sort((a, b) => a.price - b.price)
-        break
-      case 'price_desc':
-        result.sort((a, b) => b.price - a.price)
-        break
-      case 'latest':
-      default:
-        break
-    }
-
-    return result
   }, [searchQuery, selectedCategory, selectedStatus, sortBy])
 
+  useEffect(() => {
+    const timer = setTimeout(fetchProducts, 300)
+    return () => clearTimeout(timer)
+  }, [fetchProducts, modal])
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 container mx-auto">
+      <ProductCreateModal open={modal} onOpenChange={setModal} />
       {/* 검색 */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="상품명, 설명으로 검색"
           value={searchQuery}
@@ -85,7 +71,7 @@ const MarketplacePage = () => {
           className="pl-10 h-10 rounded-full bg-muted border-0 focus-visible:ring-1 focus-visible:ring-primary"
         />
       </div>
-
+      <button onClick={() => setModal(true)}>등록</button>
       {/* 카테고리 필터 - 가로 스크롤 칩 */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         <button
@@ -117,7 +103,6 @@ const MarketplacePage = () => {
 
       {/* 상태 필터 + 정렬 */}
       <div className="flex items-center justify-between">
-        {/* 상태 탭 */}
         <div className="flex gap-1">
           {STATUS_FILTERS.map((filter) => (
             <button
@@ -135,15 +120,14 @@ const MarketplacePage = () => {
           ))}
         </div>
 
-        {/* 정렬 드롭다운 */}
         <div className="relative">
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
             className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
+            <IconAdjustmentsHorizontal className="h-3.5 w-3.5" />
             <span>{SORT_LABELS[sortBy]}</span>
-            <ChevronDown className="h-3.5 w-3.5" />
+            <IconChevronDown className="h-3.5 w-3.5" />
           </button>
           {showSortDropdown && (
             <>
@@ -179,15 +163,19 @@ const MarketplacePage = () => {
 
       {/* 결과 수 */}
       <p className="text-sm text-muted-foreground">
-        {filteredProducts.length}개의 매물
+        {products.length}개의 매물
       </p>
 
       {/* 상품 그리드 */}
-      {filteredProducts.length > 0 ? (
-        <ProductGrid products={filteredProducts} />
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : products.length > 0 ? (
+        <ProductGrid products={products} />
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-          <Search className="h-12 w-12 mb-3 opacity-30" />
+          <IconSearch className="h-12 w-12 mb-3 opacity-30" />
           <p className="text-sm">검색 결과가 없습니다</p>
           <p className="text-xs mt-1">다른 키워드로 검색해 보세요</p>
         </div>

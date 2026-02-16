@@ -1,25 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { use } from 'react'
-import { ChevronLeft, Heart, MessageCircle, Eye, Share2 } from 'lucide-react'
+import {
+  IconChevronLeft,
+  IconHeart,
+  IconMessageCircle,
+  IconEye,
+  IconShare,
+  IconLoader2,
+} from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getProductById, STATUS_LABEL } from '@/lib/data'
+import { STATUS_LABEL } from '@/lib/types'
 import { cn } from '@/lib/utils'
+import { getProduct, toProduct } from '@/lib/api'
+import type { Product } from '@/lib/types'
 
-interface ProductDetailPageProps {
+type ProductDetailPageProps = {
   params: Promise<{ id: string }>
 }
 
 const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const { id } = use(params)
-  const product = getProductById(id)
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
 
-  if (!product) {
+  useEffect(() => {
+    getProduct(id)
+      .then((data) => setProduct(toProduct(data)))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error || !product) {
     notFound()
   }
 
@@ -29,13 +55,13 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
   return (
     <div className="max-w-4xl mx-auto pb-20 md:pb-0">
-      {/* 모바일 뒤로가기 */}
+      {/* 뒤로가기 */}
       <div className="mb-4 flex items-center gap-3">
         <Link
           href="/marketplace"
           className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
       </div>
@@ -58,9 +84,9 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             <Badge
               className={cn(
                 'text-xs',
-                isSelling && 'bg-green-500 text-white hover:bg-green-600',
-                isReserved && 'bg-amber-500 text-white hover:bg-amber-600',
-                isSold && 'bg-gray-400 text-white hover:bg-gray-500'
+                isSelling && 'bg-[#4CAF50] text-white hover:bg-[#43A047]',
+                isReserved && 'bg-[#FFC107] text-white hover:bg-[#FFB300]',
+                isSold && 'bg-[#9E9E9E] text-white hover:bg-[#8E8E8E]'
               )}
             >
               {STATUS_LABEL[product.status]}
@@ -90,15 +116,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           {/* 통계 */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6">
             <span className="flex items-center gap-1">
-              <Eye className="h-3.5 w-3.5" />
+              <IconEye className="h-3.5 w-3.5" />
               {product.viewCount}
             </span>
             <span className="flex items-center gap-1">
-              <MessageCircle className="h-3.5 w-3.5" />
+              <IconMessageCircle className="h-3.5 w-3.5" />
               {product.chatCount}
             </span>
             <span className="flex items-center gap-1">
-              <Heart className="h-3.5 w-3.5" />
+              <IconHeart className="h-3.5 w-3.5" />
               {product.likeCount}
             </span>
           </div>
@@ -113,15 +139,21 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           {/* 판매자 정보 */}
           <div className="border-t border-border pt-6 mb-6">
             <div className="flex items-center gap-3">
-              <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
-                <Image
-                  src={product.seller.avatarUrl}
-                  alt={product.seller.nickname}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                />
-              </div>
+              {product.seller.avatarUrl ? (
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted">
+                  <Image
+                    src={product.seller.avatarUrl}
+                    alt={product.seller.nickname}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-medium">
+                  {product.seller.nickname[0]}
+                </div>
+              )}
               <div className="flex-1">
                 <p className="font-medium text-foreground">
                   {product.seller.nickname}
@@ -136,15 +168,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           {/* 데스크톱 액션 버튼 */}
           <div className="hidden md:flex gap-3">
             <Button variant="outline" size="lg" disabled={isSold}>
-              <Heart className="h-4 w-4 mr-1" />
+              <IconHeart className="h-4 w-4 mr-1" />
               관심
             </Button>
             <Button variant="outline" size="lg">
-              <Share2 className="h-4 w-4 mr-1" />
+              <IconShare className="h-4 w-4 mr-1" />
               공유
             </Button>
             <Button size="lg" className="flex-1" disabled={isSold}>
-              <MessageCircle className="h-4 w-4 mr-1" />
+              <IconMessageCircle className="h-4 w-4 mr-1" />
               채팅하기
             </Button>
           </div>
@@ -159,7 +191,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           className="shrink-0"
           disabled={isSold}
         >
-          <Heart className="h-5 w-5" />
+          <IconHeart className="h-5 w-5" />
         </Button>
         <div className="flex-1 text-center">
           <p
@@ -172,7 +204,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           </p>
         </div>
         <Button className="flex-1" disabled={isSold}>
-          <MessageCircle className="h-4 w-4 mr-1" />
+          <IconMessageCircle className="h-4 w-4 mr-1" />
           채팅하기
         </Button>
       </div>
@@ -194,6 +226,14 @@ const ImageCarousel = ({
   const isSold = status === 'SOLD'
   const isReserved = status === 'RESERVED'
 
+  if (images.length === 0) {
+    return (
+      <div className="aspect-square rounded-xl bg-muted flex items-center justify-center text-muted-foreground">
+        이미지 없음
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-3">
       {/* 메인 이미지 */}
@@ -208,7 +248,7 @@ const ImageCarousel = ({
         />
 
         {isReserved && (
-          <span className="absolute top-3 left-3 px-3 py-1 text-sm font-medium bg-amber-500 text-white rounded">
+          <span className="absolute top-3 left-3 px-3 py-1 text-sm font-medium bg-[#FFC107] text-white rounded">
             {STATUS_LABEL.RESERVED}
           </span>
         )}
