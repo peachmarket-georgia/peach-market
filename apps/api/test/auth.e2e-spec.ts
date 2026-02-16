@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import * as bcrypt from 'bcrypt';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/core/database/prisma.service';
+import { ResendService } from '../src/modules/auth/resend.service';
 import { SignupResponseDto } from '../src/modules/auth/dto/signup-response.dto';
 import { LoginResponseDto } from '../src/modules/auth/dto/login-response.dto';
 import { MessageResponseDto } from '../src/modules/auth/dto/message-response.dto';
@@ -20,7 +21,13 @@ describe('Auth (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ResendService)
+      .useValue({
+        sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+        sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),
+      })
+      .compile();
 
     app = moduleFixture.createNestApplication();
     prisma = app.get<PrismaService>(PrismaService);

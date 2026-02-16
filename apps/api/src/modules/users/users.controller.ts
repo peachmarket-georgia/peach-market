@@ -2,6 +2,8 @@ import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto';
+import { UserProfileResponseDto } from './dto/user-response.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -26,11 +28,7 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: '중복 체크 완료',
-    schema: {
-      properties: {
-        available: { type: 'boolean', description: 'true: 사용 가능, false: 이미 사용 중' },
-      },
-    },
+    type: CheckAvailabilityResponseDto,
   })
   async checkEmail(@Body('email') email: string) {
     const available = await this.usersService.checkEmailAvailability(email);
@@ -49,11 +47,7 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: '중복 체크 완료',
-    schema: {
-      properties: {
-        available: { type: 'boolean', description: 'true: 사용 가능, false: 이미 사용 중' },
-      },
-    },
+    type: CheckAvailabilityResponseDto,
   })
   async checkNickname(@Body('nickname') nickname: string) {
     const available = await this.usersService.checkNicknameAvailability(nickname);
@@ -67,17 +61,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: '프로필 조회 성공',
-    schema: {
-      properties: {
-        id: { type: 'string' },
-        email: { type: 'string' },
-        nickname: { type: 'string' },
-        location: { type: 'string' },
-        isEmailVerified: { type: 'boolean' },
-        createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' },
-      },
-    },
+    type: UserProfileResponseDto,
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   async getProfile(@Request() req: RequestWithUser) {

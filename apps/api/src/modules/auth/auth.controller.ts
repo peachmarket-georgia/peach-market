@@ -1,12 +1,16 @@
 import { Controller, Post, Body, Get, Param, Res, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiCookieAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
+import { Throttle } from '@nestjs/throttler';
 import type { Response, Request } from 'express';
 import { AuthService } from './auth.service';
 import { SignupDto } from './signup.dto';
 import { LoginDto } from './login.dto';
 import { ForgotPasswordDto, ResetPasswordDto } from './reset-password.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { SignupResponseDto } from './dto/signup-response.dto';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { MessageResponseDto } from './dto/message-response.dto';
 import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard';
 import { AppConfigService } from '../../core/config/config.service';
 
@@ -26,11 +30,13 @@ export class AuthController {
   ) {}
 
   @Post('signup')
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @ApiOperation({ summary: '회원가입', description: '이메일/비밀번호 기반 회원가입. 가입 후 이메일 인증 필요.' })
   @ApiBody({ type: SignupDto })
-  @ApiResponse({ status: 201, description: '회원가입 성공. 이메일 인증 링크 발송됨.' })
+  @ApiResponse({ status: 201, description: '회원가입 성공. 이메일 인증 링크 발송됨.', type: SignupResponseDto })
   @ApiResponse({ status: 409, description: '이메일 또는 닉네임 중복' })
   @ApiResponse({ status: 400, description: '입력값 검증 실패' })
+  @ApiResponse({ status: 429, description: '요청 횟수 초과 (1시간당 3회 제한)' })
   async signup(@Body() signupDto: SignupDto) {
     return this.authService.signup(signupDto);
   }
@@ -38,26 +44,29 @@ export class AuthController {
   @Get('verify-email/:token')
   @ApiOperation({ summary: '이메일 인증', description: '이메일로 받은 인증 토큰을 통해 이메일 인증 처리' })
   @ApiParam({ name: 'token', description: '이메일 인증 토큰' })
-  @ApiResponse({ status: 200, description: '이메일 인증 성공' })
+  @ApiResponse({ status: 200, description: '이메일 인증 성공', type: MessageResponseDto })
   @ApiResponse({ status: 400, description: '유효하지 않거나 만료된 토큰' })
   async verifyEmail(@Param('token') token: string) {
     return this.authService.verifyEmail(token);
   }
 
   @Post('resend-verification')
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '이메일 인증 재발송',
     description: '인증 이메일을 재발송합니다. 기존 인증 토큰은 삭제되고 새로운 토큰이 발송됩니다.',
   })
   @ApiBody({ type: ResendVerificationDto })
-  @ApiResponse({ status: 200, description: '인증 이메일 발송 성공' })
+  @ApiResponse({ status: 200, description: '인증 이메일 발송 성공', type: MessageResponseDto })
   @ApiResponse({ status: 400, description: '이미 인증된 계정' })
+  @ApiResponse({ status: 429, description: '요청 횟수 초과 (1시간당 3회 제한)' })
   async resendVerification(@Body() resendVerificationDto: ResendVerificationDto) {
     return await this.authService.resendVerificationEmail(resendVerificationDto);
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 1분당 5회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: '로그인',
@@ -67,21 +76,10 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: '로그인 성공. 쿠키에 access_token, refresh_token 설정됨.',
-    schema: {
-      properties: {
-        user: {
-          type: 'object',
-          properties: {
-            id: { type: 'string' },
-            email: { type: 'string' },
-            nickname: { type: 'string' },
-          },
-        },
-        message: { type: 'string' },
-      },
-    },
+    type: LoginResponseDto,
   })
   @ApiResponse({ status: 401, description: '이메일 미인증 또는 잘못된 인증 정보' })
+  @ApiResponse({ status: 429, description: '요청 횟수 초과 (1분당 5회 제한)' })
   async login(@Body() loginDto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const deviceInfo = req.headers['user-agent'];
     const result = await this.authService.login(loginDto, deviceInfo);
@@ -118,7 +116,7 @@ export class AuthController {
     description: 'Refresh Token을 사용하여 Access Token과 Refresh Token을 모두 갱신.',
   })
   @ApiCookieAuth('refresh_token')
-  @ApiResponse({ status: 201, description: '토큰 갱신 성공. 새로운 토큰이 쿠키에 설정됨.' })
+  @ApiResponse({ status: 201, description: '토큰 갱신 성공. 새로운 토큰이 쿠키에 설정됨.', type: MessageResponseDto })
   @ApiResponse({ status: 401, description: '유효하지 않은 Refresh Token 또는 재사용 감지' })
   async refresh(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
     const { userId, refreshToken } = req.user;
@@ -153,7 +151,7 @@ export class AuthController {
   @UseGuards(JwtRefreshAuthGuard)
   @ApiOperation({ summary: '로그아웃', description: 'Refresh Token을 무효화하고 쿠키를 삭제.' })
   @ApiCookieAuth('refresh_token')
-  @ApiResponse({ status: 201, description: '로그아웃 성공. 쿠키가 삭제됨.' })
+  @ApiResponse({ status: 201, description: '로그아웃 성공. 쿠키가 삭제됨.', type: MessageResponseDto })
   @ApiResponse({ status: 401, description: '유효하지 않은 Refresh Token' })
   async logout(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
     const { userId, refreshToken } = req.user;
@@ -170,10 +168,12 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '비밀번호 재설정 요청', description: '비밀번호 재설정 이메일 발송' })
   @ApiBody({ type: ForgotPasswordDto })
-  @ApiResponse({ status: 200, description: '비밀번호 재설정 이메일 발송 성공' })
+  @ApiResponse({ status: 200, description: '비밀번호 재설정 이메일 발송 성공', type: MessageResponseDto })
+  @ApiResponse({ status: 429, description: '요청 횟수 초과 (1시간당 3회 제한)' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
@@ -183,7 +183,7 @@ export class AuthController {
   @ApiOperation({ summary: '비밀번호 재설정', description: '토큰을 사용하여 비밀번호 재설정' })
   @ApiParam({ name: 'token', description: '비밀번호 재설정 토큰' })
   @ApiBody({ type: ResetPasswordDto })
-  @ApiResponse({ status: 200, description: '비밀번호 재설정 성공' })
+  @ApiResponse({ status: 200, description: '비밀번호 재설정 성공', type: MessageResponseDto })
   @ApiResponse({ status: 400, description: '유효하지 않거나 만료된 토큰' })
   async resetPassword(@Param('token') token: string, @Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(token, resetPasswordDto);
