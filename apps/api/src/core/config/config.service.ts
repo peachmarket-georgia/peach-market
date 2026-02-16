@@ -14,7 +14,7 @@ export class AppConfigService {
   }
 
   get jwtSecret(): string {
-    return this.configService.get<string>('JWT_SECRET', 'fallback-jwt-secret-change-in-production');
+    return this.configService.get<string>('JWT_SECRET', '');
   }
 
   get googleClientId(): string {
@@ -25,7 +25,15 @@ export class AppConfigService {
     return this.configService.get<string>('GOOGLE_CLIENT_SECRET', '');
   }
 
+  get googleCallbackUrl(): string {
+    return this.configService.get<string>('GOOGLE_CALLBACK_URL', '');
+  }
+
   get resendApiKey(): string {
     return this.configService.get<string>('RESEND_API_KEY', '');
+  }
+
+  get frontendUrl(): string {
+    return this.configService.get<string>('FRONTEND_URL', '');
   }
 }

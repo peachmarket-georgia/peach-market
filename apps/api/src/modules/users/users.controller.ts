@@ -1,0 +1,93 @@
+import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
+import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+
+interface RequestWithUser extends Request {
+  user: {
+    userId: string;
+  };
+}
+
+@ApiTags('users')
+@Controller('users')
+export class UsersController {
+  constructor(private usersService: UsersService) {}
+
+  @Post('check-email')
+  @ApiOperation({ summary: '이메일 중복 체크', description: '회원가입 시 이메일 사용 가능 여부 확인' })
+  @ApiBody({
+    schema: {
+      properties: {
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: '중복 체크 완료',
+    schema: {
+      properties: {
+        available: { type: 'boolean', description: 'true: 사용 가능, false: 이미 사용 중' },
+      },
+    },
+  })
+  async checkEmail(@Body('email') email: string) {
+    const available = await this.usersService.checkEmailAvailability(email);
+    return { available };
+  }
+
+  @Post('check-nickname')
+  @ApiOperation({ summary: '닉네임 중복 체크', description: '회원가입 시 닉네임 사용 가능 여부 확인' })
+  @ApiBody({
+    schema: {
+      properties: {
+        nickname: { type: 'string', example: '피치유저' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: '중복 체크 완료',
+    schema: {
+      properties: {
+        available: { type: 'boolean', description: 'true: 사용 가능, false: 이미 사용 중' },
+      },
+    },
+  })
+  async checkNickname(@Body('nickname') nickname: string) {
+    const available = await this.usersService.checkNicknameAvailability(nickname);
+    return { available };
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '내 프로필 조회', description: '로그인한 사용자의 프로필 정보 조회 (비밀번호 제외)' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({
+    status: 200,
+    description: '프로필 조회 성공',
+    schema: {
+      properties: {
+        id: { type: 'string' },
+        email: { type: 'string' },
+        nickname: { type: 'string' },
+        location: { type: 'string' },
+        isEmailVerified: { type: 'boolean' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
+  async getProfile(@Request() req: RequestWithUser) {
+    const user = await this.usersService.findById(req.user.userId);
+    if (!user) {
+      return null;
+    }
+    // 비밀번호 제외하고 반환
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...result } = user;
+    return result;
+  }
+}

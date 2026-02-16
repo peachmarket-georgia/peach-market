@@ -354,7 +354,6 @@
 - [ ] NestJS CORS 설정
 - [ ] 허용 도메인 화이트리스트:
   - 로컬: `http://localhost:3000`
-  - 프로덕션: `https://peachmarket.com`
 - [ ] credentials: true (쿠키 전송 허용)
 
 ### 5.2 에러 처리 전략

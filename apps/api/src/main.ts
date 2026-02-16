@@ -13,7 +13,7 @@ async function bootstrap() {
 
   // CORS 설정
   app.enableCors({
-    origin: ['http://localhost:3000', 'https://peachmarket.com'],
+    origin: ['http://localhost:3000', 'http://localhost:3003'],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -41,8 +41,6 @@ async function bootstrap() {
     .setVersion('1.0')
     .addTag('auth', '인증 관련 API (회원가입, 로그인, 토큰 관리)')
     .addTag('users', '사용자 관련 API (프로필, 중복 체크)')
-    .addTag('products', '상품 관련 API')
-    .addTag('chat', '채팅 관련 API')
     .addCookieAuth('access_token', {
       type: 'apiKey',
       in: 'cookie',
