@@ -1,55 +1,55 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import Link from "next/link";
-import { Camera, X } from "lucide-react";
+import { useState } from 'react'
+import Link from 'next/link'
+import { Camera, X } from 'lucide-react'
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 
 const CATEGORIES = [
-  "디지털기기",
-  "생활가전",
-  "가구/인테리어",
-  "생활/주방",
-  "유아동",
-  "의류",
-  "스포츠/레저",
-  "도서",
-  "게임/취미",
-  "뷰티/미용",
-  "반려동물용품",
-  "기타",
-];
+  '디지털기기',
+  '생활가전',
+  '가구/인테리어',
+  '생활/주방',
+  '유아동',
+  '의류',
+  '스포츠/레저',
+  '도서',
+  '게임/취미',
+  '뷰티/미용',
+  '반려동물용품',
+  '기타',
+]
 
 const NewProductPage = () => {
-  const [images, setImages] = useState<string[]>([]);
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("");
-  const [price, setPrice] = useState("");
-  const [acceptOffer, setAcceptOffer] = useState(false);
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
+  const [images, setImages] = useState<string[]>([])
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState('')
+  const [price, setPrice] = useState('')
+  const [acceptOffer, setAcceptOffer] = useState(false)
+  const [description, setDescription] = useState('')
+  const [location, setLocation] = useState('')
 
   const handleImageAdd = () => {
-    if (images.length >= 10) return;
+    if (images.length >= 10) return
     // 실제 업로드 없이 placeholder 이미지 추가
     const placeholders = [
-      "https://picsum.photos/seed/p1/400/400",
-      "https://picsum.photos/seed/p2/400/400",
-      "https://picsum.photos/seed/p3/400/400",
-      "https://picsum.photos/seed/p4/400/400",
-      "https://picsum.photos/seed/p5/400/400",
-    ];
-    const next = placeholders[images.length % placeholders.length]!;
-    setImages((prev) => [...prev, next]);
-  };
+      'https://picsum.photos/seed/p1/400/400',
+      'https://picsum.photos/seed/p2/400/400',
+      'https://picsum.photos/seed/p3/400/400',
+      'https://picsum.photos/seed/p4/400/400',
+      'https://picsum.photos/seed/p5/400/400',
+    ]
+    const next = placeholders[images.length % placeholders.length]!
+    setImages((prev) => [...prev, next])
+  }
 
   const handleImageRemove = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-  };
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
 
-  const isValid = title.trim() && category && price;
+  const isValid = title.trim() && category && price
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -70,7 +70,7 @@ const NewProductPage = () => {
         {/* 이미지 업로드 */}
         <section className="space-y-2">
           <label className="text-sm font-medium text-foreground">
-            상품 이미지{" "}
+            상품 이미지{' '}
             <span className="text-muted-foreground font-normal">
               ({images.length}/10)
             </span>
@@ -117,7 +117,10 @@ const NewProductPage = () => {
 
         {/* 제목 */}
         <section className="space-y-2">
-          <label htmlFor="title" className="text-sm font-medium text-foreground">
+          <label
+            htmlFor="title"
+            className="text-sm font-medium text-foreground"
+          >
             제목
           </label>
           <Input
@@ -155,7 +158,10 @@ const NewProductPage = () => {
 
         {/* 가격 */}
         <section className="space-y-2">
-          <label htmlFor="price" className="text-sm font-medium text-foreground">
+          <label
+            htmlFor="price"
+            className="text-sm font-medium text-foreground"
+          >
             가격
           </label>
           <div className="relative">
@@ -229,7 +235,7 @@ const NewProductPage = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default NewProductPage;
+export default NewProductPage
