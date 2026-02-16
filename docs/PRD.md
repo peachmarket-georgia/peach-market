@@ -129,7 +129,7 @@
 - Google 이메일은 고유 식별자로 사용
 - 비밀번호 필드는 NULL (OAuth 사용자)
 - **환경별 Redirect URI 설정 필요**:
-  - 로컬: `http://localhost:4000/auth/google/callback`
+  - 로컬: `http://localhost:3003/auth/google/callback`
   - 프로덕션: `https://api.peachmarket.com/auth/google/callback`
 
 **4. 프로필**

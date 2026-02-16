@@ -70,13 +70,13 @@ pnpm dev
 
 # 또는 개별 실행
 pnpm dev --filter=@peachmarket/web    # Frontend (포트 3000)
-pnpm dev --filter=@peachmarket/api    # Backend (포트 4000)
+pnpm dev --filter=@peachmarket/api    # Backend (포트 3003)
 ```
 
 ### 접속
 
 - Frontend: http://localhost:3000
-- Backend API: http://localhost:4000
+- Backend API: http://localhost:3003
 - PostgreSQL: localhost:5433
 
 ## 📁 프로젝트 구조
