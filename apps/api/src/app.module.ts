@@ -8,6 +8,7 @@ import { AppLoggerModule } from './core/logger/logger.module';
 import { PrismaModule } from './core/database/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
+import { ProductsModule } from './modules/products/products.module';
 import { ChatModule } from './chat/chat.module';
 
 @Module({
@@ -17,17 +18,18 @@ import { ChatModule } from './chat/chat.module';
     AppLoggerModule,
     PrismaModule,
 
-    // Rate Limiting
+    // Rate Limiting (개발환경에서는 더 높은 limit 적용)
     ThrottlerModule.forRoot([
       {
         ttl: 60000, // 1분
-        limit: 100, // 1분당 100회
+        limit: process.env.NODE_ENV === 'production' ? 100 : 1000, // 개발: 1000회, 프로덕션: 100회
       },
     ]),
 
     // Feature modules (비즈니스 도메인)
     AuthModule,
     UsersModule,
+    ProductsModule,
     ChatModule,
   ],
   controllers: [AppController],

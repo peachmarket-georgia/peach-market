@@ -1,0 +1,94 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
+import { IconHeart, IconHeartFilled, IconEye } from '@tabler/icons-react';
+import { Badge } from '@/components/ui/badge';
+import { ProductResponseDto } from '@/types/api';
+
+const STATUS_CONFIG = {
+  SELLING: { label: '판매중', className: 'bg-[#4CAF50] text-white hover:bg-[#4CAF50]' },
+  RESERVED: { label: '예약중', className: 'bg-[#FFC107] text-black hover:bg-[#FFC107]' },
+  SOLD: { label: '판매완료', className: 'bg-[#9E9E9E] text-white hover:bg-[#9E9E9E]' },
+};
+
+type ProductCardProps = {
+  product: ProductResponseDto;
+  onFavoriteToggle?: (id: string) => void;
+};
+
+export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
+  const status = STATUS_CONFIG[product.status];
+  const priceDisplay = `$${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  return (
+    <Link href={`/marketplace/${product.id}`} className="group block">
+      <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
+        {product.images[0] ? (
+          <Image
+            src={product.images[0]}
+            alt={product.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-muted">
+            <span className="text-muted-foreground text-sm">이미지 없음</span>
+          </div>
+        )}
+
+        {/* 상태 배지 */}
+        <Badge className={`absolute top-2 left-2 ${status.className}`}>{status.label}</Badge>
+
+        {/* 찜 버튼 */}
+        {onFavoriteToggle && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onFavoriteToggle(product.id);
+            }}
+            className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
+          >
+            {product.isFavorited ? (
+              <IconHeartFilled className="w-5 h-5 text-primary" />
+            ) : (
+              <IconHeart className="w-5 h-5 text-gray-600" />
+            )}
+          </button>
+        )}
+
+        {/* SOLD 오버레이 */}
+        {product.status === 'SOLD' && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+            <span className="text-white font-bold text-lg">판매완료</span>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-2 space-y-1">
+        <h3 className="font-medium text-foreground truncate text-sm sm:text-base">{product.title}</h3>
+        <p className="text-base sm:text-lg font-bold text-primary">{priceDisplay}</p>
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span className="truncate max-w-[60%]">{product.location}</span>
+          <span className="shrink-0">
+            {formatDistanceToNow(new Date(product.createdAt), { addSuffix: true, locale: ko })}
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <IconHeart className="w-3.5 h-3.5" />
+            {product.favoriteCount}
+          </span>
+          <span className="flex items-center gap-1">
+            <IconEye className="w-3.5 h-3.5" />
+            {product.viewCount}
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}

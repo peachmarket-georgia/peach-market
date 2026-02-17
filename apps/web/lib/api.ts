@@ -9,6 +9,15 @@ import {
   ResendVerificationDto,
   UserProfileResponseDto,
   CheckAvailabilityResponseDto,
+  ChatRoomDto,
+  ChatRoomWithMessagesDto,
+  UnreadCountDto,
+  ProductResponseDto,
+  ProductListResponseDto,
+  CreateProductDto,
+  UpdateProductDto,
+  ProductQueryParams,
+  ProductStatus,
 } from '@/types/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
@@ -190,6 +199,126 @@ export const userApi = {
     apiRequest<CheckAvailabilityResponseDto>('/api/users/check-nickname', {
       method: 'POST',
       body: { nickname },
+    }),
+};
+
+// ==================== Chat API ====================
+
+export const chatApi = {
+  /**
+   * 내 채팅방 목록 조회
+   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
+   */
+  getRooms: (cookies?: string) => apiRequest<ChatRoomDto[]>('/api/chat/rooms', undefined, cookies),
+
+  /**
+   * 채팅방 상세 조회 (메시지 포함)
+   * @param id - 채팅방 ID
+   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
+   */
+  getRoom: (id: string, cookies?: string) =>
+    apiRequest<ChatRoomWithMessagesDto>(`/api/chat/rooms/${id}`, undefined, cookies),
+
+  /**
+   * 채팅방 생성 (상품 기반)
+   * @param productId - 상품 ID
+   */
+  createRoom: (productId: string) =>
+    apiRequest<ChatRoomDto>('/api/chat/rooms', {
+      method: 'POST',
+      body: { productId },
+    }),
+
+  /**
+   * 메시지 읽음 처리
+   * @param roomId - 채팅방 ID
+   */
+  markAsRead: (roomId: string) =>
+    apiRequest<MessageResponseDto>(`/api/chat/rooms/${roomId}/read`, {
+      method: 'PATCH',
+    }),
+
+  /**
+   * 전체 안읽은 메시지 수
+   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
+   */
+  getUnreadCount: (cookies?: string) => apiRequest<UnreadCountDto>('/api/chat/unread-count', undefined, cookies),
+};
+
+// ==================== Product API ====================
+
+export const productApi = {
+  /**
+   * 상품 목록 조회 (cursor pagination)
+   * @param params - 쿼리 파라미터 (cursor, limit, search, category, status, sort)
+   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
+   */
+  getProducts: (params?: ProductQueryParams, cookies?: string) => {
+    const query = new URLSearchParams();
+    if (params?.cursor) query.set('cursor', params.cursor);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.category) query.set('category', params.category);
+    if (params?.status) query.set('status', params.status);
+    if (params?.sort) query.set('sort', params.sort);
+
+    const queryString = query.toString();
+    return apiRequest<ProductListResponseDto>(
+      `/api/products${queryString ? `?${queryString}` : ''}`,
+      undefined,
+      cookies
+    );
+  },
+
+  /**
+   * 상품 상세 조회
+   * @param id - 상품 ID
+   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
+   */
+  getProduct: (id: string, cookies?: string) =>
+    apiRequest<ProductResponseDto>(`/api/products/${id}`, undefined, cookies),
+
+  /**
+   * 상품 등록
+   */
+  createProduct: (data: CreateProductDto) =>
+    apiRequest<ProductResponseDto>('/api/products', {
+      method: 'POST',
+      body: data,
+    }),
+
+  /**
+   * 상품 수정
+   */
+  updateProduct: (id: string, data: UpdateProductDto) =>
+    apiRequest<ProductResponseDto>(`/api/products/${id}`, {
+      method: 'PATCH',
+      body: data,
+    }),
+
+  /**
+   * 상품 삭제
+   */
+  deleteProduct: (id: string) =>
+    apiRequest<void>(`/api/products/${id}`, {
+      method: 'DELETE',
+    }),
+
+  /**
+   * 상품 상태 변경
+   */
+  updateProductStatus: (id: string, status: ProductStatus) =>
+    apiRequest<ProductResponseDto>(`/api/products/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+
+  /**
+   * 찜 토글
+   */
+  toggleFavorite: (productId: string) =>
+    apiRequest<{ isFavorited: boolean }>(`/api/products/${productId}/favorite`, {
+      method: 'POST',
     }),
 };
 

@@ -119,6 +119,7 @@ model Product {
   title       String
   description String
   price       Int // USD 센트 단위 (예: 5000 = $50.00)
+  category    String // 카테고리 (디지털기기, 생활가전 등)
   status      ProductStatus @default(SELLING)
   images      String[] // 이미지 URL 배열 (최대 10장)
   location    String // 거래 희망 지역
