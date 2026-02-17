@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProductStatus } from '@prisma/client';
+import { ProductStatus, PaymentMethod } from '@prisma/client';
 
 export class ProductSellerDto {
   @ApiProperty({ description: '판매자 ID' })
@@ -39,6 +39,9 @@ export class ProductResponseDto {
 
   @ApiProperty({ description: '거래 희망 지역' })
   location: string;
+
+  @ApiProperty({ description: '선호 결제 수단', enum: PaymentMethod, isArray: true })
+  paymentMethods: PaymentMethod[];
 
   @ApiProperty({ description: '조회수' })
   viewCount: number;

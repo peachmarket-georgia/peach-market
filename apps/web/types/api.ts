@@ -166,6 +166,7 @@ export interface UnreadCountDto {
 // ==================== Product Types ====================
 
 export type ProductStatus = 'SELLING' | 'RESERVED' | 'SOLD';
+export type PaymentMethod = 'CASH' | 'ZELLE' | 'VENMO';
 
 export interface ProductSellerDto {
   id: string;
@@ -183,6 +184,7 @@ export interface ProductResponseDto {
   status: ProductStatus;
   images: string[];
   location: string;
+  paymentMethods: PaymentMethod[];
   viewCount: number;
   createdAt: string;
   updatedAt: string;
@@ -204,6 +206,7 @@ export interface CreateProductDto {
   category: string;
   images: string[];
   location: string;
+  paymentMethods?: PaymentMethod[];
 }
 
 export interface UpdateProductDto {
@@ -213,6 +216,28 @@ export interface UpdateProductDto {
   category?: string;
   images?: string[];
   location?: string;
+  paymentMethods?: PaymentMethod[];
+}
+
+// ==================== User Update Types ====================
+
+export interface UpdateUserDto {
+  nickname?: string;
+  location?: string;
+  avatarUrl?: string;
+}
+
+// ==================== Upload Types ====================
+
+export interface UploadedImageDto {
+  url: string;
+  thumbnailUrl: string;
+  originalName: string;
+  size: number;
+}
+
+export interface UploadResponseDto {
+  images: UploadedImageDto[];
 }
 
 export interface ProductQueryParams {

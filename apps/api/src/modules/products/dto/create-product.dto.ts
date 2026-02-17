@@ -1,5 +1,16 @@
-import { IsString, IsInt, IsArray, MaxLength, Min, ArrayMaxSize, ArrayMinSize } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsString,
+  IsInt,
+  IsArray,
+  MaxLength,
+  Min,
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsEnum,
+  IsOptional,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { PaymentMethod } from '@prisma/client';
 
 export class CreateProductDto {
   @ApiProperty({ description: '상품 제목', maxLength: 50, example: '아이폰 15 프로' })
@@ -31,4 +42,15 @@ export class CreateProductDto {
   @ApiProperty({ description: '거래 희망 지역', example: 'Duluth' })
   @IsString()
   location: string;
+
+  @ApiPropertyOptional({
+    description: '선호 결제 수단',
+    enum: PaymentMethod,
+    isArray: true,
+    example: ['CASH', 'ZELLE'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(PaymentMethod, { each: true })
+  paymentMethods?: PaymentMethod[];
 }

@@ -41,12 +41,18 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { checkAuth, productApi, chatApi } from '@/lib/api';
-import { ProductResponseDto, ProductStatus, UserProfileResponseDto } from '@/types/api';
+import { ProductResponseDto, ProductStatus, UserProfileResponseDto, PaymentMethod } from '@/types/api';
 
 const STATUS_CONFIG = {
   SELLING: { label: '판매중', className: 'bg-[#4CAF50] text-white' },
   RESERVED: { label: '예약중', className: 'bg-[#FFC107] text-black' },
   SOLD: { label: '판매완료', className: 'bg-[#9E9E9E] text-white' },
+};
+
+const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  CASH: '현금',
+  ZELLE: 'Zelle',
+  VENMO: 'Venmo',
 };
 
 export default function ProductDetailPage() {
@@ -334,6 +340,20 @@ export default function ProductDetailPage() {
               {product.location}
             </p>
           </div>
+
+          {/* 선호 결제 수단 */}
+          {product.paymentMethods && product.paymentMethods.length > 0 && (
+            <div className="border-t pt-6">
+              <h2 className="font-medium mb-2">선호 결제 수단</h2>
+              <div className="flex flex-wrap gap-2">
+                {product.paymentMethods.map((method) => (
+                  <Badge key={method} variant="secondary">
+                    {PAYMENT_METHOD_LABELS[method]}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 하단 액션 바 */}

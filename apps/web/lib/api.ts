@@ -9,6 +9,7 @@ import {
   ResendVerificationDto,
   UserProfileResponseDto,
   CheckAvailabilityResponseDto,
+  UpdateUserDto,
   ChatRoomDto,
   ChatRoomWithMessagesDto,
   UnreadCountDto,
@@ -18,6 +19,7 @@ import {
   UpdateProductDto,
   ProductQueryParams,
   ProductStatus,
+  UploadResponseDto,
 } from '@/types/api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
@@ -200,6 +202,15 @@ export const userApi = {
       method: 'POST',
       body: { nickname },
     }),
+
+  /**
+   * 프로필 수정
+   */
+  updateProfile: (data: UpdateUserDto) =>
+    apiRequest<UserProfileResponseDto>('/api/users/me', {
+      method: 'PATCH',
+      body: data,
+    }),
 };
 
 // ==================== Chat API ====================
@@ -320,6 +331,61 @@ export const productApi = {
     apiRequest<{ isFavorited: boolean }>(`/api/products/${productId}/favorite`, {
       method: 'POST',
     }),
+
+  /**
+   * 찜 목록 조회
+   */
+  getFavorites: (cookies?: string) => apiRequest<ProductResponseDto[]>('/api/products/favorites', undefined, cookies),
+
+  /**
+   * 내 상품 목록 조회
+   */
+  getMyProducts: (status?: ProductStatus, cookies?: string) => {
+    const query = status ? `?status=${status}` : '';
+    return apiRequest<ProductResponseDto[]>(`/api/products/my${query}`, undefined, cookies);
+  },
+};
+
+// ==================== Upload API ====================
+
+export const uploadApi = {
+  /**
+   * 이미지 업로드
+   * @param files - 업로드할 파일들 (최대 5개)
+   */
+  uploadImages: async (files: File[]): Promise<{ data?: UploadResponseDto; error?: string; status: number }> => {
+    try {
+      const formData = new FormData();
+      files.forEach((file) => formData.append('files', file));
+
+      const response = await fetch(`${API_URL}/api/upload/images`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      if (!response.ok) {
+        return {
+          error: (data as { message?: string })?.message || '이미지 업로드에 실패했습니다.',
+          status: response.status,
+        };
+      }
+
+      return { data: data as UploadResponseDto, status: response.status };
+    } catch {
+      return {
+        error: '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+        status: 0,
+      };
+    }
+  },
 };
 
 // ==================== Helper Functions ====================

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Camera, X, Loader2 } from 'lucide-react';
 
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout/header';
 import { checkAuth, productApi, uploadApi } from '@/lib/api';
-import { PaymentMethod } from '@/types/api';
+import { PaymentMethod, ProductResponseDto, UserProfileResponseDto } from '@/types/api';
 
 const CATEGORIES = [
   '디지털기기',
@@ -35,10 +35,14 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const NewProductPage = () => {
+const EditProductPage = () => {
   const router = useRouter();
+  const params = useParams();
+  const productId = params.id as string;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [product, setProduct] = useState<ProductResponseDto | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfileResponseDto | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('');
@@ -50,18 +54,47 @@ const NewProductPage = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [authChecking, setAuthChecking] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
 
-  // 인증 체크
+  // 데이터 로드
   useEffect(() => {
-    checkAuth().then(({ isAuthenticated }) => {
-      if (!isAuthenticated) {
+    const loadData = async () => {
+      const [productRes, authRes] = await Promise.all([productApi.getProduct(productId), checkAuth()]);
+
+      if (!authRes.isAuthenticated) {
         router.push('/login');
-      } else {
-        setAuthChecking(false);
+        return;
       }
-    });
-  }, [router]);
+
+      if (!productRes.data) {
+        router.push('/marketplace');
+        return;
+      }
+
+      // 소유자 확인
+      if (authRes.user && productRes.data.seller.id !== authRes.user.id) {
+        router.push(`/marketplace/${productId}`);
+        return;
+      }
+
+      setCurrentUser(authRes.user ?? null);
+      setProduct(productRes.data);
+
+      // 폼 초기화
+      const p = productRes.data;
+      setImages(p.images || []);
+      setTitle(p.title);
+      setCategory(p.category);
+      setPrice((p.price / 100).toFixed(2));
+      setDescription(p.description);
+      setLocation(p.location);
+      setPaymentMethods(p.paymentMethods || []);
+
+      setInitialLoading(false);
+    };
+
+    loadData();
+  }, [productId, router]);
 
   const handleImageClick = () => {
     if (images.length >= 5 || uploading) return;
@@ -130,7 +163,7 @@ const NewProductPage = () => {
     // 가격을 센트 단위로 변환 (USD)
     const priceInCents = Math.round(parseFloat(price) * 100);
 
-    const { data, error: apiError } = await productApi.createProduct({
+    const { data, error: apiError } = await productApi.updateProduct(productId, {
       title: title.trim(),
       description: description.trim(),
       price: priceInCents,
@@ -148,11 +181,11 @@ const NewProductPage = () => {
     }
 
     if (data) {
-      router.push(`/marketplace/${data.id}`);
+      router.push(`/marketplace/${productId}`);
     }
   };
 
-  if (authChecking) {
+  if (initialLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
@@ -163,6 +196,10 @@ const NewProductPage = () => {
     );
   }
 
+  if (!product || !currentUser) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -171,10 +208,10 @@ const NewProductPage = () => {
         {/* 헤더 */}
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/marketplace" className="text-sm text-muted-foreground hover:text-foreground">
+            <Link href={`/marketplace/${productId}`} className="text-sm text-muted-foreground hover:text-foreground">
               ← 돌아가기
             </Link>
-            <h1 className="text-lg font-semibold text-foreground">매물 등록</h1>
+            <h1 className="text-lg font-semibold text-foreground">매물 수정</h1>
           </div>
         </div>
 
@@ -350,9 +387,9 @@ const NewProductPage = () => {
             />
           </section>
 
-          {/* 등록 버튼 */}
+          {/* 수정 버튼 */}
           <div className="sticky bottom-4 flex gap-3 pb-4 md:static md:pb-0">
-            <Link href="/marketplace" className="flex-1">
+            <Link href={`/marketplace/${productId}`} className="flex-1">
               <Button variant="outline" className="w-full" disabled={loading}>
                 취소
               </Button>
@@ -361,10 +398,10 @@ const NewProductPage = () => {
               {loading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  등록 중...
+                  수정 중...
                 </>
               ) : (
-                '등록하기'
+                '수정하기'
               )}
             </Button>
           </div>
@@ -374,4 +411,4 @@ const NewProductPage = () => {
   );
 };
 
-export default NewProductPage;
+export default EditProductPage;

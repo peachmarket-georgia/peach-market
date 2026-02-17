@@ -12,7 +12,8 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ProductStatus } from '@prisma/client';
 import { ProductsService } from './products.service';
 import {
   CreateProductDto,
@@ -45,6 +46,30 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '조회 성공', type: ProductListResponseDto })
   async findAll(@Query() query: ProductQueryDto, @Request() req: RequestWithUser): Promise<ProductListResponseDto> {
     return this.productsService.findAll(query, req.user?.userId);
+  }
+
+  @Get('favorites')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '찜 목록 조회', description: '사용자가 찜한 상품 목록을 조회합니다.' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({ status: 200, description: '조회 성공', type: [ProductResponseDto] })
+  @ApiResponse({ status: 401, description: '인증 필요' })
+  async getFavorites(@Request() req: RequestWithUser): Promise<ProductResponseDto[]> {
+    return this.productsService.getFavoritesByUser(req.user!.userId);
+  }
+
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '내 상품 목록 조회', description: '사용자가 등록한 상품 목록을 조회합니다.' })
+  @ApiCookieAuth('access_token')
+  @ApiQuery({ name: 'status', enum: ProductStatus, required: false, description: '상품 상태 필터' })
+  @ApiResponse({ status: 200, description: '조회 성공', type: [ProductResponseDto] })
+  @ApiResponse({ status: 401, description: '인증 필요' })
+  async getMyProducts(
+    @Request() req: RequestWithUser,
+    @Query('status') status?: ProductStatus
+  ): Promise<ProductResponseDto[]> {
+    return this.productsService.getProductsByUser(req.user!.userId, status);
   }
 
   @Get(':id')

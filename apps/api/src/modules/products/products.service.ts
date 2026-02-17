@@ -70,6 +70,7 @@ export class ProductsService {
       status: product.status,
       images: product.images,
       location: product.location,
+      paymentMethods: product.paymentMethods,
       viewCount: product.viewCount,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
@@ -122,6 +123,7 @@ export class ProductsService {
       status: product.status,
       images: product.images,
       location: product.location,
+      paymentMethods: product.paymentMethods,
       viewCount: product.viewCount,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
@@ -267,6 +269,89 @@ export class ProductsService {
         viewCount: { increment: 1 },
       },
     });
+  }
+
+  async getFavoritesByUser(userId: string): Promise<ProductResponseDto[]> {
+    const favorites = await this.prisma.favorite.findMany({
+      where: { userId },
+      include: {
+        product: {
+          include: {
+            seller: {
+              select: {
+                id: true,
+                nickname: true,
+                avatarUrl: true,
+                location: true,
+              },
+            },
+            _count: {
+              select: { favorites: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return favorites.map((favorite) => ({
+      id: favorite.product.id,
+      title: favorite.product.title,
+      description: favorite.product.description,
+      price: favorite.product.price,
+      category: favorite.product.category,
+      status: favorite.product.status,
+      images: favorite.product.images,
+      location: favorite.product.location,
+      paymentMethods: favorite.product.paymentMethods,
+      viewCount: favorite.product.viewCount,
+      createdAt: favorite.product.createdAt,
+      updatedAt: favorite.product.updatedAt,
+      seller: favorite.product.seller,
+      favoriteCount: favorite.product._count.favorites,
+      isFavorited: true,
+    }));
+  }
+
+  async getProductsByUser(userId: string, status?: ProductStatus): Promise<ProductResponseDto[]> {
+    const products = await this.prisma.product.findMany({
+      where: {
+        sellerId: userId,
+        ...(status && { status }),
+      },
+      include: {
+        seller: {
+          select: {
+            id: true,
+            nickname: true,
+            avatarUrl: true,
+            location: true,
+          },
+        },
+        _count: {
+          select: { favorites: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return products.map((product) => ({
+      id: product.id,
+      title: product.title,
+      description: product.description,
+      price: product.price,
+      category: product.category,
+      status: product.status,
+      images: product.images,
+      location: product.location,
+      paymentMethods: product.paymentMethods,
+      viewCount: product.viewCount,
+      createdAt: product.createdAt,
+      updatedAt: product.updatedAt,
+      seller: product.seller,
+      favoriteCount: product._count.favorites,
+      isFavorited: false,
+    }));
   }
 
   private getOrderBy(sort: string) {
