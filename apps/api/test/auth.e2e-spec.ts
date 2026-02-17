@@ -50,6 +50,10 @@ describe('Auth (e2e)', () => {
   });
 
   beforeEach(async () => {
+    await prisma.favorite.deleteMany();
+    await prisma.chatRoom.deleteMany();
+    await prisma.review.deleteMany();
+    await prisma.product.deleteMany();
     await prisma.emailVerification.deleteMany();
     await prisma.passwordReset.deleteMany();
     await prisma.session.deleteMany();

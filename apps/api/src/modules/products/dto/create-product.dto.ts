@@ -1,6 +1,7 @@
 import {
   IsString,
   IsInt,
+  IsNotEmpty,
   IsArray,
   MaxLength,
   Min,
@@ -13,35 +14,38 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentMethod } from '@prisma/client';
 
 export class CreateProductDto {
-  @ApiProperty({ description: '상품 제목', maxLength: 50, example: '아이폰 15 프로' })
+  @ApiProperty({ example: '아이폰 15 프로', description: '상품 제목', maxLength: 50 })
   @IsString()
+  @IsNotEmpty()
   @MaxLength(50)
-  title: string;
+  title!: string;
 
-  @ApiProperty({ description: '상품 설명', maxLength: 2000, example: '거의 새 제품입니다. 케이스와 함께 판매합니다.' })
+  @ApiProperty({ example: '상태 좋습니다. 직거래 원합니다.', description: '상품 설명' })
   @IsString()
-  @MaxLength(2000)
-  description: string;
+  @IsNotEmpty()
+  description!: string;
 
-  @ApiProperty({ description: '가격 (센트 단위)', example: 80000, minimum: 0 })
+  @ApiProperty({ example: 500, description: '가격 (USD)', minimum: 0 })
   @IsInt()
   @Min(0)
-  price: number;
+  price!: number;
 
-  @ApiProperty({ description: '카테고리', example: '디지털기기' })
+  @ApiProperty({ example: '전자기기', description: '카테고리' })
   @IsString()
-  category: string;
+  @IsNotEmpty()
+  category!: string;
 
   @ApiProperty({ description: '이미지 URL 배열 (1-5장)', type: [String], example: ['https://example.com/image1.jpg'] })
   @IsArray()
   @ArrayMinSize(1)
   @ArrayMaxSize(5)
   @IsString({ each: true })
-  images: string[];
+  images!: string[];
 
-  @ApiProperty({ description: '거래 희망 지역', example: 'Duluth' })
+  @ApiProperty({ example: 'Duluth', description: '거래 희망 지역' })
   @IsString()
-  location: string;
+  @IsNotEmpty()
+  location!: string;
 
   @ApiPropertyOptional({
     description: '선호 결제 수단',

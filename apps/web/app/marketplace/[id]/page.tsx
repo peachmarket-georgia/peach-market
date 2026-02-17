@@ -1,405 +1,320 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { notFound } from 'next/navigation';
+import { use } from 'react';
 import {
   IconChevronLeft,
+  IconChevronRight,
   IconHeart,
-  IconHeartFilled,
-  IconShare,
+  IconMessageCircle,
   IconEye,
+  IconShare,
+  IconLoader2,
   IconMapPin,
   IconClock,
-  IconMessage,
-  IconLoader2,
-  IconDots,
-  IconEdit,
-  IconTrash,
+  IconStar,
 } from '@tabler/icons-react';
-import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { checkAuth, productApi, chatApi } from '@/lib/api';
-import { ProductResponseDto, ProductStatus, UserProfileResponseDto, PaymentMethod } from '@/types/api';
+import { STATUS_LABEL } from '@/lib/product-types';
+import { cn } from '@/lib/utils';
+import { getProduct, toProduct } from '@/lib/products-api';
+import type { Product } from '@/lib/product-types';
 
-const STATUS_CONFIG = {
-  SELLING: { label: '판매중', className: 'bg-[#4CAF50] text-white' },
-  RESERVED: { label: '예약중', className: 'bg-[#FFC107] text-black' },
-  SOLD: { label: '판매완료', className: 'bg-[#9E9E9E] text-white' },
+type ProductDetailPageProps = {
+  params: Promise<{ id: string }>;
 };
 
-const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  CASH: '현금',
-  ZELLE: 'Zelle',
-  VENMO: 'Venmo',
-};
-
-export default function ProductDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const productId = params.id as string;
-
-  const [product, setProduct] = useState<ProductResponseDto | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserProfileResponseDto | null>(null);
+const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
+  const { id } = use(params);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const isOwner = currentUser && product && currentUser.id === product.seller.id;
-
-  // 데이터 로드
   useEffect(() => {
-    const loadData = async () => {
-      const [productRes, authRes] = await Promise.all([productApi.getProduct(productId), checkAuth()]);
-
-      if (productRes.data) {
-        setProduct(productRes.data);
-      }
-      if (authRes.user) {
-        setCurrentUser(authRes.user);
-      }
-      setLoading(false);
-    };
-    loadData();
-  }, [productId]);
-
-  // 찜 토글
-  const handleFavoriteToggle = async () => {
-    if (!currentUser || !product) return;
-
-    const { data } = await productApi.toggleFavorite(productId);
-    if (data) {
-      setProduct((prev) =>
-        prev
-          ? {
-              ...prev,
-              isFavorited: data.isFavorited,
-              favoriteCount: data.isFavorited ? prev.favoriteCount + 1 : prev.favoriteCount - 1,
-            }
-          : null
-      );
-    }
-  };
-
-  // 채팅 시작
-  const handleStartChat = async () => {
-    if (!currentUser || !product) {
-      router.push('/login');
-      return;
-    }
-
-    setActionLoading(true);
-    const { data, error } = await chatApi.createRoom(productId);
-    setActionLoading(false);
-
-    if (data) {
-      router.push(`/chat/${data.id}`);
-    } else if (error) {
-      alert(error);
-    }
-  };
-
-  // 상태 변경
-  const handleStatusChange = async (newStatus: ProductStatus) => {
-    if (!product) return;
-
-    setActionLoading(true);
-    const { data } = await productApi.updateProductStatus(productId, newStatus);
-    setActionLoading(false);
-
-    if (data) {
-      setProduct((prev) => (prev ? { ...prev, status: data.status } : null));
-    }
-  };
-
-  // 삭제
-  const handleDelete = async () => {
-    setActionLoading(true);
-    const { error } = await productApi.deleteProduct(productId);
-    setActionLoading(false);
-
-    if (!error) {
-      router.push('/marketplace');
-    }
-  };
-
-  // 공유
-  const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: product?.title,
-        url: window.location.href,
-      });
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      alert('링크가 복사되었습니다');
-    }
-  };
+    getProduct(id)
+      .then((data) => setProduct(toProduct(data)))
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
+  }, [id]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex items-center justify-center h-[50vh]">
-          <IconLoader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-        </div>
+      <div className="flex justify-center py-20">
+        <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
-          <p className="text-muted-foreground">상품을 찾을 수 없습니다</p>
-          <Link href="/marketplace">
-            <Button variant="outline">목록으로 돌아가기</Button>
-          </Link>
-        </div>
-      </div>
-    );
+  if (error || !product) {
+    notFound();
   }
 
-  const status = STATUS_CONFIG[product.status];
-  const priceDisplay = `$${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const currentImage = product.images[currentImageIndex] || product.images[0] || '';
+  const isSold = product.status === 'SOLD';
+  const isReserved = product.status === 'RESERVED';
+  const isSelling = product.status === 'SELLING';
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
+      {/* 뒤로가기 */}
+      <div className="mb-4 flex items-center gap-3">
+        <Link
+          href="/marketplace"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <IconChevronLeft className="h-4 w-4" />
+          목록으로
+        </Link>
+      </div>
 
-      <main className="max-w-3xl mx-auto">
-        {/* 뒤로가기 + 액션 버튼 */}
-        <div className="sticky top-14 z-40 bg-background border-b px-4 py-2 flex items-center justify-between">
-          <button
-            onClick={() => router.back()}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-          >
-            <IconChevronLeft className="w-5 h-5" />
-            <span className="text-sm">뒤로</span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleShare}>
-              <IconShare className="w-5 h-5" />
-            </Button>
-
-            {isOwner && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <IconDots className="w-5 h-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => router.push(`/marketplace/${productId}/edit`)}>
-                    <IconEdit className="w-4 h-4 mr-2" />
-                    수정하기
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>상태 변경</DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleStatusChange('SELLING')}
-                    disabled={product.status === 'SELLING'}
-                  >
-                    판매중으로 변경
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleStatusChange('RESERVED')}
-                    disabled={product.status === 'RESERVED'}
-                  >
-                    예약중으로 변경
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleStatusChange('SOLD')} disabled={product.status === 'SOLD'}>
-                    판매완료로 변경
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => setShowDeleteDialog(true)}
-                  >
-                    <IconTrash className="w-4 h-4 mr-2" />
-                    삭제하기
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
-        </div>
-
-        {/* 이미지 갤러리 */}
-        <div className="relative aspect-square bg-muted">
-          {currentImage ? (
-            <>
-              <Image src={currentImage} alt={product.title} fill className="object-contain" priority />
-              {/* 이미지 인디케이터 */}
-              {product.images.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {product.images.map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        idx === currentImageIndex ? 'bg-primary' : 'bg-white/60'
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <span className="text-muted-foreground">이미지 없음</span>
-            </div>
-          )}
-        </div>
+      <div className="grid md:grid-cols-2 gap-6 md:gap-10">
+        {/* 이미지 캐러셀 */}
+        <ImageCarousel images={product.images} alt={product.title} status={product.status} />
 
         {/* 상품 정보 */}
-        <div className="px-4 py-6 space-y-6">
-          {/* 판매자 정보 */}
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden">
-              {product.seller.avatarUrl ? (
-                <img
-                  src={product.seller.avatarUrl}
-                  alt={product.seller.nickname}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xl font-medium text-muted-foreground">{product.seller.nickname.charAt(0)}</span>
+        <div className="flex flex-col">
+          {/* 카테고리 + 상태 뱃지 */}
+          <div className="flex items-center gap-2 mb-3">
+            <Badge variant="secondary" className="text-xs font-normal">
+              {product.category}
+            </Badge>
+            <Badge
+              className={cn(
+                'text-xs',
+                isSelling && 'bg-[#4CAF50] text-white hover:bg-[#43A047]',
+                isReserved && 'bg-[#FFC107] text-white hover:bg-[#FFB300]',
+                isSold && 'bg-[#9E9E9E] text-white hover:bg-[#8E8E8E]'
               )}
-            </div>
-            <div>
-              <p className="font-medium">{product.seller.nickname}</p>
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <IconMapPin className="w-3.5 h-3.5" />
-                {product.seller.location}
-              </p>
-            </div>
+            >
+              {STATUS_LABEL[product.status]}
+            </Badge>
           </div>
 
-          {/* 제목 & 가격 */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge className={status.className}>{status.label}</Badge>
-              <Badge variant="outline">{product.category}</Badge>
-            </div>
-            <h1 className="text-xl font-bold">{product.title}</h1>
-            <p className="text-2xl font-bold text-primary">{priceDisplay}</p>
-          </div>
+          {/* 제목 */}
+          <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">{product.title}</h1>
 
-          {/* 메타 정보 */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          {/* 위치 · 시간 */}
+          <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
             <span className="flex items-center gap-1">
-              <IconClock className="w-4 h-4" />
-              {formatDistanceToNow(new Date(product.createdAt), { addSuffix: true, locale: ko })}
+              <IconMapPin className="h-3.5 w-3.5" />
+              {product.location}
             </span>
             <span className="flex items-center gap-1">
-              <IconEye className="w-4 h-4" />
+              <IconClock className="h-3.5 w-3.5" />
+              {product.timeAgo}
+            </span>
+          </div>
+
+          {/* 가격 */}
+          <p
+            className={cn(
+              'text-2xl md:text-3xl font-bold mb-5',
+              isSold ? 'text-muted-foreground line-through' : 'text-foreground'
+            )}
+          >
+            ${product.price.toLocaleString()}
+          </p>
+
+          {/* 통계 */}
+          <div className="flex items-center gap-5 text-sm text-muted-foreground pb-5 border-b border-border">
+            <span className="flex items-center gap-1.5">
+              <IconEye className="h-4 w-4" />
               조회 {product.viewCount}
             </span>
-            <span className="flex items-center gap-1">
-              <IconHeart className="w-4 h-4" />찜 {product.favoriteCount}
+            <span className="flex items-center gap-1.5">
+              <IconMessageCircle className="h-4 w-4" />
+              채팅 {product.chatCount}
             </span>
+            <span className="flex items-center gap-1.5">
+              <IconHeart className="h-4 w-4" />
+              관심 {product.likeCount}
+            </span>
+          </div>
+
+          {/* 판매자 정보 */}
+          <div className="py-5 border-b border-border">
+            <div className="flex items-center gap-3">
+              {product.seller.avatarUrl ? (
+                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted ring-2 ring-background shadow-sm">
+                  <Image
+                    src={product.seller.avatarUrl}
+                    alt={product.seller.nickname}
+                    fill
+                    sizes="44px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+                  {product.seller.nickname[0]}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground truncate">{product.seller.nickname}</p>
+                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <IconStar className="h-3.5 w-3.5 text-[#FFB347] fill-[#FFB347]" />
+                  <span>매너점수 {product.seller.mannerScore}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* 설명 */}
-          <div className="border-t pt-6">
-            <h2 className="font-medium mb-2">상품 설명</h2>
-            <p className="text-muted-foreground whitespace-pre-wrap">{product.description}</p>
-          </div>
-
-          {/* 거래 희망 장소 */}
-          <div className="border-t pt-6">
-            <h2 className="font-medium mb-2">거래 희망 장소</h2>
-            <p className="text-muted-foreground flex items-center gap-1">
-              <IconMapPin className="w-4 h-4" />
-              {product.location}
+          <div className="py-5 border-b border-border">
+            <h2 className="text-sm font-semibold text-foreground mb-3">상품 설명</h2>
+            <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
+              {product.description || '등록된 상품 설명이 없습니다.'}
             </p>
           </div>
 
-          {/* 선호 결제 수단 */}
-          {product.paymentMethods && product.paymentMethods.length > 0 && (
-            <div className="border-t pt-6">
-              <h2 className="font-medium mb-2">선호 결제 수단</h2>
-              <div className="flex flex-wrap gap-2">
-                {product.paymentMethods.map((method) => (
-                  <Badge key={method} variant="secondary">
-                    {PAYMENT_METHOD_LABELS[method]}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* 하단 액션 바 */}
-        {!isOwner && (
-          <div className="sticky bottom-0 bg-background border-t px-4 py-3 flex items-center gap-3">
-            <Button variant="outline" size="icon" onClick={handleFavoriteToggle} disabled={!currentUser}>
-              {product.isFavorited ? (
-                <IconHeartFilled className="w-5 h-5 text-primary" />
-              ) : (
-                <IconHeart className="w-5 h-5" />
-              )}
+          {/* 데스크톱 액션 버튼 */}
+          <div className="hidden md:flex gap-3 pt-5">
+            <Button variant="outline" size="lg" className="gap-1.5" disabled={isSold}>
+              <IconHeart className="h-4 w-4" />
+              관심
             </Button>
-            <div className="flex-1">
-              <p className="text-lg font-bold">{priceDisplay}</p>
-            </div>
-            <Button onClick={handleStartChat} disabled={actionLoading || product.status === 'SOLD'} className="px-6">
-              {actionLoading ? (
-                <IconLoader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <>
-                  <IconMessage className="w-4 h-4 mr-2" />
-                  채팅하기
-                </>
-              )}
+            <Button variant="outline" size="lg" className="gap-1.5">
+              <IconShare className="h-4 w-4" />
+              공유
+            </Button>
+            <Button size="lg" className="flex-1 gap-1.5 bg-primary hover:bg-primary/90" disabled={isSold}>
+              <IconMessageCircle className="h-4 w-4" />
+              채팅하기
             </Button>
           </div>
-        )}
-      </main>
+        </div>
+      </div>
 
-      {/* 삭제 확인 다이얼로그 */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>상품을 삭제하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription>
-              이 작업은 되돌릴 수 없습니다. 상품과 관련된 모든 채팅도 함께 삭제됩니다.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={actionLoading}>
-              {actionLoading ? '삭제 중...' : '삭제'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* 모바일 하단 고정 액션바 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 md:hidden z-30">
+        <Button variant="outline" size="icon" className="shrink-0 h-11 w-11" disabled={isSold}>
+          <IconHeart className="h-5 w-5" />
+        </Button>
+        <div className="border-l border-border h-8 mx-1" />
+        <p
+          className={cn(
+            'text-lg font-bold shrink-0',
+            isSold ? 'text-muted-foreground line-through' : 'text-foreground'
+          )}
+        >
+          ${product.price.toLocaleString()}
+        </p>
+        <Button className="flex-1 h-11 gap-1.5 bg-primary hover:bg-primary/90" disabled={isSold}>
+          <IconMessageCircle className="h-4 w-4" />
+          채팅하기
+        </Button>
+      </div>
     </div>
   );
-}
+};
+
+/** 이미지 캐러셀 컴포넌트 */
+const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string; status: string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const isSold = status === 'SOLD';
+  const isReserved = status === 'RESERVED';
+  const hasMultiple = images.length > 1;
+
+  const goTo = (idx: number) => {
+    if (idx < 0) setCurrentIndex(images.length - 1);
+    else if (idx >= images.length) setCurrentIndex(0);
+    else setCurrentIndex(idx);
+  };
+
+  if (images.length === 0) {
+    return (
+      <div className="aspect-square rounded-2xl bg-muted flex items-center justify-center text-muted-foreground text-sm">
+        이미지 없음
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* 메인 이미지 */}
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted group">
+        <Image
+          src={images[currentIndex] ?? images[0]!}
+          alt={alt}
+          fill
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover transition-transform duration-300"
+          priority
+        />
+
+        {isReserved && (
+          <span className="absolute top-3 left-3 px-3 py-1 text-sm font-medium bg-[#FFC107] text-white rounded-lg shadow-sm">
+            {STATUS_LABEL.RESERVED}
+          </span>
+        )}
+        {isSold && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-white text-xl font-medium">{STATUS_LABEL.SOLD}</span>
+          </div>
+        )}
+
+        {/* 좌우 화살표 */}
+        {hasMultiple && (
+          <>
+            <button
+              onClick={() => goTo(currentIndex - 1)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/50"
+            >
+              <IconChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => goTo(currentIndex + 1)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/50"
+            >
+              <IconChevronRight className="h-4 w-4" />
+            </button>
+          </>
+        )}
+
+        {/* 인디케이터 dots + 카운터 */}
+        {hasMultiple && (
+          <>
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {images.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={cn(
+                    'w-2 h-2 rounded-full transition-all',
+                    idx === currentIndex ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/70'
+                  )}
+                />
+              ))}
+            </div>
+            <span className="absolute top-3 right-3 px-2.5 py-1 text-xs font-medium bg-black/40 text-white rounded-full">
+              {currentIndex + 1} / {images.length}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* 데스크톱 썸네일 */}
+      {hasMultiple && (
+        <div className="hidden md:flex gap-2">
+          {images.map((img, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentIndex(idx)}
+              className={cn(
+                'relative w-20 h-20 rounded-lg overflow-hidden bg-muted transition-all',
+                idx === currentIndex ? 'ring-2 ring-primary shadow-sm' : 'opacity-50 hover:opacity-100'
+              )}
+            >
+              <Image src={img} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ProductDetailPage;

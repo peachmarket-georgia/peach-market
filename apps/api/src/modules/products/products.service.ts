@@ -1,231 +1,222 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../core/database/prisma.service';
-import { CreateProductDto, UpdateProductDto, ProductQueryDto, ProductResponseDto, ProductListResponseDto } from './dto';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ProductStatus } from '@prisma/client';
+import { PrismaService } from '../../core/database/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+
+const SELLER_SELECT = {
+  id: true,
+  nickname: true,
+  avatarUrl: true,
+  location: true,
+  mannerScore: true,
+} as const;
+
+const PRODUCT_SELECT = {
+  id: true,
+  sellerId: true,
+  title: true,
+  description: true,
+  price: true,
+  category: true,
+  status: true,
+  images: true,
+  location: true,
+  paymentMethods: true,
+  viewCount: true,
+  createdAt: true,
+  updatedAt: true,
+  seller: { select: SELLER_SELECT },
+  _count: { select: { favorites: true } },
+} as const;
+
+const VIEW_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const recentViews = new Map<string, number>();
+
+// 만료된 항목 주기적 정리 (5분마다)
+setInterval(
+  () => {
+    const now = Date.now();
+    for (const [key, timestamp] of recentViews) {
+      if (now - timestamp > VIEW_COOLDOWN_MS) {
+        recentViews.delete(key);
+      }
+    }
+  },
+  5 * 60 * 1000
+);
+
+type ProductWithCount = {
+  _count: { favorites: number };
+  [key: string]: unknown;
+};
+
+function formatProduct(product: ProductWithCount, isFavorited = false) {
+  const { _count, ...rest } = product;
+  return {
+    ...rest,
+    favoriteCount: _count.favorites,
+    isFavorited,
+  };
+}
 
 @Injectable()
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: ProductQueryDto, userId?: string): Promise<ProductListResponseDto> {
-    const { cursor, limit = 20, search, category, status, sort = 'latest' } = query;
+  async findAll(query: { search?: string; category?: string; status?: string; sort?: string }) {
+    const conditions: object[] = [];
 
-    // 정렬 조건
-    const orderBy = this.getOrderBy(sort);
+    if (query.search) {
+      conditions.push({
+        OR: [{ title: { contains: query.search } }, { description: { contains: query.search } }],
+      });
+    }
 
-    // 필터 조건
-    const where = {
-      ...(search && {
-        OR: [
-          { title: { contains: search, mode: 'insensitive' as const } },
-          { description: { contains: search, mode: 'insensitive' as const } },
-        ],
-      }),
-      ...(category && { category }),
-      ...(status && { status }),
-    };
+    if (query.category) {
+      conditions.push({ category: query.category });
+    }
 
-    // 상품 조회
+    if (query.status) {
+      conditions.push({ status: query.status });
+    }
+
+    const where = conditions.length > 0 ? { AND: conditions } : {};
+
+    let orderBy: Record<string, string> = { createdAt: 'desc' };
+    if (query.sort === 'price_asc') orderBy = { price: 'asc' };
+    if (query.sort === 'price_desc') orderBy = { price: 'desc' };
+
     const products = await this.prisma.product.findMany({
       where,
-      take: limit + 1, // 다음 페이지 확인용으로 1개 더 조회
-      ...(cursor && {
-        skip: 1,
-        cursor: { id: cursor },
-      }),
       orderBy,
-      include: {
-        seller: {
-          select: {
-            id: true,
-            nickname: true,
-            avatarUrl: true,
-            location: true,
-          },
-        },
-        _count: {
-          select: { favorites: true },
-        },
-        ...(userId && {
-          favorites: {
-            where: { userId },
-            select: { id: true },
-          },
-        }),
-      },
+      select: PRODUCT_SELECT,
     });
 
-    // 다음 페이지 여부 확인
-    const hasMore = products.length > limit;
-    const items = hasMore ? products.slice(0, -1) : products;
-    const nextCursor = hasMore ? items[items.length - 1].id : null;
-
-    // 응답 형식 변환
-    const formattedProducts: ProductResponseDto[] = items.map((product) => ({
-      id: product.id,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-      status: product.status,
-      images: product.images,
-      location: product.location,
-      paymentMethods: product.paymentMethods,
-      viewCount: product.viewCount,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-      seller: product.seller,
-      favoriteCount: product._count.favorites,
-      isFavorited: userId ? (product as typeof product & { favorites: { id: string }[] }).favorites?.length > 0 : false,
-    }));
-
-    return {
-      products: formattedProducts,
-      nextCursor,
-      hasMore,
-    };
+    return products.map((p) => formatProduct(p));
   }
 
-  async findById(id: string, userId?: string): Promise<ProductResponseDto> {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            nickname: true,
-            avatarUrl: true,
-            location: true,
-          },
-        },
-        _count: {
-          select: { favorites: true },
-        },
-        ...(userId && {
-          favorites: {
-            where: { userId },
-            select: { id: true },
-          },
-        }),
-      },
-    });
-
-    if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다');
-    }
-
-    return {
-      id: product.id,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-      status: product.status,
-      images: product.images,
-      location: product.location,
-      paymentMethods: product.paymentMethods,
-      viewCount: product.viewCount,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-      seller: product.seller,
-      favoriteCount: product._count.favorites,
-      isFavorited: userId ? (product as typeof product & { favorites: { id: string }[] }).favorites?.length > 0 : false,
-    };
-  }
-
-  async create(createDto: CreateProductDto, sellerId: string) {
-    return this.prisma.product.create({
-      data: {
-        ...createDto,
+  async findMy(sellerId: string, status?: ProductStatus) {
+    const products = await this.prisma.product.findMany({
+      where: {
         sellerId,
+        ...(status && { status }),
       },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            nickname: true,
-            avatarUrl: true,
-            location: true,
-          },
-        },
-      },
+      orderBy: { createdAt: 'desc' },
+      select: PRODUCT_SELECT,
     });
+
+    return products.map((p) => formatProduct(p));
   }
 
-  async update(id: string, updateDto: UpdateProductDto, sellerId: string) {
+  async findOne(id: string, ip?: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
+      select: PRODUCT_SELECT,
     });
 
     if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다');
+      throw new NotFoundException(`Product ${id} not found`);
     }
 
-    if (product.sellerId !== sellerId) {
+    // 조회수 증가 (같은 IP의 중복 조회 무시)
+    const viewKey = `${ip ?? 'unknown'}:${id}`;
+    const lastViewed = recentViews.get(viewKey);
+    const now = Date.now();
+
+    if (!lastViewed || now - lastViewed > VIEW_COOLDOWN_MS) {
+      recentViews.set(viewKey, now);
+      await this.prisma.product.update({
+        where: { id },
+        data: { viewCount: { increment: 1 } },
+      });
+      (product as { viewCount: number }).viewCount += 1;
+    }
+
+    return formatProduct(product);
+  }
+
+  async create(dto: CreateProductDto, sellerId: string) {
+    const product = await this.prisma.product.create({
+      data: {
+        sellerId,
+        title: dto.title,
+        description: dto.description,
+        price: dto.price,
+        category: dto.category,
+        location: dto.location,
+        images: dto.images,
+        paymentMethods: dto.paymentMethods ?? [],
+      },
+      select: PRODUCT_SELECT,
+    });
+
+    return formatProduct(product);
+  }
+
+  async update(id: string, dto: UpdateProductDto, userId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: { sellerId: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product ${id} not found`);
+    }
+
+    if (product.sellerId !== userId) {
       throw new ForbiddenException('본인의 상품만 수정할 수 있습니다');
     }
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
-      data: updateDto,
-      include: {
-        seller: {
-          select: {
-            id: true,
-            nickname: true,
-            avatarUrl: true,
-            location: true,
-          },
-        },
-      },
+      data: dto,
+      select: PRODUCT_SELECT,
     });
+
+    return formatProduct(updated);
   }
 
-  async delete(id: string, sellerId: string): Promise<void> {
+  async updateStatus(id: string, status: ProductStatus, userId: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
+      select: { sellerId: true },
     });
 
     if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다');
+      throw new NotFoundException(`Product ${id} not found`);
     }
 
-    if (product.sellerId !== sellerId) {
-      throw new ForbiddenException('본인의 상품만 삭제할 수 있습니다');
-    }
-
-    await this.prisma.product.delete({
-      where: { id },
-    });
-  }
-
-  async updateStatus(id: string, status: ProductStatus, sellerId: string) {
-    const product = await this.prisma.product.findUnique({
-      where: { id },
-    });
-
-    if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다');
-    }
-
-    if (product.sellerId !== sellerId) {
+    if (product.sellerId !== userId) {
       throw new ForbiddenException('본인의 상품만 상태를 변경할 수 있습니다');
     }
 
-    return this.prisma.product.update({
+    const updated = await this.prisma.product.update({
       where: { id },
       data: { status },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            nickname: true,
-            avatarUrl: true,
-            location: true,
-          },
-        },
-      },
+      select: PRODUCT_SELECT,
     });
+
+    return formatProduct(updated);
+  }
+
+  async remove(id: string, userId: string) {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: { sellerId: true },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Product ${id} not found`);
+    }
+
+    if (product.sellerId !== userId) {
+      throw new ForbiddenException('본인의 상품만 삭제할 수 있습니다');
+    }
+
+    await this.prisma.product.delete({ where: { id } });
+
+    return { message: '상품이 삭제되었습니다' };
   }
 
   async toggleFavorite(productId: string, userId: string): Promise<{ isFavorited: boolean }> {
@@ -262,107 +253,17 @@ export class ProductsService {
     }
   }
 
-  async incrementViewCount(id: string): Promise<void> {
-    await this.prisma.product.update({
-      where: { id },
-      data: {
-        viewCount: { increment: 1 },
-      },
-    });
-  }
-
-  async getFavoritesByUser(userId: string): Promise<ProductResponseDto[]> {
+  async getFavoritesByUser(userId: string) {
     const favorites = await this.prisma.favorite.findMany({
       where: { userId },
       include: {
         product: {
-          include: {
-            seller: {
-              select: {
-                id: true,
-                nickname: true,
-                avatarUrl: true,
-                location: true,
-              },
-            },
-            _count: {
-              select: { favorites: true },
-            },
-          },
+          select: PRODUCT_SELECT,
         },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    return favorites.map((favorite) => ({
-      id: favorite.product.id,
-      title: favorite.product.title,
-      description: favorite.product.description,
-      price: favorite.product.price,
-      category: favorite.product.category,
-      status: favorite.product.status,
-      images: favorite.product.images,
-      location: favorite.product.location,
-      paymentMethods: favorite.product.paymentMethods,
-      viewCount: favorite.product.viewCount,
-      createdAt: favorite.product.createdAt,
-      updatedAt: favorite.product.updatedAt,
-      seller: favorite.product.seller,
-      favoriteCount: favorite.product._count.favorites,
-      isFavorited: true,
-    }));
-  }
-
-  async getProductsByUser(userId: string, status?: ProductStatus): Promise<ProductResponseDto[]> {
-    const products = await this.prisma.product.findMany({
-      where: {
-        sellerId: userId,
-        ...(status && { status }),
-      },
-      include: {
-        seller: {
-          select: {
-            id: true,
-            nickname: true,
-            avatarUrl: true,
-            location: true,
-          },
-        },
-        _count: {
-          select: { favorites: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return products.map((product) => ({
-      id: product.id,
-      title: product.title,
-      description: product.description,
-      price: product.price,
-      category: product.category,
-      status: product.status,
-      images: product.images,
-      location: product.location,
-      paymentMethods: product.paymentMethods,
-      viewCount: product.viewCount,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-      seller: product.seller,
-      favoriteCount: product._count.favorites,
-      isFavorited: false,
-    }));
-  }
-
-  private getOrderBy(sort: string) {
-    switch (sort) {
-      case 'price_asc':
-        return { price: 'asc' as const };
-      case 'price_desc':
-        return { price: 'desc' as const };
-      case 'latest':
-      default:
-        return { createdAt: 'desc' as const };
-    }
+    return favorites.map((f) => formatProduct(f.product, true));
   }
 }

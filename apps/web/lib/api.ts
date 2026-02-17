@@ -24,13 +24,13 @@ import {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
 
-type ApiResponse<T> = {
+export type ApiResponse<T> = {
   data?: T;
   error?: string;
   status: number;
 };
 
-type RequestOptions = {
+export type RequestOptions = {
   method?: string;
   body?: unknown;
   headers?: HeadersInit;
@@ -42,7 +42,11 @@ type RequestOptions = {
  * @param options - 요청 옵션
  * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
  */
-async function apiRequest<T>(endpoint: string, options?: RequestOptions, cookies?: string): Promise<ApiResponse<T>> {
+export async function apiRequest<T>(
+  endpoint: string,
+  options?: RequestOptions,
+  cookies?: string
+): Promise<ApiResponse<T>> {
   try {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
