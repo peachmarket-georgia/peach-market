@@ -1,16 +1,16 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { Skeleton } from '@/components/ui/skeleton'
-import { STATUS_LABEL } from '@/lib/product-types'
-import type { Product } from '@/lib/product-types'
+import Image from 'next/image';
+import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
+import { STATUS_LABEL } from '@/lib/product-types';
+import type { Product } from '@/lib/product-types';
 
 type ProductCardProps = {
-  product: Product
-}
+  product: Product;
+};
 
 export const ProductCard = ({ product }: ProductCardProps) => {
-  const isSold = product.status === 'SOLD'
-  const isReserved = product.status === 'RESERVED'
+  const isSold = product.status === 'SOLD';
+  const isReserved = product.status === 'RESERVED';
 
   return (
     <Link href={`/marketplace/${product.id}`}>
@@ -39,18 +39,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {/* 판매완료 오버레이 */}
           {isSold && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white font-medium">
-                {STATUS_LABEL.SOLD}
-              </span>
+              <span className="text-white font-medium">{STATUS_LABEL.SOLD}</span>
             </div>
           )}
         </div>
 
         {/* 정보 */}
         <div className="mt-2 px-0.5">
-          <h3 className="text-[15px] font-normal text-foreground line-clamp-2 leading-snug">
-            {product.title}
-          </h3>
+          <h3 className="text-[15px] font-normal text-foreground line-clamp-2 leading-snug">{product.title}</h3>
 
           {(product.location || product.timeAgo) && (
             <p className="mt-1 text-xs text-muted-foreground">
@@ -60,15 +56,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             </p>
           )}
 
-          <p
-            className={`mt-1 text-[15px] font-bold ${
-              isSold ? 'text-muted-foreground' : 'text-foreground'
-            }`}
-          >
+          <p className={`mt-1 text-[15px] font-bold ${isSold ? 'text-muted-foreground' : 'text-foreground'}`}>
             ${product.price.toLocaleString()}
           </p>
         </div>
       </article>
     </Link>
-  )
-}
+  );
+};

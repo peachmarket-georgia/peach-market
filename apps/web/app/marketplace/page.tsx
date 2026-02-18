@@ -1,67 +1,52 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import Link from 'next/link'
-import {
-  IconSearch,
-  IconAdjustmentsHorizontal,
-  IconChevronDown,
-  IconLoader2,
-  IconPlus,
-} from '@tabler/icons-react'
-import { ProductGrid } from '@/components/product'
-import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
-import { getProducts, toProduct } from '@/lib/products-api'
-import type {
-  ProductStatus,
-  Category,
-  Product,
-  SortOption,
-} from '@/lib/product-types'
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { IconSearch, IconAdjustmentsHorizontal, IconChevronDown, IconLoader2, IconPlus } from '@tabler/icons-react';
+import { ProductGrid } from '@/components/product';
+import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { getProducts, toProduct } from '@/lib/products-api';
+import type { ProductStatus, Category, Product, SortOption } from '@/lib/product-types';
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
   { value: 'SELLING', label: STATUS_LABEL.SELLING },
   { value: 'RESERVED', label: STATUS_LABEL.RESERVED },
   { value: 'SOLD', label: STATUS_LABEL.SOLD },
-]
+];
 
 const MarketplacePage = () => {
-  const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>(
-    'ALL'
-  )
-  const [selectedStatus, setSelectedStatus] = useState<ProductStatus | 'ALL'>(
-    'ALL'
-  )
-  const [sortBy, setSortBy] = useState<SortOption>('latest')
-  const [showSortDropdown, setShowSortDropdown] = useState(false)
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<ProductStatus | 'ALL'>('ALL');
+  const [sortBy, setSortBy] = useState<SortOption>('latest');
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const fetchProducts = useCallback(async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const params: Record<string, string> = {}
-      if (searchQuery.trim()) params.search = searchQuery.trim()
-      if (selectedCategory !== 'ALL') params.category = selectedCategory
-      if (selectedStatus !== 'ALL') params.status = selectedStatus
-      if (sortBy !== 'latest') params.sort = sortBy
+      const params: Record<string, string> = {};
+      if (searchQuery.trim()) params.search = searchQuery.trim();
+      if (selectedCategory !== 'ALL') params.category = selectedCategory;
+      if (selectedStatus !== 'ALL') params.status = selectedStatus;
+      if (sortBy !== 'latest') params.sort = sortBy;
 
-      const data = await getProducts(params)
-      setProducts(data.map(toProduct))
+      const data = await getProducts(params);
+      setProducts(data.map(toProduct));
     } catch (e) {
-      console.error('Failed to fetch products:', e)
+      console.error('Failed to fetch products:', e);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [searchQuery, selectedCategory, selectedStatus, sortBy])
+  }, [searchQuery, selectedCategory, selectedStatus, sortBy]);
 
   useEffect(() => {
-    const timer = setTimeout(fetchProducts, 300)
-    return () => clearTimeout(timer)
-  }, [fetchProducts])
+    const timer = setTimeout(fetchProducts, 300);
+    return () => clearTimeout(timer);
+  }, [fetchProducts]);
 
   return (
     <div className="flex flex-col gap-4 container mx-auto px-4 md:px-6 md:mt-10">
@@ -143,30 +128,23 @@ const MarketplacePage = () => {
           </button>
           {showSortDropdown && (
             <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setShowSortDropdown(false)}
-              />
+              <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
               <div className="absolute right-0 top-full mt-1 z-20 bg-background border border-border rounded-lg shadow-lg py-1 min-w-30">
-                {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(
-                  ([key, label]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setSortBy(key)
-                        setShowSortDropdown(false)
-                      }}
-                      className={cn(
-                        'w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors',
-                        sortBy === key
-                          ? 'font-medium text-foreground'
-                          : 'text-muted-foreground'
-                      )}
-                    >
-                      {label}
-                    </button>
-                  )
-                )}
+                {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSortBy(key);
+                      setShowSortDropdown(false);
+                    }}
+                    className={cn(
+                      'w-full px-3 py-2 text-left text-sm hover:bg-muted transition-colors',
+                      sortBy === key ? 'font-medium text-foreground' : 'text-muted-foreground'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
             </>
           )}
@@ -174,9 +152,7 @@ const MarketplacePage = () => {
       </div>
 
       {/* 결과 수 */}
-      <p className="text-sm text-muted-foreground">
-        {products.length}개의 매물
-      </p>
+      <p className="text-sm text-muted-foreground">{products.length}개의 매물</p>
 
       {/* 상품 그리드 */}
       {loading ? (
@@ -193,7 +169,7 @@ const MarketplacePage = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default MarketplacePage
+export default MarketplacePage;

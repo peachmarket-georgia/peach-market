@@ -1,114 +1,107 @@
-'use client'
+'use client';
 
-import { useState, useRef, useCallback } from 'react'
-import Image from 'next/image'
-import {
-  IconPhoto,
-  IconX,
-  IconCrown,
-  IconGripVertical,
-} from '@tabler/icons-react'
-import { Label } from '@/components/ui/label'
-import { cn } from '@/lib/utils'
+import { useState, useRef, useCallback } from 'react';
+import Image from 'next/image';
+import { IconPhoto, IconX, IconCrown, IconGripVertical } from '@tabler/icons-react';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
-const MAX_IMAGES = 5
-const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+const MAX_IMAGES = 5;
+const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 
 export type ImageItem = {
-  id: string
-  file: File
-  preview: string
-}
+  id: string;
+  file: File;
+  preview: string;
+};
 
 type ImageUploadProps = {
-  images: ImageItem[]
-  onChange: (images: ImageItem[]) => void
-}
+  images: ImageItem[];
+  onChange: (images: ImageItem[]) => void;
+};
 
 export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [dragOverZone, setDragOverZone] = useState(false)
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOverZone, setDragOverZone] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   const addImages = useCallback(
     (files: FileList | File[]) => {
-      const validFiles = Array.from(files).filter((f) =>
-        ACCEPTED_TYPES.includes(f.type)
-      )
-      const remaining = MAX_IMAGES - images.length
-      const toAdd = validFiles.slice(0, remaining)
+      const validFiles = Array.from(files).filter((f) => ACCEPTED_TYPES.includes(f.type));
+      const remaining = MAX_IMAGES - images.length;
+      const toAdd = validFiles.slice(0, remaining);
 
       const newItems: ImageItem[] = toAdd.map((file) => ({
         id: crypto.randomUUID(),
         file,
         preview: URL.createObjectURL(file),
-      }))
+      }));
 
-      onChange([...images, ...newItems])
+      onChange([...images, ...newItems]);
     },
     [images, onChange]
-  )
+  );
 
   const removeImage = (id: string) => {
-    const item = images.find((i) => i.id === id)
-    if (item) URL.revokeObjectURL(item.preview)
-    onChange(images.filter((i) => i.id !== id))
-  }
+    const item = images.find((i) => i.id === id);
+    if (item) URL.revokeObjectURL(item.preview);
+    onChange(images.filter((i) => i.id !== id));
+  };
 
   // 드래그 앤 드롭 순서 변경
   const handleDragStart = (e: React.DragEvent, idx: number) => {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', String(idx))
-    setDragIndex(idx)
-  }
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+    setDragIndex(idx);
+  };
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
-    e.preventDefault()
-    setDragOverIndex(idx)
-  }
+    e.preventDefault();
+    setDragOverIndex(idx);
+  };
 
   const handleDrop = (e: React.DragEvent, dropIdx: number) => {
-    e.preventDefault()
+    e.preventDefault();
     if (dragIndex === null || dragIndex === dropIdx) {
-      setDragIndex(null)
-      setDragOverIndex(null)
-      return
+      setDragIndex(null);
+      setDragOverIndex(null);
+      return;
     }
 
-    const next = [...images]
-    const [moved] = next.splice(dragIndex, 1)
-    next.splice(dropIdx, 0, moved!)
-    onChange(next)
-    setDragIndex(null)
-    setDragOverIndex(null)
-  }
+    const next = [...images];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(dropIdx, 0, moved!);
+    onChange(next);
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
 
   const handleDragEnd = () => {
-    setDragIndex(null)
-    setDragOverIndex(null)
-  }
+    setDragIndex(null);
+    setDragOverIndex(null);
+  };
 
   // 드롭존 (파일 추가용 — 순서 변경 드래그 중에는 무시)
-  const isReordering = dragIndex !== null
+  const isReordering = dragIndex !== null;
 
   const handleZoneDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    if (!isReordering) setDragOverZone(true)
-  }
+    e.preventDefault();
+    if (!isReordering) setDragOverZone(true);
+  };
 
   const handleZoneDragLeave = () => {
-    setDragOverZone(false)
-  }
+    setDragOverZone(false);
+  };
 
   const handleZoneDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOverZone(false)
-    if (isReordering) return
+    e.preventDefault();
+    setDragOverZone(false);
+    if (isReordering) return;
     if (e.dataTransfer.files.length > 0) {
-      addImages(e.dataTransfer.files)
+      addImages(e.dataTransfer.files);
     }
-  }
+  };
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -160,7 +153,7 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
           {images.length > 1 && (
             <div className="grid grid-cols-2 gap-2 flex-1">
               {images.slice(1).map((img, i) => {
-                const idx = i + 1
+                const idx = i + 1;
                 return (
                   <div
                     key={img.id}
@@ -172,9 +165,7 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
                     className={cn(
                       'relative aspect-square rounded-lg overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
                       dragIndex === idx && 'opacity-40 scale-95',
-                      dragOverIndex === idx &&
-                        dragIndex !== idx &&
-                        'ring-2 ring-primary'
+                      dragOverIndex === idx && dragIndex !== idx && 'ring-2 ring-primary'
                     )}
                   >
                     <Image
@@ -195,7 +186,7 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
                       <IconX className="h-3 w-3" />
                     </button>
                   </div>
-                )
+                );
               })}
             </div>
           )}
@@ -211,16 +202,12 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
           onClick={() => fileInputRef.current?.click()}
           className={cn(
             'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 cursor-pointer transition-colors',
-            dragOverZone
-              ? 'border-primary bg-primary/5'
-              : 'border-border hover:border-muted-foreground/50'
+            dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
           )}
         >
           <IconPhoto className="h-8 w-8 text-muted-foreground" />
           <div className="text-center">
-            <p className="text-sm font-medium text-muted-foreground">
-              클릭 또는 드래그하여 이미지 추가
-            </p>
+            <p className="text-sm font-medium text-muted-foreground">클릭 또는 드래그하여 이미지 추가</p>
             <p className="text-xs text-muted-foreground/70 mt-1">
               JPG, PNG, WebP, GIF · 최대 {MAX_IMAGES - images.length}장
             </p>
@@ -232,8 +219,8 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
             multiple
             className="hidden"
             onChange={(e) => {
-              if (e.target.files) addImages(e.target.files)
-              e.target.value = ''
+              if (e.target.files) addImages(e.target.files);
+              e.target.value = '';
             }}
           />
         </div>
@@ -241,10 +228,9 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
 
       {images.length > 1 && (
         <p className="text-xs text-muted-foreground">
-          드래그하여 순서를 변경할 수 있습니다. 첫 번째 이미지가 대표이미지로
-          사용됩니다.
+          드래그하여 순서를 변경할 수 있습니다. 첫 번째 이미지가 대표이미지로 사용됩니다.
         </p>
       )}
     </div>
-  )
-}
+  );
+};

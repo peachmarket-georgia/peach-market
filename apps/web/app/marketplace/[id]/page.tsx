@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import { use } from 'react'
+import { useState, useEffect } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
+import { use } from 'react';
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -16,46 +16,46 @@ import {
   IconMapPin,
   IconClock,
   IconStar,
-} from '@tabler/icons-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { STATUS_LABEL } from '@/lib/product-types'
-import { cn } from '@/lib/utils'
-import { getProduct, toProduct } from '@/lib/products-api'
-import type { Product } from '@/lib/product-types'
+} from '@tabler/icons-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { STATUS_LABEL } from '@/lib/product-types';
+import { cn } from '@/lib/utils';
+import { getProduct, toProduct } from '@/lib/products-api';
+import type { Product } from '@/lib/product-types';
 
 type ProductDetailPageProps = {
-  params: Promise<{ id: string }>
-}
+  params: Promise<{ id: string }>;
+};
 
 const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
-  const { id } = use(params)
-  const [product, setProduct] = useState<Product | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+  const { id } = use(params);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     getProduct(id)
       .then((data) => setProduct(toProduct(data)))
       .catch(() => setError(true))
-      .finally(() => setLoading(false))
-  }, [id])
+      .finally(() => setLoading(false));
+  }, [id]);
 
   if (loading) {
     return (
       <div className="flex justify-center py-20">
         <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
-    )
+    );
   }
 
   if (error || !product) {
-    notFound()
+    notFound();
   }
 
-  const isSold = product.status === 'SOLD'
-  const isReserved = product.status === 'RESERVED'
-  const isSelling = product.status === 'SELLING'
+  const isSold = product.status === 'SOLD';
+  const isReserved = product.status === 'RESERVED';
+  const isSelling = product.status === 'SELLING';
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
@@ -72,11 +72,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">
         {/* 이미지 캐러셀 */}
-        <ImageCarousel
-          images={product.images}
-          alt={product.title}
-          status={product.status}
-        />
+        <ImageCarousel images={product.images} alt={product.title} status={product.status} />
 
         {/* 상품 정보 */}
         <div className="flex flex-col">
@@ -98,9 +94,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           </div>
 
           {/* 제목 */}
-          <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">
-            {product.title}
-          </h1>
+          <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">{product.title}</h1>
 
           {/* 위치 · 시간 */}
           <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
@@ -159,9 +153,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground truncate">
-                  {product.seller.nickname}
-                </p>
+                <p className="font-semibold text-foreground truncate">{product.seller.nickname}</p>
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
                   <IconStar className="h-3.5 w-3.5 text-[#FFB347] fill-[#FFB347]" />
                   <span>매너점수 {product.seller.mannerScore}</span>
@@ -172,9 +164,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
           {/* 설명 */}
           <div className="py-5 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground mb-3">
-              상품 설명
-            </h2>
+            <h2 className="text-sm font-semibold text-foreground mb-3">상품 설명</h2>
             <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
               {product.description || '등록된 상품 설명이 없습니다.'}
             </p>
@@ -182,12 +172,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
           {/* 데스크톱 액션 버튼 */}
           <div className="hidden md:flex gap-3 pt-5">
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-1.5"
-              disabled={isSold}
-            >
+            <Button variant="outline" size="lg" className="gap-1.5" disabled={isSold}>
               <IconHeart className="h-4 w-4" />
               관심
             </Button>
@@ -195,11 +180,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
               <IconShare className="h-4 w-4" />
               공유
             </Button>
-            <Button
-              size="lg"
-              className="flex-1 gap-1.5 bg-primary hover:bg-primary/90"
-              disabled={isSold}
-            >
+            <Button size="lg" className="flex-1 gap-1.5 bg-primary hover:bg-primary/90" disabled={isSold}>
               <IconMessageCircle className="h-4 w-4" />
               채팅하기
             </Button>
@@ -209,12 +190,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
       {/* 모바일 하단 고정 액션바 */}
       <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 md:hidden z-30">
-        <Button
-          variant="outline"
-          size="icon"
-          className="shrink-0 h-11 w-11"
-          disabled={isSold}
-        >
+        <Button variant="outline" size="icon" className="shrink-0 h-11 w-11" disabled={isSold}>
           <IconHeart className="h-5 w-5" />
         </Button>
         <div className="border-l border-border h-8 mx-1" />
@@ -226,45 +202,34 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         >
           ${product.price.toLocaleString()}
         </p>
-        <Button
-          className="flex-1 h-11 gap-1.5 bg-primary hover:bg-primary/90"
-          disabled={isSold}
-        >
+        <Button className="flex-1 h-11 gap-1.5 bg-primary hover:bg-primary/90" disabled={isSold}>
           <IconMessageCircle className="h-4 w-4" />
           채팅하기
         </Button>
       </div>
     </div>
-  )
-}
+  );
+};
 
 /** 이미지 캐러셀 컴포넌트 */
-const ImageCarousel = ({
-  images,
-  alt,
-  status,
-}: {
-  images: string[]
-  alt: string
-  status: string
-}) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const isSold = status === 'SOLD'
-  const isReserved = status === 'RESERVED'
-  const hasMultiple = images.length > 1
+const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string; status: string }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const isSold = status === 'SOLD';
+  const isReserved = status === 'RESERVED';
+  const hasMultiple = images.length > 1;
 
   const goTo = (idx: number) => {
-    if (idx < 0) setCurrentIndex(images.length - 1)
-    else if (idx >= images.length) setCurrentIndex(0)
-    else setCurrentIndex(idx)
-  }
+    if (idx < 0) setCurrentIndex(images.length - 1);
+    else if (idx >= images.length) setCurrentIndex(0);
+    else setCurrentIndex(idx);
+  };
 
   if (images.length === 0) {
     return (
       <div className="aspect-square rounded-2xl bg-muted flex items-center justify-center text-muted-foreground text-sm">
         이미지 없음
       </div>
-    )
+    );
   }
 
   return (
@@ -287,9 +252,7 @@ const ImageCarousel = ({
         )}
         {isSold && (
           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white text-xl font-medium">
-              {STATUS_LABEL.SOLD}
-            </span>
+            <span className="text-white text-xl font-medium">{STATUS_LABEL.SOLD}</span>
           </div>
         )}
 
@@ -321,9 +284,7 @@ const ImageCarousel = ({
                   onClick={() => setCurrentIndex(idx)}
                   className={cn(
                     'w-2 h-2 rounded-full transition-all',
-                    idx === currentIndex
-                      ? 'bg-white w-4'
-                      : 'bg-white/50 hover:bg-white/70'
+                    idx === currentIndex ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/70'
                   )}
                 />
               ))}
@@ -344,24 +305,16 @@ const ImageCarousel = ({
               onClick={() => setCurrentIndex(idx)}
               className={cn(
                 'relative w-20 h-20 rounded-lg overflow-hidden bg-muted transition-all',
-                idx === currentIndex
-                  ? 'ring-2 ring-primary shadow-sm'
-                  : 'opacity-50 hover:opacity-100'
+                idx === currentIndex ? 'ring-2 ring-primary shadow-sm' : 'opacity-50 hover:opacity-100'
               )}
             >
-              <Image
-                src={img}
-                alt={`${alt} ${idx + 1}`}
-                fill
-                sizes="80px"
-                className="object-cover"
-              />
+              <Image src={img} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-cover" />
             </button>
           ))}
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default ProductDetailPage
+export default ProductDetailPage;

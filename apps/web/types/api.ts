@@ -97,6 +97,8 @@ export interface UserProfileResponseDto {
   location: string;
   /** @example true */
   isEmailVerified: boolean;
+  /** @example "https://example.com/avatar.jpg" */
+  avatarUrl?: string | null;
   /**
    * @format date-time
    * @example "2024-01-01T00:00:00.000Z"
@@ -107,4 +109,142 @@ export interface UserProfileResponseDto {
    * @example "2024-01-01T00:00:00.000Z"
    */
   updatedAt: string;
+}
+
+// ==================== Chat Types ====================
+
+export interface ChatUserDto {
+  id: string;
+  nickname: string;
+  avatarUrl: string | null;
+}
+
+export interface ChatProductDto {
+  id: string;
+  title: string;
+  price: number;
+  images: string[];
+  status: string;
+}
+
+export interface ChatMessageDto {
+  id: string;
+  chatRoomId: string;
+  senderId: string;
+  content: string;
+  isRead: boolean;
+  createdAt: string;
+  sender: ChatUserDto;
+}
+
+export interface ChatRoomDto {
+  id: string;
+  productId: string;
+  buyerId: string;
+  sellerId: string;
+  lastMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+  product: ChatProductDto;
+  buyer: ChatUserDto;
+  seller: ChatUserDto;
+  unreadCount: number;
+}
+
+export interface ChatRoomWithMessagesDto extends Omit<ChatRoomDto, 'unreadCount'> {
+  messages: ChatMessageDto[];
+}
+
+export interface CreateChatRoomDto {
+  productId: string;
+}
+
+export interface UnreadCountDto {
+  count: number;
+}
+
+// ==================== Product Types ====================
+
+export type ProductStatus = 'SELLING' | 'RESERVED' | 'SOLD';
+export type PaymentMethod = 'CASH' | 'ZELLE' | 'VENMO';
+
+export interface ProductSellerDto {
+  id: string;
+  nickname: string;
+  avatarUrl: string | null;
+  location: string;
+}
+
+export interface ProductResponseDto {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  status: ProductStatus;
+  images: string[];
+  location: string;
+  paymentMethods: PaymentMethod[];
+  viewCount: number;
+  createdAt: string;
+  updatedAt: string;
+  seller: ProductSellerDto;
+  favoriteCount: number;
+  isFavorited: boolean;
+}
+
+export interface ProductListResponseDto {
+  products: ProductResponseDto[];
+  nextCursor: string | null;
+  hasMore: boolean;
+}
+
+export interface CreateProductDto {
+  title: string;
+  description: string;
+  price: number;
+  category: string;
+  images: string[];
+  location: string;
+  paymentMethods?: PaymentMethod[];
+}
+
+export interface UpdateProductDto {
+  title?: string;
+  description?: string;
+  price?: number;
+  category?: string;
+  images?: string[];
+  location?: string;
+  paymentMethods?: PaymentMethod[];
+}
+
+// ==================== User Update Types ====================
+
+export interface UpdateUserDto {
+  nickname?: string;
+  location?: string;
+  avatarUrl?: string;
+}
+
+// ==================== Upload Types ====================
+
+export interface UploadedImageDto {
+  url: string;
+  thumbnailUrl: string;
+  originalName: string;
+  size: number;
+}
+
+export interface UploadResponseDto {
+  images: UploadedImageDto[];
+}
+
+export interface ProductQueryParams {
+  cursor?: string;
+  limit?: number;
+  search?: string;
+  category?: string;
+  status?: ProductStatus;
+  sort?: 'latest' | 'price_asc' | 'price_desc';
 }

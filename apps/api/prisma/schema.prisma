@@ -113,6 +113,13 @@ enum ProductStatus {
   SOLD // 판매완료 (⚫)
 }
 
+// 결제 수단
+enum PaymentMethod {
+  CASH // 현금
+  ZELLE // Zelle
+  VENMO // Venmo
+}
+
 model Product {
   id          String        @id @default(uuid())
   sellerId    String
@@ -121,8 +128,9 @@ model Product {
   price       Int // USD 달러 단위
   category    String // 카테고리 (디지털기기, 생활가전 등)
   status      ProductStatus @default(SELLING)
-  images      String[] // 이미지 URL 배열 (최대 10장)
-  location    String // 거래 희망 지역
+  images         String[] // 이미지 URL 배열 (최대 10장)
+  location       String // 거래 희망 지역
+  paymentMethods PaymentMethod[] @default([]) // 선호 결제 수단
   viewCount   Int           @default(0)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
