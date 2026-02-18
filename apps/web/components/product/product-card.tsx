@@ -1,45 +1,45 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import { Skeleton } from '@/components/ui/skeleton'
-import { STATUS_LABEL } from '@/lib/product-types'
-import type { Product } from '@/lib/product-types'
+import Image from 'next/image';
+import Link from 'next/link';
+import { IconMapPin } from '@tabler/icons-react';
+import { STATUS_LABEL } from '@/lib/product-types';
+import type { Product } from '@/lib/product-types';
 
 type ProductCardProps = {
-  product: Product
-}
+  product: Product;
+};
 
 export const ProductCard = ({ product }: ProductCardProps) => {
-  const isSold = product.status === 'SOLD'
-  const isReserved = product.status === 'RESERVED'
+  const isSold = product.status === 'SOLD';
+  const isReserved = product.status === 'RESERVED';
 
   return (
     <Link href={`/marketplace/${product.id}`}>
-      <article className="group cursor-pointer">
-        {/* 이미지 - 1:1 정사각형 */}
-        <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+      <article className="group cursor-pointer bg-white rounded-2xl overflow-hidden border-2 border-orange-50 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/10 transition-all duration-200">
+        {/* 이미지 */}
+        <div className="relative aspect-square overflow-hidden bg-orange-50">
           {product.thumbnailUrl ? (
             <Image
               src={product.thumbnailUrl}
               alt={product.title}
               fill
               sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
-              className="object-cover transition-transform group-hover:scale-105"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
-            <Skeleton className="w-full h-full rounded-none" />
+            <div className="w-full h-full bg-linear-to-br from-orange-50 to-amber-50" />
           )}
 
           {/* 예약중 뱃지 */}
           {isReserved && (
-            <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-medium bg-[#FFC107] text-white rounded">
+            <span className="absolute top-2 left-2 px-2.5 py-1 text-xs font-bold bg-[#FFC107] text-white rounded-lg shadow-md">
               {STATUS_LABEL.RESERVED}
             </span>
           )}
 
           {/* 판매완료 오버레이 */}
           {isSold && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white font-medium">
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
+              <span className="text-white text-sm font-bold bg-black/30 px-3 py-1.5 rounded-lg">
                 {STATUS_LABEL.SOLD}
               </span>
             </div>
@@ -47,22 +47,27 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </div>
 
         {/* 정보 */}
-        <div className="mt-2 px-0.5">
-          <h3 className="text-[15px] font-normal text-foreground line-clamp-2 leading-snug">
+        <div className="p-3">
+          <h3
+            className={`text-[14px] font-semibold line-clamp-2 leading-snug mb-1.5 ${
+              isSold ? 'text-[#9E9E9E]' : 'text-[#212121]'
+            }`}
+          >
             {product.title}
           </h3>
 
-          {(product.location || product.timeAgo) && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {product.location}
-              {product.location && product.timeAgo && ' · '}
-              {product.timeAgo}
+          {product.location && (
+            <p className="flex items-center gap-0.5 text-xs text-[#9E9E9E] mb-1.5">
+              <IconMapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{product.location}</span>
             </p>
           )}
 
           <p
-            className={`mt-1 text-[15px] font-bold ${
-              isSold ? 'text-muted-foreground' : 'text-foreground'
+            className={`text-[15px] font-extrabold ${
+              isSold
+                ? 'text-[#9E9E9E] line-through'
+                : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
             }`}
           >
             ${product.price.toLocaleString()}
@@ -70,5 +75,5 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </div>
       </article>
     </Link>
-  )
-}
+  );
+};
