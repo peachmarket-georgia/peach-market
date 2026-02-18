@@ -60,10 +60,10 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
       {/* 뒤로가기 */}
-      <div className="mb-4 flex items-center gap-3">
+      <div className="mb-6 flex items-center gap-3">
         <Link
           href="/marketplace"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-all hover:gap-0.5"
         >
           <IconChevronLeft className="h-4 w-4" />
           목록으로
@@ -77,16 +77,19 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         {/* 상품 정보 */}
         <div className="flex flex-col">
           {/* 카테고리 + 상태 뱃지 */}
-          <div className="flex items-center gap-2 mb-3">
-            <Badge variant="secondary" className="text-xs font-normal">
+          <div className="flex items-center gap-2 mb-4">
+            <Badge
+              variant="secondary"
+              className="text-xs font-medium px-3 py-1 bg-primary/10 text-primary border-primary/20 shadow-sm"
+            >
               {product.category}
             </Badge>
             <Badge
               className={cn(
-                'text-xs',
-                isSelling && 'bg-[#4CAF50] text-white hover:bg-[#43A047]',
-                isReserved && 'bg-[#FFC107] text-white hover:bg-[#FFB300]',
-                isSold && 'bg-[#9E9E9E] text-white hover:bg-[#8E8E8E]'
+                'text-xs font-medium px-3 py-1 shadow-md transition-all',
+                isSelling && 'bg-linear-to-r from-[#4CAF50] to-[#66BB6A] text-white hover:shadow-lg hover:scale-105',
+                isReserved && 'bg-linear-to-r from-[#FFC107] to-[#FFD54F] text-white hover:shadow-lg hover:scale-105',
+                isSold && 'bg-[#9E9E9E] text-white opacity-90 hover:opacity-100'
               )}
             >
               {STATUS_LABEL[product.status]}
@@ -109,79 +112,103 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           </div>
 
           {/* 가격 */}
-          <p
-            className={cn(
-              'text-2xl md:text-3xl font-bold mb-5',
-              isSold ? 'text-muted-foreground line-through' : 'text-foreground'
-            )}
-          >
-            ${product.price.toLocaleString()}
-          </p>
+          <div className="mb-6">
+            <p
+              className={cn(
+                'text-3xl md:text-4xl font-extrabold transition-colors',
+                isSold
+                  ? 'text-muted-foreground line-through'
+                  : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
+              )}
+            >
+              ${product.price.toLocaleString()}
+            </p>
+          </div>
 
           {/* 통계 */}
-          <div className="flex items-center gap-5 text-sm text-muted-foreground pb-5 border-b border-border">
-            <span className="flex items-center gap-1.5">
+          <div className="flex items-center gap-5 text-sm pb-5 border-b border-border/50">
+            <span className="flex items-center gap-1.5 text-muted-foreground hover:text-blue-500 transition-colors cursor-default">
               <IconEye className="h-4 w-4" />
-              조회 {product.viewCount}
+              <span className="font-medium">조회 {product.viewCount}</span>
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-muted-foreground hover:text-green-500 transition-colors cursor-default">
               <IconMessageCircle className="h-4 w-4" />
-              채팅 {product.chatCount}
+              <span className="font-medium">채팅 {product.chatCount}</span>
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-default">
               <IconHeart className="h-4 w-4" />
-              관심 {product.likeCount}
+              <span className="font-medium">관심 {product.likeCount}</span>
             </span>
           </div>
 
           {/* 판매자 정보 */}
-          <div className="py-5 border-b border-border">
-            <div className="flex items-center gap-3">
+          <div className="py-5 border-b border-border/50">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-linear-to-br from-background to-muted/20 hover:shadow-md transition-all cursor-pointer group">
               {product.seller.avatarUrl ? (
-                <div className="relative w-11 h-11 rounded-full overflow-hidden bg-muted ring-2 ring-background shadow-sm">
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20 shadow-md group-hover:ring-primary/40 transition-all">
                   <Image
                     src={product.seller.avatarUrl}
                     alt={product.seller.nickname}
                     fill
-                    sizes="44px"
+                    sizes="48px"
                     className="object-cover"
                   />
                 </div>
               ) : (
-                <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+                <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-base shadow-md">
                   {product.seller.nickname[0]}
                 </div>
               )}
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground truncate">{product.seller.nickname}</p>
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                  <IconStar className="h-3.5 w-3.5 text-[#FFB347] fill-[#FFB347]" />
-                  <span>매너점수 {product.seller.mannerScore}</span>
+                <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                  {product.seller.nickname}
+                </p>
+                <div className="flex items-center gap-1 text-sm">
+                  <IconStar className="h-4 w-4 text-secondary fill-secondary drop-shadow-sm" />
+                  <span className="font-semibold text-transparent bg-linear-to-r from-secondary to-primary bg-clip-text">
+                    매너점수 {product.seller.mannerScore}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* 설명 */}
-          <div className="py-5 border-b border-border">
-            <h2 className="text-sm font-semibold text-foreground mb-3">상품 설명</h2>
-            <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed">
+          <div className="py-5 border-b border-border/50">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-linear-to-b from-primary to-secondary rounded-full" />
+              상품 설명
+            </h2>
+            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed pl-3">
               {product.description || '등록된 상품 설명이 없습니다.'}
             </p>
           </div>
 
           {/* 데스크톱 액션 버튼 */}
-          <div className="hidden md:flex gap-3 pt-5">
-            <Button variant="outline" size="lg" className="gap-1.5" disabled={isSold}>
-              <IconHeart className="h-4 w-4" />
-              관심
+          <div className="hidden md:flex gap-3 pt-6">
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-2 border-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:scale-105 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100"
+              disabled={isSold}
+            >
+              <IconHeart className="h-5 w-5" />
+              <span className="font-semibold">관심</span>
             </Button>
-            <Button variant="outline" size="lg" className="gap-1.5">
-              <IconShare className="h-4 w-4" />
-              공유
+            <Button
+              variant="outline"
+              size="lg"
+              className="gap-2 border-2 hover:border-secondary/50 hover:bg-secondary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md"
+            >
+              <IconShare className="h-5 w-5" />
+              <span className="font-semibold">공유</span>
             </Button>
-            <Button size="lg" className="flex-1 gap-1.5 bg-primary hover:bg-primary/90" disabled={isSold}>
-              <IconMessageCircle className="h-4 w-4" />
+            <Button
+              size="lg"
+              className="flex-1 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              disabled={isSold}
+            >
+              <IconMessageCircle className="h-5 w-5" />
               채팅하기
             </Button>
           </div>
@@ -189,21 +216,34 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
       </div>
 
       {/* 모바일 하단 고정 액션바 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border px-4 py-3 flex items-center gap-3 md:hidden z-30">
-        <Button variant="outline" size="icon" className="shrink-0 h-11 w-11" disabled={isSold}>
-          <IconHeart className="h-5 w-5" />
-        </Button>
-        <div className="border-l border-border h-8 mx-1" />
-        <p
-          className={cn(
-            'text-lg font-bold shrink-0',
-            isSold ? 'text-muted-foreground line-through' : 'text-foreground'
-          )}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        <Button
+          variant="outline"
+          size="icon"
+          className="shrink-0 h-12 w-12 border-2 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary active:scale-95 transition-all shadow-sm disabled:opacity-50"
+          disabled={isSold}
         >
-          ${product.price.toLocaleString()}
-        </p>
-        <Button className="flex-1 h-11 gap-1.5 bg-primary hover:bg-primary/90" disabled={isSold}>
-          <IconMessageCircle className="h-4 w-4" />
+          <IconHeart className="h-6 w-6" />
+        </Button>
+        <div className="border-l border-border/30 h-10 mx-0.5" />
+        <div className="flex-1 flex flex-col min-w-0 mr-2">
+          <span className="text-xs text-muted-foreground font-medium">판매가격</span>
+          <p
+            className={cn(
+              'text-xl font-extrabold truncate',
+              isSold
+                ? 'text-muted-foreground line-through'
+                : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
+            )}
+          >
+            ${product.price.toLocaleString()}
+          </p>
+        </div>
+        <Button
+          className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
+          disabled={isSold}
+        >
+          <IconMessageCircle className="h-5 w-5" />
           채팅하기
         </Button>
       </div>
@@ -226,7 +266,7 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
 
   if (images.length === 0) {
     return (
-      <div className="aspect-square rounded-2xl bg-muted flex items-center justify-center text-muted-foreground text-sm">
+      <div className="aspect-square rounded-2xl bg-linear-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground text-sm font-semibold shadow-inner">
         이미지 없음
       </div>
     );
@@ -235,24 +275,26 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
   return (
     <div className="space-y-3">
       {/* 메인 이미지 */}
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted group">
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted group shadow-lg">
         <Image
           src={images[currentIndex] ?? images[0]!}
           alt={alt}
           fill
           sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover transition-transform duration-300"
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
           priority
         />
 
         {isReserved && (
-          <span className="absolute top-3 left-3 px-3 py-1 text-sm font-medium bg-[#FFC107] text-white rounded-lg shadow-sm">
+          <span className="absolute top-3 left-3 px-4 py-1.5 text-sm font-bold bg-linear-to-r from-[#FFC107] to-[#FFD54F] text-white rounded-lg shadow-lg backdrop-blur-sm">
             {STATUS_LABEL.RESERVED}
           </span>
         )}
         {isSold && (
-          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-            <span className="text-white text-xl font-medium">{STATUS_LABEL.SOLD}</span>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+            <span className="text-white text-2xl font-bold bg-black/40 px-6 py-3 rounded-xl backdrop-blur-sm shadow-xl">
+              {STATUS_LABEL.SOLD}
+            </span>
           </div>
         )}
 
@@ -261,15 +303,15 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
           <>
             <button
               onClick={() => goTo(currentIndex - 1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/50"
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-foreground flex items-center justify-center opacity-0 md:group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-lg active:scale-95"
             >
-              <IconChevronLeft className="h-4 w-4" />
+              <IconChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={() => goTo(currentIndex + 1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/50"
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-foreground flex items-center justify-center opacity-0 md:group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-lg active:scale-95"
             >
-              <IconChevronRight className="h-4 w-4" />
+              <IconChevronRight className="h-5 w-5" />
             </button>
           </>
         )}
@@ -277,19 +319,19 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
         {/* 인디케이터 dots + 카운터 */}
         {hasMultiple && (
           <>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/30 backdrop-blur-md px-3 py-2 rounded-full">
               {images.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => setCurrentIndex(idx)}
                   className={cn(
-                    'w-2 h-2 rounded-full transition-all',
-                    idx === currentIndex ? 'bg-white w-4' : 'bg-white/50 hover:bg-white/70'
+                    'rounded-full transition-all',
+                    idx === currentIndex ? 'bg-white w-6 h-2.5 shadow-md' : 'bg-white/50 hover:bg-white/80 w-2.5 h-2.5'
                   )}
                 />
               ))}
             </div>
-            <span className="absolute top-3 right-3 px-2.5 py-1 text-xs font-medium bg-black/40 text-white rounded-full">
+            <span className="absolute top-3 right-3 px-3 py-1.5 text-xs font-bold bg-black/60 text-white rounded-full backdrop-blur-sm shadow-lg">
               {currentIndex + 1} / {images.length}
             </span>
           </>
@@ -298,14 +340,16 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
 
       {/* 데스크톱 썸네일 */}
       {hasMultiple && (
-        <div className="hidden md:flex gap-2">
+        <div className="hidden md:flex gap-3">
           {images.map((img, idx) => (
             <button
               key={idx}
               onClick={() => setCurrentIndex(idx)}
               className={cn(
-                'relative w-20 h-20 rounded-lg overflow-hidden bg-muted transition-all',
-                idx === currentIndex ? 'ring-2 ring-primary shadow-sm' : 'opacity-50 hover:opacity-100'
+                'relative w-20 h-20 rounded-xl overflow-hidden bg-muted transition-all',
+                idx === currentIndex
+                  ? 'ring-3 ring-primary shadow-lg scale-105 opacity-100'
+                  : 'opacity-60 hover:opacity-100 hover:scale-105 shadow-md'
               )}
             >
               <Image src={img} alt={`${alt} ${idx + 1}`} fill sizes="80px" className="object-cover" />
