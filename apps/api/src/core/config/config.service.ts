@@ -36,4 +36,12 @@ export class AppConfigService {
   get frontendUrl(): string {
     return this.configService.get<string>('FRONTEND_URL', '');
   }
+
+  get supabaseUrl(): string {
+    return this.configService.get<string>('SUPABASE_URL', '');
+  }
+
+  get supabaseServiceRoleKey(): string {
+    return this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY', '');
+  }
 }

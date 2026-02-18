@@ -38,10 +38,8 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
           {/* 판매완료 오버레이 */}
           {isSold && (
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] flex items-center justify-center">
-              <span className="text-white text-sm font-bold bg-black/30 px-3 py-1.5 rounded-lg">
-                {STATUS_LABEL.SOLD}
-              </span>
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+              <span className="text-white font-medium">{STATUS_LABEL.SOLD}</span>
             </div>
           )}
         </div>
@@ -63,13 +61,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             </p>
           )}
 
-          <p
-            className={`text-[15px] font-extrabold ${
-              isSold
-                ? 'text-[#9E9E9E] line-through'
-                : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
-            }`}
-          >
+          <p className={`mt-1 text-[15px] font-bold ${isSold ? 'text-muted-foreground' : 'text-foreground'}`}>
             ${product.price.toLocaleString()}
           </p>
         </div>
