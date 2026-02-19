@@ -8,8 +8,9 @@ import { Camera, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Header } from '@/components/layout/header';
-import { checkAuth, productApi, uploadApi } from '@/lib/api';
+import { checkAuth, uploadApi } from '@/lib/api';
 import { PaymentMethod, ProductResponseDto, UserProfileResponseDto } from '@/types/api';
+import { productApi } from '@/lib/products-api';
 
 const CATEGORIES = [
   '디지털기기',
@@ -202,8 +203,6 @@ const EditProductPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-
       <main className="mx-auto max-w-2xl px-4 py-6">
         {/* 헤더 */}
         <div className="mb-6 flex items-center justify-between">

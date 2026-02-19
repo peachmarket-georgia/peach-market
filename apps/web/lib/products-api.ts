@@ -1,7 +1,74 @@
-import type { Product, ProductStatus } from '@/lib/product-types';
+import type { Product } from '@/lib/product-types';
 import { apiRequest } from '@/lib/api';
+import type {
+  ProductResponseDto,
+  ProductListResponseDto,
+  CreateProductDto,
+  UpdateProductDto,
+  ProductQueryParams,
+  ProductStatus,
+} from '@/types/api';
 
-// ── Products API ───────────────────────────
+// ── Product API ────────────────────────────
+
+export const productApi = {
+  getProducts: (params?: ProductQueryParams, cookies?: string) => {
+    const query = new URLSearchParams();
+    if (params?.cursor) query.set('cursor', params.cursor);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search) query.set('search', params.search);
+    if (params?.category) query.set('category', params.category);
+    if (params?.status) query.set('status', params.status);
+    if (params?.sort) query.set('sort', params.sort);
+
+    const queryString = query.toString();
+    return apiRequest<ProductListResponseDto>(
+      `/api/products${queryString ? `?${queryString}` : ''}`,
+      undefined,
+      cookies
+    );
+  },
+
+  getProduct: (id: string, cookies?: string) =>
+    apiRequest<ProductResponseDto>(`/api/products/${id}`, undefined, cookies),
+
+  createProduct: (data: CreateProductDto) =>
+    apiRequest<ProductResponseDto>('/api/products', {
+      method: 'POST',
+      body: data,
+    }),
+
+  updateProduct: (id: string, data: UpdateProductDto) =>
+    apiRequest<ProductResponseDto>(`/api/products/${id}`, {
+      method: 'PATCH',
+      body: data,
+    }),
+
+  deleteProduct: (id: string) =>
+    apiRequest<void>(`/api/products/${id}`, {
+      method: 'DELETE',
+    }),
+
+  updateProductStatus: (id: string, status: ProductStatus) =>
+    apiRequest<ProductResponseDto>(`/api/products/${id}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+
+  toggleFavorite: (productId: string) =>
+    apiRequest<{ isFavorited: boolean }>(`/api/products/${productId}/favorite`, {
+      method: 'POST',
+    }),
+
+  getFavorites: (cookies?: string) => apiRequest<ProductResponseDto[]>('/api/products/favorites', undefined, cookies),
+
+  getMyProducts: (status?: ProductStatus, cookies?: string) => {
+    const query = status ? `?status=${status}` : '';
+    return apiRequest<ProductResponseDto[]>(`/api/products/my${query}`, undefined, cookies);
+  },
+};
+
+// ── Legacy: ApiProduct → Product 변환 (marketplace/[id]/page.tsx 에서 사용) ──
 
 export type ApiProduct = {
   id: string;
@@ -22,47 +89,6 @@ export type ApiProduct = {
     mannerScore: number;
   };
 };
-
-export async function getProducts(params?: {
-  search?: string;
-  category?: string;
-  status?: string;
-  sort?: string;
-}): Promise<ApiProduct[]> {
-  const query = new URLSearchParams();
-  if (params?.search) query.set('search', params.search);
-  if (params?.category) query.set('category', params.category);
-  if (params?.status) query.set('status', params.status);
-  if (params?.sort) query.set('sort', params.sort);
-
-  const qs = query.toString();
-  const { data, error } = await apiRequest<ApiProduct[]>(`/api/products${qs ? `?${qs}` : ''}`);
-  if (error || !data) throw new Error(error || '상품 목록을 불러올 수 없습니다.');
-  return data;
-}
-
-export async function getProduct(id: string): Promise<ApiProduct> {
-  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`);
-  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.');
-  return data;
-}
-
-export async function createProduct(body: {
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  location: string;
-}): Promise<ApiProduct> {
-  const { data, error } = await apiRequest<ApiProduct>('/api/products', {
-    method: 'POST',
-    body,
-  });
-  if (error || !data) throw new Error(error || '상품 등록에 실패했습니다.');
-  return data;
-}
-
-// ── ApiProduct → Product 변환 ──────────────
 
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -97,4 +123,10 @@ export function toProduct(p: ApiProduct): Product {
     chatCount: 0,
     likeCount: 0,
   };
+}
+
+export async function getProduct(id: string): Promise<ApiProduct> {
+  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`);
+  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.');
+  return data;
 }

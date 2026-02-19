@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { IconEye, IconEyeOff, IconLoader2, IconBrandGoogle, IconAlertCircle } from '@tabler/icons-react';
@@ -15,6 +15,8 @@ import { validateEmail } from '@/utils';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirect') || '/marketplace';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,7 +51,7 @@ export default function LoginPage() {
 
       if (data) {
         // 로그인 성공 → 마켓플레이스로 이동
-        router.push('/marketplace');
+        router.push(redirectTo);
       }
     } finally {
       setIsLoading(false);

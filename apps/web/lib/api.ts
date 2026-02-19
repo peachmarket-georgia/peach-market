@@ -13,12 +13,6 @@ import {
   ChatRoomDto,
   ChatRoomWithMessagesDto,
   UnreadCountDto,
-  ProductResponseDto,
-  ProductListResponseDto,
-  CreateProductDto,
-  UpdateProductDto,
-  ProductQueryParams,
-  ProductStatus,
   UploadResponseDto,
 } from '@/types/api';
 
@@ -258,96 +252,6 @@ export const chatApi = {
    * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
    */
   getUnreadCount: (cookies?: string) => apiRequest<UnreadCountDto>('/api/chat/unread-count', undefined, cookies),
-};
-
-// ==================== Product API ====================
-
-export const productApi = {
-  /**
-   * 상품 목록 조회 (cursor pagination)
-   * @param params - 쿼리 파라미터 (cursor, limit, search, category, status, sort)
-   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
-   */
-  getProducts: (params?: ProductQueryParams, cookies?: string) => {
-    const query = new URLSearchParams();
-    if (params?.cursor) query.set('cursor', params.cursor);
-    if (params?.limit) query.set('limit', String(params.limit));
-    if (params?.search) query.set('search', params.search);
-    if (params?.category) query.set('category', params.category);
-    if (params?.status) query.set('status', params.status);
-    if (params?.sort) query.set('sort', params.sort);
-
-    const queryString = query.toString();
-    return apiRequest<ProductListResponseDto>(
-      `/api/products${queryString ? `?${queryString}` : ''}`,
-      undefined,
-      cookies
-    );
-  },
-
-  /**
-   * 상품 상세 조회
-   * @param id - 상품 ID
-   * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
-   */
-  getProduct: (id: string, cookies?: string) =>
-    apiRequest<ProductResponseDto>(`/api/products/${id}`, undefined, cookies),
-
-  /**
-   * 상품 등록
-   */
-  createProduct: (data: CreateProductDto) =>
-    apiRequest<ProductResponseDto>('/api/products', {
-      method: 'POST',
-      body: data,
-    }),
-
-  /**
-   * 상품 수정
-   */
-  updateProduct: (id: string, data: UpdateProductDto) =>
-    apiRequest<ProductResponseDto>(`/api/products/${id}`, {
-      method: 'PATCH',
-      body: data,
-    }),
-
-  /**
-   * 상품 삭제
-   */
-  deleteProduct: (id: string) =>
-    apiRequest<void>(`/api/products/${id}`, {
-      method: 'DELETE',
-    }),
-
-  /**
-   * 상품 상태 변경
-   */
-  updateProductStatus: (id: string, status: ProductStatus) =>
-    apiRequest<ProductResponseDto>(`/api/products/${id}/status`, {
-      method: 'PATCH',
-      body: { status },
-    }),
-
-  /**
-   * 찜 토글
-   */
-  toggleFavorite: (productId: string) =>
-    apiRequest<{ isFavorited: boolean }>(`/api/products/${productId}/favorite`, {
-      method: 'POST',
-    }),
-
-  /**
-   * 찜 목록 조회
-   */
-  getFavorites: (cookies?: string) => apiRequest<ProductResponseDto[]>('/api/products/favorites', undefined, cookies),
-
-  /**
-   * 내 상품 목록 조회
-   */
-  getMyProducts: (status?: ProductStatus, cookies?: string) => {
-    const query = status ? `?status=${status}` : '';
-    return apiRequest<ProductResponseDto[]>(`/api/products/my${query}`, undefined, cookies);
-  },
 };
 
 // ==================== Upload API ====================

@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam }
 import type { Request } from 'express';
 import { ProductStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -13,6 +14,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: '상품 목록 조회', description: '검색, 카테고리, 상태 필터 및 정렬 지원' })
   @ApiQuery({ name: 'search', required: false, description: '검색어 (제목, 설명)' })
   @ApiQuery({ name: 'category', required: false, description: '카테고리 필터' })
@@ -20,12 +22,14 @@ export class ProductsController {
   @ApiQuery({ name: 'sort', required: false, description: '정렬', enum: ['price_asc', 'price_desc'] })
   @ApiResponse({ status: 200, description: '상품 목록 반환' })
   findAll(
+    @Req() req: Request,
     @Query('search') search?: string,
     @Query('category') category?: string,
     @Query('status') status?: string,
     @Query('sort') sort?: string
   ) {
-    return this.productsService.findAll({ search, category, status, sort });
+    const userId = (req.user as { userId: string } | undefined)?.userId;
+    return this.productsService.findAll({ search, category, status, sort }, userId);
   }
 
   @Get('favorites')
@@ -52,6 +56,7 @@ export class ProductsController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: '상품 상세 조회',
     description: '상품 상세 정보 조회 및 조회수 증가 (IP 기반 24시간 중복 방지)',
@@ -61,7 +66,8 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   findOne(@Param('id') id: string, @Req() req: Request) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
-    return this.productsService.findOne(id, ip);
+    const userId = (req.user as { userId: string } | undefined)?.userId;
+    return this.productsService.findOne(id, ip, userId);
   }
 
   @Post()

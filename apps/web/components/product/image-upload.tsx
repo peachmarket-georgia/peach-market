@@ -114,82 +114,49 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
 
       {/* 이미지 프리뷰 */}
       {images.length > 0 && (
-        <div className="flex gap-2 mb-2">
-          {/* 대표이미지 (큰 사이즈) */}
-          <div
-            draggable
-            onDragStart={(e) => handleDragStart(e, 0)}
-            onDragOver={(e) => handleDragOver(e, 0)}
-            onDrop={(e) => handleDrop(e, 0)}
-            onDragEnd={handleDragEnd}
-            className={cn(
-              'relative aspect-square rounded-xl overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all shrink-0',
-              images.length === 1 ? 'w-full' : 'w-2/5',
-              dragIndex === 0 && 'opacity-40 scale-95',
-              dragOverIndex === 0 && dragIndex !== 0 && 'ring-2 ring-primary'
-            )}
-          >
-            <Image
-              src={images[0]!.preview}
-              alt="대표 이미지"
-              fill
-              className="object-cover pointer-events-none select-none"
-              draggable={false}
-            />
-            <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-xs font-semibold flex items-center gap-1">
-              <IconCrown className="h-3 w-3" />
-              대표
-            </span>
-            <button
-              type="button"
-              onClick={() => removeImage(images[0]!.id)}
-              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80 z-10"
+        <div className="flex gap-2 overflow-x-auto pb-1 mb-1">
+          {images.map((img, idx) => (
+            <div
+              key={img.id}
+              draggable
+              onDragStart={(e) => handleDragStart(e, idx)}
+              onDragOver={(e) => handleDragOver(e, idx)}
+              onDrop={(e) => handleDrop(e, idx)}
+              onDragEnd={handleDragEnd}
+              className={cn(
+                'relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
+                dragIndex === idx && 'opacity-40 scale-95',
+                dragOverIndex === idx && dragIndex !== idx && 'ring-2 ring-primary'
+              )}
             >
-              <IconX className="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          {/* 나머지 이미지 (작은 그리드) */}
-          {images.length > 1 && (
-            <div className="grid grid-cols-2 gap-2 flex-1">
-              {images.slice(1).map((img, i) => {
-                const idx = i + 1;
-                return (
-                  <div
-                    key={img.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, idx)}
-                    onDragOver={(e) => handleDragOver(e, idx)}
-                    onDrop={(e) => handleDrop(e, idx)}
-                    onDragEnd={handleDragEnd}
-                    className={cn(
-                      'relative aspect-square rounded-lg overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
-                      dragIndex === idx && 'opacity-40 scale-95',
-                      dragOverIndex === idx && dragIndex !== idx && 'ring-2 ring-primary'
-                    )}
-                  >
-                    <Image
-                      src={img.preview}
-                      alt={`상품 이미지 ${idx + 1}`}
-                      fill
-                      className="object-cover pointer-events-none select-none"
-                      draggable={false}
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/40 to-transparent p-1 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex justify-center">
-                      <IconGripVertical className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeImage(img.id)}
-                      className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80 z-10"
-                    >
-                      <IconX className="h-3 w-3" />
-                    </button>
-                  </div>
-                );
-              })}
+              <Image
+                src={img.preview}
+                alt={`상품 이미지 ${idx + 1}`}
+                fill
+                sizes="80px"
+                className="object-cover pointer-events-none select-none"
+                draggable={false}
+              />
+              {idx === 0 && (
+                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-primary text-white text-[10px] font-semibold flex items-center gap-0.5">
+                  <IconCrown className="h-2.5 w-2.5" />
+                  대표
+                </span>
+              )}
+              {idx > 0 && (
+                <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/40 to-transparent p-1 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex justify-center">
+                  <IconGripVertical className="h-3 w-3 text-white" />
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => removeImage(img.id)}
+                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80 z-10"
+              >
+                <IconX className="h-3 w-3" />
+              </button>
             </div>
-          )}
+          ))}
         </div>
       )}
 
