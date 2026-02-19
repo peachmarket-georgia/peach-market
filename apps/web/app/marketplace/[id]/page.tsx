@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, useRouter } from 'next/navigation';
 import { use } from 'react';
 import {
   IconChevronLeft,
@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { chatApi, checkAuth } from '@/lib/api';
 import { STATUS_LABEL } from '@/lib/product-types';
 import { cn } from '@/lib/utils';
 import { getProduct, toProduct } from '@/lib/products-api';
@@ -30,9 +31,35 @@ type ProductDetailPageProps = {
 
 const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const { id } = use(params);
+  const router = useRouter();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+
+  const handleChat = useCallback(async () => {
+    if (chatLoading) return;
+    setChatLoading(true);
+    try {
+      const { isAuthenticated } = await checkAuth();
+      if (!isAuthenticated) {
+        router.push('/login');
+        return;
+      }
+      const { data, error: chatError } = await chatApi.createRoom(id);
+      if (chatError) {
+        alert(chatError);
+        return;
+      }
+      if (data) {
+        router.push(`/chat/${data.id}`);
+      }
+    } catch {
+      alert('채팅방을 생성할 수 없습니다.');
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatLoading, id, router]);
 
   useEffect(() => {
     getProduct(id)
@@ -206,10 +233,11 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             <Button
               size="lg"
               className="flex-1 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
-              disabled={isSold}
+              disabled={isSold || chatLoading}
+              onClick={handleChat}
             >
               <IconMessageCircle className="h-5 w-5" />
-              채팅하기
+              {chatLoading ? '연결 중...' : '채팅하기'}
             </Button>
           </div>
         </div>
@@ -241,10 +269,11 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         </div>
         <Button
           className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
-          disabled={isSold}
+          disabled={isSold || chatLoading}
+          onClick={handleChat}
         >
           <IconMessageCircle className="h-5 w-5" />
-          채팅하기
+          {chatLoading ? '연결 중...' : '채팅하기'}
         </Button>
       </div>
     </div>
