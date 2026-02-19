@@ -6,14 +6,14 @@ import { useSocket } from '@/context/socket-provider';
 import { chatApi, checkAuth } from '@/lib/api';
 import { ChatMessageDto, ChatRoomWithMessagesDto } from '@/types/api';
 import { cn } from '@/lib/utils';
-import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react';
+import { IconChevronLeft, IconSend, IconDotsVertical, IconWifi, IconWifiOff } from '@tabler/icons-react';
 
 export default function ChatRoomPage() {
   const router = useRouter();
   const params = useParams();
   const roomId = params.roomId as string;
 
-  const { socket, isConnected, connect } = useSocket();
+  const { socket, isConnected, isReconnecting, connect } = useSocket();
   const [chatRoom, setChatRoom] = useState<ChatRoomWithMessagesDto | null>(null);
   const [messages, setMessages] = useState<ChatMessageDto[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -57,8 +57,8 @@ export default function ChatRoomPage() {
 
   // Join room when connected
   useEffect(() => {
-    if (socket && isConnected && roomId) {
-      socket.emit('joinRoom', { roomId });
+    if (socket && isConnected && roomId && currentUserId) {
+      socket.emit('joinRoom', { roomId, userId: currentUserId });
     }
 
     return () => {
@@ -66,7 +66,7 @@ export default function ChatRoomPage() {
         socket.emit('leaveRoom', roomId);
       }
     };
-  }, [socket, isConnected, roomId]);
+  }, [socket, isConnected, roomId, currentUserId]);
 
   // Socket event listeners
   useEffect(() => {
@@ -123,10 +123,11 @@ export default function ChatRoomPage() {
   }, [socket, roomId, isTyping]);
 
   const handleSend = () => {
-    if (!socket || !newMessage.trim()) return;
+    if (!socket || !newMessage.trim() || !currentUserId) return;
 
     socket.emit('sendMessage', {
       chatRoomId: roomId,
+      senderId: currentUserId,
       content: newMessage.trim(),
     });
 
@@ -177,10 +178,24 @@ export default function ChatRoomPage() {
           </div>
         </div>
 
-        <button className="p-2 rounded-lg hover:bg-accent">
-          <IconDotsVertical className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-1">
+          {isConnected ? (
+            <IconWifi className="w-4 h-4 text-success" />
+          ) : (
+            <IconWifiOff className="w-4 h-4 text-destructive" />
+          )}
+          <button className="p-2 rounded-lg hover:bg-accent">
+            <IconDotsVertical className="w-5 h-5" />
+          </button>
+        </div>
       </header>
+
+      {/* Connection Status Banner */}
+      {!isConnected && (
+        <div className="bg-destructive/10 text-destructive text-center text-sm py-2 px-4">
+          {isReconnecting ? '재연결 중...' : '연결이 끊어졌습니다'}
+        </div>
+      )}
 
       {/* Product Card */}
       <div className="flex items-center gap-3 p-3 border-b bg-muted/30">
@@ -261,15 +276,16 @@ export default function ChatRoomPage() {
               handleTyping();
             }}
             onKeyDown={handleKeyDown}
-            placeholder="메시지를 입력하세요"
-            className="flex-1 px-4 py-2.5 bg-muted rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/20"
+            disabled={!isConnected}
+            placeholder={isConnected ? '메시지를 입력하세요' : '연결 중...'}
+            className="flex-1 px-4 py-2.5 bg-muted rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
           />
           <button
             onClick={handleSend}
-            disabled={!newMessage.trim()}
+            disabled={!newMessage.trim() || !isConnected}
             className={cn(
               'p-2.5 rounded-full transition-colors',
-              newMessage.trim()
+              newMessage.trim() && isConnected
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                 : 'bg-muted text-muted-foreground'
             )}
