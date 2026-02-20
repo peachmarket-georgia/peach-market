@@ -12,21 +12,13 @@ import type {
 // ── Product API ────────────────────────────
 
 export const productApi = {
-  getProducts: (params?: ProductQueryParams, cookies?: string) => {
-    const query = new URLSearchParams();
-    if (params?.cursor) query.set('cursor', params.cursor);
-    if (params?.limit) query.set('limit', String(params.limit));
-    if (params?.search) query.set('search', params.search);
-    if (params?.category) query.set('category', params.category);
-    if (params?.status) query.set('status', params.status);
-    if (params?.sort) query.set('sort', params.sort);
-
-    const queryString = query.toString();
-    return apiRequest<ProductListResponseDto>(
-      `/api/products${queryString ? `?${queryString}` : ''}`,
-      undefined,
-      cookies
+  getProducts: (params: ProductQueryParams = {}, cookies?: string) => {
+    const query = new URLSearchParams(
+      Object.entries(params)
+        .filter((entry): entry is [string, string | number] => entry[1] != null && entry[1] !== '')
+        .map(([k, v]) => [k, String(v)])
     );
+    return apiRequest<ProductListResponseDto>(`/api/products?${query}`, undefined, cookies);
   },
 
   getProduct: (id: string, cookies?: string) =>

@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Patch, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { JwtAuthGuard } from '../modules/auth/jwt-auth.guard';
+import { CurrentUser, type JwtUser } from '../modules/auth/current-user.decorator';
 import { ChatService } from './chat.service';
 import { CreateChatRoomDto } from './dto/create-chat-room.dto';
 
@@ -16,8 +16,7 @@ export class ChatController {
   @ApiOperation({ summary: '내 채팅방 목록 조회', description: '로그인한 사용자의 채팅방 목록을 조회합니다.' })
   @ApiResponse({ status: 200, description: '채팅방 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  async getRooms(@Req() req: Request) {
-    const { userId } = req.user as { userId: string };
+  async getRooms(@CurrentUser() { userId }: JwtUser) {
     return this.chatService.getChatRoomsWithUnreadCount(userId);
   }
 
@@ -25,8 +24,7 @@ export class ChatController {
   @ApiOperation({ summary: '전체 안읽은 메시지 수', description: '모든 채팅방의 안읽은 메시지 총 개수를 조회합니다.' })
   @ApiResponse({ status: 200, description: '안읽은 메시지 수 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  async getUnreadCount(@Req() req: Request) {
-    const { userId } = req.user as { userId: string };
+  async getUnreadCount(@CurrentUser() { userId }: JwtUser) {
     const count = await this.chatService.getTotalUnreadCount(userId);
     return { count };
   }
@@ -50,8 +48,7 @@ export class ChatController {
   @ApiResponse({ status: 400, description: '자신의 상품에는 채팅 불가' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  async createRoom(@Body() dto: CreateChatRoomDto, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
+  async createRoom(@Body() dto: CreateChatRoomDto, @CurrentUser() { userId }: JwtUser) {
     return this.chatService.createChatRoom(dto.productId, userId);
   }
 
@@ -60,8 +57,7 @@ export class ChatController {
   @ApiParam({ name: 'id', description: '채팅방 ID' })
   @ApiResponse({ status: 200, description: '읽음 처리 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  async markAsRead(@Param('id') id: string, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
+  async markAsRead(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
     await this.chatService.markMessagesAsRead(id, userId);
     return { message: '읽음 처리되었습니다.' };
   }

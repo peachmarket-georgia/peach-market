@@ -13,13 +13,7 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import { MessageResponseDto } from './dto/message-response.dto';
 import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard';
 import { AppConfigService } from '../../core/config/config.service';
-
-interface RequestWithUser extends Request {
-  user: {
-    userId: string;
-    refreshToken: string;
-  };
-}
+import { CurrentUser, type JwtRefreshUser } from './current-user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -118,8 +112,11 @@ export class AuthController {
   @ApiCookieAuth('refresh_token')
   @ApiResponse({ status: 201, description: '토큰 갱신 성공. 새로운 토큰이 쿠키에 설정됨.', type: MessageResponseDto })
   @ApiResponse({ status: 401, description: '유효하지 않은 Refresh Token 또는 재사용 감지' })
-  async refresh(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
-    const { userId, refreshToken } = req.user;
+  async refresh(
+    @CurrentUser() { userId, refreshToken }: JwtRefreshUser,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response
+  ) {
     const deviceInfo = req.headers['user-agent'];
 
     const result = await this.authService.refresh(userId, refreshToken, deviceInfo);
@@ -153,8 +150,7 @@ export class AuthController {
   @ApiCookieAuth('refresh_token')
   @ApiResponse({ status: 201, description: '로그아웃 성공. 쿠키가 삭제됨.', type: MessageResponseDto })
   @ApiResponse({ status: 401, description: '유효하지 않은 Refresh Token' })
-  async logout(@Req() req: RequestWithUser, @Res({ passthrough: true }) res: Response) {
-    const { userId, refreshToken } = req.user;
+  async logout(@CurrentUser() { userId, refreshToken }: JwtRefreshUser, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(userId, refreshToken);
 
     const isProduction = this.configService.nodeEnv === 'production';

@@ -1,16 +1,11 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser, type JwtUser } from '../auth/current-user.decorator';
 import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto';
 import { UserProfileResponseDto } from './dto/user-response.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-
-interface RequestWithUser extends Request {
-  user: {
-    userId: string;
-  };
-}
 
 @ApiTags('users')
 @Controller('users')
@@ -65,8 +60,8 @@ export class UsersController {
     type: UserProfileResponseDto,
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
-  async getProfile(@Request() req: RequestWithUser) {
-    const user = await this.usersService.findById(req.user.userId);
+  async getProfile(@CurrentUser() { userId }: JwtUser) {
+    const user = await this.usersService.findById(userId);
     if (!user) {
       return null;
     }
@@ -87,7 +82,7 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   @ApiResponse({ status: 409, description: '닉네임 중복' })
-  async updateProfile(@Request() req: RequestWithUser, @Body() updateDto: UpdateUserDto) {
-    return this.usersService.updateProfile(req.user.userId, updateDto);
+  async updateProfile(@CurrentUser() { userId }: JwtUser, @Body() updateDto: UpdateUserDto) {
+    return this.usersService.updateProfile(userId, updateDto);
   }
 }

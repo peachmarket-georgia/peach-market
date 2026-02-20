@@ -6,10 +6,10 @@ const MarketPlaceLayout = ({
   children: React.ReactNode;
 }>) => {
   return (
-    <div className="antialiased">
+    <>
       <Header />
       {children}
-    </div>
+    </>
   );
 };
 
