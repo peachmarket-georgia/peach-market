@@ -1,9 +1,10 @@
-import { Controller, Post, Body, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto';
 import { UserProfileResponseDto } from './dto/user-response.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 interface RequestWithUser extends Request {
   user: {
@@ -73,5 +74,20 @@ export class UsersController {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...result } = user;
     return result;
+  }
+
+  @Patch('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: '내 프로필 수정', description: '로그인한 사용자의 프로필 정보 수정' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({
+    status: 200,
+    description: '프로필 수정 성공',
+    type: UserProfileResponseDto,
+  })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
+  @ApiResponse({ status: 409, description: '닉네임 중복' })
+  async updateProfile(@Request() req: RequestWithUser, @Body() updateDto: UpdateUserDto) {
+    return this.usersService.updateProfile(req.user.userId, updateDto);
   }
 }

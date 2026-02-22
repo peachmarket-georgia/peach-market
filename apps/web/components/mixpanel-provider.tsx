@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { usePathname } from 'next/navigation'
-import { trackPageView } from '@/lib/mixpanel'
+import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
+import { trackPageView } from '@/lib/mixpanel';
 
 export function MixpanelProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   useEffect(() => {
-    trackPageView(pathname)
-  }, [pathname])
+    trackPageView(pathname);
+  }, [pathname]);
 
-  return <>{children}</>
+  return <>{children}</>;
 }

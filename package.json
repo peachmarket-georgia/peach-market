@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "docker-compose -f docker/docker-compose.local.yml up -d && turbo run dev",
+    "dev": "docker compose -f docker/docker-compose.local.yml up -d && turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,yaml,yml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yaml,yml}\"",
