@@ -1,19 +1,19 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { IconChevronLeft, IconCurrencyDollar, IconLoader2 } from '@tabler/icons-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { CATEGORIES } from '@/lib/product-types';
-import { cn } from '@/lib/utils';
-import { createProduct } from '@/lib/products-api';
-import { ImageUpload } from '@/components/product/image-upload';
-import type { ImageItem } from '@/components/product/image-upload';
-import type { Category } from '@/lib/product-types';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { IconChevronLeft, IconCurrencyDollar, IconLoader2 } from '@tabler/icons-react'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { CATEGORIES } from '@/lib/product-types'
+import { cn } from '@/lib/utils'
+import { createProduct } from '@/lib/products-api'
+import { ImageUpload } from '@/components/product/image-upload'
+import type { ImageItem } from '@/components/product/image-upload'
+import type { Category } from '@/lib/product-types'
 
 const GEORGIA_LOCATIONS = [
   'Atlanta',
@@ -36,94 +36,99 @@ const GEORGIA_LOCATIONS = [
   'Dunwoody',
   'Decatur',
   'Peachtree City',
-] as const;
+] as const
 
 const DESCRIPTION_TEMPLATE = `상품 상태:
 사용 기간:
 거래 방법:
 거래 가능 시간:
-하자/특이사항:`;
+하자/특이사항:`
 
 const DESCRIPTION_PLACEHOLDER = `예시)
 상품 상태: A급, 생활기스 거의 없음
 사용 기간: 6개월
 거래 방법: 직거래
 거래 가능 시간: 평일 19시 이후 / 주말 협의
-하자/특이사항: 정품 박스 포함, 환불 불가`;
+하자/특이사항: 정품 박스 포함, 환불 불가`
 
 type FieldErrors = {
-  title?: string;
-  category?: string;
-  price?: string;
-  location?: string;
-};
+  images?: string
+  title?: string
+  category?: string
+  price?: string
+  location?: string
+}
 
 const ProductCreatePage = () => {
-  const router = useRouter();
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState<Category | ''>('');
-  const [price, setPrice] = useState('');
-  const [location, setLocation] = useState('');
-  const [isLocationFocused, setIsLocationFocused] = useState(false);
-  const [description, setDescription] = useState('');
-  const [images, setImages] = useState<ImageItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const router = useRouter()
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState<Category | ''>('')
+  const [price, setPrice] = useState('')
+  const [location, setLocation] = useState('')
+  const [isLocationFocused, setIsLocationFocused] = useState(false)
+  const [description, setDescription] = useState('')
+  const [images, setImages] = useState<ImageItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
-  const numericPrice = Number(price.replaceAll(',', ''));
-  const normalizedLocation = location.trim().toLowerCase();
+  const numericPrice = Number(price.replaceAll(',', ''))
+  const normalizedLocation = location.trim().toLowerCase()
   const filteredLocations = GEORGIA_LOCATIONS.filter((item) => item.toLowerCase().includes(normalizedLocation)).slice(
     0,
     8
-  );
+  )
 
   const isValid =
-    title.trim() && category && price && Number.isFinite(numericPrice) && numericPrice >= 0 && location.trim();
+    title.trim() && category && price && Number.isFinite(numericPrice) && numericPrice >= 0 && location.trim()
 
   const handlePriceChange = (value: string) => {
-    const digitsOnly = value.replace(/\D/g, '');
-    setPrice(digitsOnly ? Number(digitsOnly).toLocaleString('en-US') : '');
-    if (digitsOnly) setFieldErrors((prev) => ({ ...prev, price: undefined }));
-  };
+    const digitsOnly = value.replace(/\D/g, '')
+    setPrice(digitsOnly ? Number(digitsOnly).toLocaleString('en-US') : '')
+    if (digitsOnly) setFieldErrors((prev) => ({ ...prev, price: undefined }))
+  }
 
   const handleLocationSelect = (value: string) => {
-    setLocation(value);
-    setIsLocationFocused(false);
-    setFieldErrors((prev) => ({ ...prev, location: undefined }));
-  };
+    setLocation(value)
+    setIsLocationFocused(false)
+    setFieldErrors((prev) => ({ ...prev, location: undefined }))
+  }
 
   const validate = (): boolean => {
-    const errors: FieldErrors = {};
+    const errors: FieldErrors = {}
 
-    if (!title.trim()) errors.title = '제목을 입력해 주세요';
-    if (!category) errors.category = '카테고리를 선택해 주세요';
-    if (!price || !Number.isFinite(numericPrice) || numericPrice < 0) errors.price = '가격을 입력해 주세요';
-    if (!location.trim()) errors.location = '거래 희망 지역을 입력해 주세요';
+    if (images.length === 0) errors.images = '이미지를 최소 1장 이상 등록해 주세요'
+    if (!title.trim()) errors.title = '제목을 입력해 주세요'
+    if (!category) errors.category = '카테고리를 선택해 주세요'
+    if (!price || !Number.isFinite(numericPrice) || numericPrice < 0) errors.price = '가격을 입력해 주세요'
+    if (!location.trim()) errors.location = '거래 희망 지역을 입력해 주세요'
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleSubmit = async () => {
-    if (!validate() || loading) return;
-    setLoading(true);
-    setError('');
+    if (!validate() || loading) return
+    setLoading(true)
+    setError('')
     try {
-      await createProduct({
-        title: title.trim(),
-        category: category as Category,
-        price: numericPrice,
-        location: location.trim(),
-        description: description.trim(),
-      });
-      router.push('/marketplace');
+      await createProduct(
+        {
+          title: title.trim(),
+          category: category as Category,
+          price: numericPrice,
+          location: location.trim(),
+          description: description.trim(),
+        },
+        images.map((img) => img.file)
+      )
+      router.push('/marketplace')
     } catch (e) {
-      setError(e instanceof Error ? e.message : '등록에 실패했습니다');
+      setError(e instanceof Error ? e.message : '등록에 실패했습니다')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 md:px-6 pb-20 md:pb-8 md:mt-10">
@@ -143,7 +148,16 @@ const ProductCreatePage = () => {
         {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">{error}</p>}
 
         {/* 이미지 업로드 */}
-        <ImageUpload images={images} onChange={setImages} />
+        <div className="flex flex-col gap-1.5">
+          <ImageUpload
+            images={images}
+            onChange={(imgs) => {
+              setImages(imgs)
+              if (imgs.length > 0) setFieldErrors((prev) => ({ ...prev, images: undefined }))
+            }}
+          />
+          {fieldErrors.images && <span className="text-xs text-destructive">{fieldErrors.images}</span>}
+        </div>
 
         {/* 제목 */}
         <div className="flex flex-col gap-1.5">
@@ -156,8 +170,8 @@ const ProductCreatePage = () => {
             maxLength={50}
             value={title}
             onChange={(e) => {
-              setTitle(e.target.value);
-              if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, title: undefined }));
+              setTitle(e.target.value)
+              if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, title: undefined }))
             }}
             className={cn(fieldErrors.title && 'border-destructive')}
           />
@@ -178,8 +192,8 @@ const ProductCreatePage = () => {
                 key={cat}
                 type="button"
                 onClick={() => {
-                  setCategory(cat);
-                  setFieldErrors((prev) => ({ ...prev, category: undefined }));
+                  setCategory(cat)
+                  setFieldErrors((prev) => ({ ...prev, category: undefined }))
                 }}
                 className={cn(
                   'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
@@ -228,8 +242,8 @@ const ProductCreatePage = () => {
               onFocus={() => setIsLocationFocused(true)}
               onBlur={() => setTimeout(() => setIsLocationFocused(false), 100)}
               onChange={(e) => {
-                setLocation(e.target.value);
-                if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, location: undefined }));
+                setLocation(e.target.value)
+                if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, location: undefined }))
               }}
               autoComplete="off"
               className={cn(fieldErrors.location && 'border-destructive')}
@@ -266,7 +280,7 @@ const ProductCreatePage = () => {
             value={description}
             onFocus={() => {
               if (!description.trim()) {
-                setDescription(DESCRIPTION_TEMPLATE);
+                setDescription(DESCRIPTION_TEMPLATE)
               }
             }}
             onChange={(e) => setDescription(e.target.value)}
@@ -284,7 +298,7 @@ const ProductCreatePage = () => {
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default ProductCreatePage;
+export default ProductCreatePage

@@ -1,11 +1,25 @@
-import { Controller, Delete, Get, Post, Patch, Param, Query, Body, Req, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
-import type { Request } from 'express';
-import { ProductStatus } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ProductsService } from './products.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import {
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Query,
+  Body,
+  Req,
+  UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+} from '@nestjs/common'
+import { FilesInterceptor } from '@nestjs/platform-express'
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam, ApiConsumes } from '@nestjs/swagger'
+import type { Request } from 'express'
+import { ProductStatus } from '@prisma/client'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { ProductsService } from './products.service'
+import { CreateProductDto } from './dto/create-product.dto'
+import { UpdateProductDto } from './dto/update-product.dto'
 
 @ApiTags('products')
 @Controller('products')
@@ -25,7 +39,7 @@ export class ProductsController {
     @Query('status') status?: string,
     @Query('sort') sort?: string
   ) {
-    return this.productsService.findAll({ search, category, status, sort });
+    return this.productsService.findAll({ search, category, status, sort })
   }
 
   @Get('favorites')
@@ -35,8 +49,8 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '찜 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   getFavorites(@Req() req: Request) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.getFavoritesByUser(userId);
+    const { userId } = req.user as { userId: string }
+    return this.productsService.getFavoritesByUser(userId)
   }
 
   @Get('my')
@@ -47,8 +61,8 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '내 상품 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   findMy(@Req() req: Request, @Query('status') status?: ProductStatus) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.findMy(userId, status);
+    const { userId } = req.user as { userId: string }
+    return this.productsService.findMy(userId, status)
   }
 
   @Get(':id')
@@ -60,20 +74,25 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '상품 상세 정보 반환' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   findOne(@Param('id') id: string, @Req() req: Request) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
-    return this.productsService.findOne(id, ip);
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown'
+    return this.productsService.findOne(id, ip)
   }
 
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiCookieAuth('access_token')
-  @ApiOperation({ summary: '상품 등록', description: '새 상품을 등록합니다 (로그인 필요)' })
+  @UseInterceptors(FilesInterceptor('files', 5, { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: '상품 등록',
+    description: '새 상품을 등록합니다. 이미지 파일을 files 필드로 함께 전송하세요 (로그인 필요)',
+  })
   @ApiResponse({ status: 201, description: '상품 등록 성공' })
   @ApiResponse({ status: 400, description: '유효하지 않은 입력' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  create(@Body() dto: CreateProductDto, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.create(dto, userId);
+  create(@UploadedFiles() files: Express.Multer.File[], @Body() dto: CreateProductDto, @Req() req: Request) {
+    const { userId } = req.user as { userId: string }
+    return this.productsService.create(dto, userId, files)
   }
 
   @Patch(':id')
@@ -86,8 +105,8 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: '본인의 상품만 수정 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.update(id, dto, userId);
+    const { userId } = req.user as { userId: string }
+    return this.productsService.update(id, dto, userId)
   }
 
   @Patch(':id/status')
@@ -100,8 +119,8 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: '본인의 상품만 변경 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   updateStatus(@Param('id') id: string, @Body('status') status: ProductStatus, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.updateStatus(id, status, userId);
+    const { userId } = req.user as { userId: string }
+    return this.productsService.updateStatus(id, status, userId)
   }
 
   @Delete(':id')
@@ -113,8 +132,8 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: '본인의 상품만 삭제 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   remove(@Param('id') id: string, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.remove(id, userId);
+    const { userId } = req.user as { userId: string }
+    return this.productsService.remove(id, userId)
   }
 
   @Post(':id/favorite')
@@ -126,7 +145,7 @@ export class ProductsController {
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   toggleFavorite(@Param('id') id: string, @Req() req: Request) {
-    const { userId } = req.user as { userId: string };
-    return this.productsService.toggleFavorite(id, userId);
+    const { userId } = req.user as { userId: string }
+    return this.productsService.toggleFavorite(id, userId)
   }
 }
