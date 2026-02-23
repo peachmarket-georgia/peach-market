@@ -59,7 +59,7 @@ type FieldErrors = {
   location?: string
 }
 
-const ProductCreatePage = () => {
+const ProductCreatePage = (): React.JSX.Element => {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<Category | ''>('')

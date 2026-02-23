@@ -1,64 +1,64 @@
-'use client';
+'use client'
 
-import { useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { IconEye, IconEyeOff, IconLoader2, IconBrandGoogle, IconAlertCircle } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { authApi } from '@/lib/api';
-import { validateEmail } from '@/utils';
+import { useState, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { IconEye, IconEyeOff, IconLoader2, IconBrandGoogle, IconAlertCircle } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { authApi } from '@/lib/api'
+import { validateEmail } from '@/utils'
 
 export default function LoginPage() {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
 
     // 클라이언트 측 검증
     if (!validateEmail(email)) {
-      setError('유효한 이메일을 입력해주세요.');
-      return;
+      setError('유효한 이메일을 입력해주세요.')
+      return
     }
 
     if (!password) {
-      setError('비밀번호를 입력해주세요.');
-      return;
+      setError('비밀번호를 입력해주세요.')
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const { data, error: apiError } = await authApi.login({ email, password });
+      const { data, error: apiError } = await authApi.login({ email, password })
 
       if (apiError) {
-        setError(apiError);
-        return;
+        setError(apiError)
+        return
       }
 
       if (data) {
         // 로그인 성공 → 마켓플레이스로 이동
-        router.push('/marketplace');
+        router.push('/marketplace')
       }
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   const handleGoogleLogin = () => {
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`;
-  };
+    window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-8">
@@ -171,5 +171,5 @@ export default function LoginPage() {
         </Link>
       </p>
     </div>
-  );
+  )
 }

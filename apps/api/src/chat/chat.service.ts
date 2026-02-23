@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { ChatRoom, Message } from '@prisma/client';
-import { PrismaService } from '../core/database/prisma.service';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { ChatRoom, Message } from '@prisma/client'
+import { PrismaService } from '../core/database/prisma.service'
 
 @Injectable()
 export class ChatService {
@@ -8,7 +8,7 @@ export class ChatService {
 
   // ChatRoom 관련 메서드
   async findChatRoomById(id: string): Promise<ChatRoom | null> {
-    return this.prisma.chatRoom.findUnique({ where: { id } });
+    return this.prisma.chatRoom.findUnique({ where: { id } })
   }
 
   async findChatRoomByIdWithMessages(id: string) {
@@ -23,7 +23,7 @@ export class ChatService {
         seller: true,
         product: true,
       },
-    });
+    })
   }
 
   async findChatRoomsByUserId(userId: string): Promise<ChatRoom[]> {
@@ -37,7 +37,7 @@ export class ChatService {
         product: true,
       },
       orderBy: { updatedAt: 'desc' },
-    });
+    })
   }
 
   async findChatRoomByProductAndBuyer(productId: string, buyerId: string): Promise<ChatRoom | null> {
@@ -45,25 +45,25 @@ export class ChatService {
       where: {
         productId_buyerId: { productId, buyerId },
       },
-    });
+    })
   }
 
   async createChatRoom(productId: string, buyerId: string) {
     // Find product and get seller
     const product = await this.prisma.product.findUnique({
       where: { id: productId },
-    });
+    })
 
     if (!product) {
-      throw new NotFoundException('상품을 찾을 수 없습니다');
+      throw new NotFoundException('상품을 찾을 수 없습니다')
     }
 
     if (product.sellerId === buyerId) {
-      throw new BadRequestException('자신의 상품에는 채팅을 시작할 수 없습니다');
+      throw new BadRequestException('자신의 상품에는 채팅을 시작할 수 없습니다')
     }
 
     // Check if chat room already exists
-    const existingRoom = await this.findChatRoomByProductAndBuyer(productId, buyerId);
+    const existingRoom = await this.findChatRoomByProductAndBuyer(productId, buyerId)
     if (existingRoom) {
       return this.prisma.chatRoom.findUnique({
         where: { id: existingRoom.id },
@@ -72,7 +72,7 @@ export class ChatService {
           buyer: true,
           seller: true,
         },
-      });
+      })
     }
 
     // Create new chat room
@@ -87,20 +87,20 @@ export class ChatService {
         buyer: true,
         seller: true,
       },
-    });
+    })
   }
 
   async getChatRoomsWithUnreadCount(userId: string) {
-    const chatRooms = await this.findChatRoomsByUserId(userId);
+    const chatRooms = await this.findChatRoomsByUserId(userId)
 
     const roomsWithUnread = await Promise.all(
       chatRooms.map(async (room) => {
-        const unreadCount = await this.countUnreadMessages(room.id, userId);
-        return { ...room, unreadCount };
+        const unreadCount = await this.countUnreadMessages(room.id, userId)
+        return { ...room, unreadCount }
       })
-    );
+    )
 
-    return roomsWithUnread;
+    return roomsWithUnread
   }
 
   async getTotalUnreadCount(userId: string): Promise<number> {
@@ -109,13 +109,13 @@ export class ChatService {
         OR: [{ buyerId: userId }, { sellerId: userId }],
       },
       select: { id: true },
-    });
+    })
 
-    let total = 0;
+    let total = 0
     for (const room of chatRooms) {
-      total += await this.countUnreadMessages(room.id, userId);
+      total += await this.countUnreadMessages(room.id, userId)
     }
-    return total;
+    return total
   }
 
   // Message 관련 메서드
@@ -124,7 +124,7 @@ export class ChatService {
       where: { chatRoomId },
       include: { sender: true },
       orderBy: { createdAt: 'asc' },
-    });
+    })
   }
 
   async markMessagesAsRead(chatRoomId: string, userId: string): Promise<void> {
@@ -135,7 +135,7 @@ export class ChatService {
         isRead: false,
       },
       data: { isRead: true },
-    });
+    })
   }
 
   async countUnreadMessages(chatRoomId: string, userId: string): Promise<number> {
@@ -145,7 +145,7 @@ export class ChatService {
         senderId: { not: userId },
         isRead: false,
       },
-    });
+    })
   }
 
   async saveMessage(chatRoomId: string, senderId: string, content: string): Promise<Message> {
@@ -159,7 +159,7 @@ export class ChatService {
       include: {
         sender: true,
       },
-    });
+    })
 
     // Update lastMessage in ChatRoom
     await this.prisma.chatRoom.update({
@@ -168,8 +168,8 @@ export class ChatService {
         lastMessage: content,
         updatedAt: new Date(),
       },
-    });
+    })
 
-    return message;
+    return message
   }
 }

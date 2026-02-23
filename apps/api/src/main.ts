@@ -1,15 +1,15 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import cookieParser from 'cookie-parser';
-import { AppModule } from './app.module';
-import { AppLoggerService } from './core/logger/logger.service';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { NestFactory } from '@nestjs/core'
+import { ValidationPipe } from '@nestjs/common'
+import cookieParser from 'cookie-parser'
+import { AppModule } from './app.module'
+import { AppLoggerService } from './core/logger/logger.service'
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule)
 
-  const logger = app.get(AppLoggerService);
-  logger.setContext(bootstrap.name);
+  const logger = app.get(AppLoggerService)
+  logger.setContext(bootstrap.name)
 
   // CORS 설정
   app.enableCors({
@@ -17,7 +17,7 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
-  });
+  })
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -26,13 +26,13 @@ async function bootstrap() {
       forbidNonWhitelisted: true, // DTO에 없는 속성이 있으면 에러
       transform: true, // 자동 타입 변환
     })
-  );
+  )
 
   // Cookie parser
-  app.use(cookieParser());
+  app.use(cookieParser())
 
   // Global prefix
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api')
 
   // Swagger 설정
   const config = new DocumentBuilder()
@@ -53,22 +53,22 @@ async function bootstrap() {
       name: 'refresh_token',
       description: 'Refresh Token (httpOnly 쿠키)',
     })
-    .build();
+    .build()
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config)
   SwaggerModule.setup('api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
       tagsSorter: 'alpha',
       operationsSorter: 'alpha',
     },
-  });
+  })
 
-  await app.listen(3003);
+  await app.listen(3003)
 
-  logger.log(`🍑 Peach Market API is running`);
-  logger.log(`🚀 Server: http://localhost:3003`);
-  logger.log(`📝 API Docs: http://localhost:3003/api/docs`);
+  logger.log(`🍑 Peach Market API is running`)
+  logger.log(`🚀 Server: http://localhost:3003`)
+  logger.log(`📝 API Docs: http://localhost:3003/api/docs`)
 }
 
-void bootstrap();
+void bootstrap()

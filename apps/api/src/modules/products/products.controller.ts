@@ -11,6 +11,7 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common'
 import { FilesInterceptor } from '@nestjs/platform-express'
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam, ApiConsumes } from '@nestjs/swagger'
@@ -81,7 +82,19 @@ export class ProductsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiCookieAuth('access_token')
-  @UseInterceptors(FilesInterceptor('files', 5, { limits: { fileSize: 5 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FilesInterceptor('files', 5, {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+        if (!allowedTypes.includes(file.mimetype)) {
+          callback(new BadRequestException('JPG, PNG, WebP 형식만 업로드 가능합니다.'), false)
+          return
+        }
+        callback(null, true)
+      },
+    })
+  )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: '상품 등록',

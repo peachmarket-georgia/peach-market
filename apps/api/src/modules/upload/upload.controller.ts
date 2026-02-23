@@ -7,12 +7,12 @@ import {
   BadRequestException,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { UploadService } from './upload.service';
-import { UploadResponseDto } from './dto/upload-response.dto';
+} from '@nestjs/common'
+import { FilesInterceptor } from '@nestjs/platform-express'
+import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody, ApiCookieAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { UploadService } from './upload.service'
+import { UploadResponseDto } from './dto/upload-response.dto'
 
 @ApiTags('upload')
 @Controller('upload')
@@ -27,12 +27,12 @@ export class UploadController {
         fileSize: 5 * 1024 * 1024, // 5MB
       },
       fileFilter: (_req, file, callback) => {
-        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
         if (!allowedTypes.includes(file.mimetype)) {
-          callback(new BadRequestException('JPG, PNG, WebP 형식만 업로드 가능합니다.'), false);
-          return;
+          callback(new BadRequestException('JPG, PNG, WebP 형식만 업로드 가능합니다.'), false)
+          return
         }
-        callback(null, true);
+        callback(null, true)
       },
     })
   )
@@ -66,7 +66,7 @@ export class UploadController {
   @ApiResponse({ status: 400, description: '잘못된 요청 (파일 형식, 크기 등)' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   async uploadImages(@UploadedFiles() files: Express.Multer.File[]): Promise<UploadResponseDto> {
-    const images = await this.uploadService.uploadImages(files);
-    return { images };
+    const images = await this.uploadService.uploadImages(files)
+    return { images }
   }
 }

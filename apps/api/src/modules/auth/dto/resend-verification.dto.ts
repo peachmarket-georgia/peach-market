@@ -1,5 +1,5 @@
-import { IsEmail } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail } from 'class-validator'
+import { ApiProperty } from '@nestjs/swagger'
 
 export class ResendVerificationDto {
   @ApiProperty({
@@ -7,5 +7,5 @@ export class ResendVerificationDto {
     description: '인증 이메일을 재발송할 이메일 주소',
   })
   @IsEmail({}, { message: '유효한 이메일 주소를 입력해주세요' })
-  email: string;
+  email: string
 }

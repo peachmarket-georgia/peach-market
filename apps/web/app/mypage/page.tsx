@@ -1,107 +1,99 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
-import {
-  IconLoader2,
-  IconMapPin,
-  IconCalendar,
-  IconEdit,
-  IconHeart,
-  IconPackage,
-  IconCheck,
-} from '@tabler/icons-react';
-import { Header } from '@/components/layout/header';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { ProductCard } from '@/app/marketplace/components/product-card';
-import { checkAuth, productApi, userApi } from '@/lib/api';
-import { ProductResponseDto, UserProfileResponseDto } from '@/types/api';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { formatDistanceToNow } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { IconLoader2, IconMapPin, IconCalendar, IconEdit, IconHeart, IconPackage, IconCheck } from '@tabler/icons-react'
+import { Header } from '@/components/layout/header'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ProductCard } from '@/app/marketplace/components/product-card'
+import { checkAuth, productApi, userApi } from '@/lib/api'
+import { ProductResponseDto, UserProfileResponseDto } from '@/types/api'
 
-type TabType = 'selling' | 'sold' | 'favorites';
+type TabType = 'selling' | 'sold' | 'favorites'
 
 const TAB_CONFIG: { id: TabType; label: string; icon: typeof IconPackage }[] = [
   { id: 'selling', label: '판매중', icon: IconPackage },
   { id: 'sold', label: '판매완료', icon: IconCheck },
   { id: 'favorites', label: '찜 목록', icon: IconHeart },
-];
+]
 
 export default function MyPage() {
-  const router = useRouter();
+  const router = useRouter()
 
-  const [user, setUser] = useState<UserProfileResponseDto | null>(null);
-  const [products, setProducts] = useState<ProductResponseDto[]>([]);
-  const [activeTab, setActiveTab] = useState<TabType>('selling');
-  const [loading, setLoading] = useState(true);
-  const [productsLoading, setProductsLoading] = useState(false);
+  const [user, setUser] = useState<UserProfileResponseDto | null>(null)
+  const [products, setProducts] = useState<ProductResponseDto[]>([])
+  const [activeTab, setActiveTab] = useState<TabType>('selling')
+  const [loading, setLoading] = useState(true)
+  const [productsLoading, setProductsLoading] = useState(false)
 
   // 프로필 수정 상태
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [editNickname, setEditNickname] = useState('');
-  const [editLocation, setEditLocation] = useState('');
-  const [editLoading, setEditLoading] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editNickname, setEditNickname] = useState('')
+  const [editLocation, setEditLocation] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
 
   // 인증 및 유저 정보 로드
   useEffect(() => {
     const loadData = async () => {
-      const { isAuthenticated, user: userData } = await checkAuth();
+      const { isAuthenticated, user: userData } = await checkAuth()
 
       if (!isAuthenticated || !userData) {
-        router.push('/login');
-        return;
+        router.push('/login')
+        return
       }
 
-      setUser(userData);
-      setLoading(false);
-    };
+      setUser(userData)
+      setLoading(false)
+    }
 
-    loadData();
-  }, [router]);
+    loadData()
+  }, [router])
 
   // 탭별 상품 로드
   useEffect(() => {
-    if (!user) return;
+    if (!user) return
 
     const loadProducts = async () => {
-      setProductsLoading(true);
+      setProductsLoading(true)
 
-      let result: { data?: ProductResponseDto[]; error?: string };
+      let result: { data?: ProductResponseDto[]; error?: string }
 
       switch (activeTab) {
         case 'selling':
-          result = await productApi.getMyProducts('SELLING');
-          break;
+          result = await productApi.getMyProducts('SELLING')
+          break
         case 'sold':
-          result = await productApi.getMyProducts('SOLD');
-          break;
+          result = await productApi.getMyProducts('SOLD')
+          break
         case 'favorites':
-          result = await productApi.getFavorites();
-          break;
+          result = await productApi.getFavorites()
+          break
       }
 
       if (result.data) {
-        setProducts(result.data);
+        setProducts(result.data)
       }
 
-      setProductsLoading(false);
-    };
+      setProductsLoading(false)
+    }
 
-    loadProducts();
-  }, [user, activeTab]);
+    loadProducts()
+  }, [user, activeTab])
 
   // 찜 토글
   const handleFavoriteToggle = async (productId: string) => {
-    const { data } = await productApi.toggleFavorite(productId);
+    const { data } = await productApi.toggleFavorite(productId)
     if (data) {
       if (activeTab === 'favorites') {
         // 찜 목록에서는 찜 해제 시 목록에서 제거
         if (!data.isFavorited) {
-          setProducts((prev) => prev.filter((p) => p.id !== productId));
+          setProducts((prev) => prev.filter((p) => p.id !== productId))
         }
       } else {
         setProducts((prev) =>
@@ -114,48 +106,48 @@ export default function MyPage() {
                 }
               : p
           )
-        );
+        )
       }
     }
-  };
+  }
 
   // 프로필 수정 다이얼로그 열기
   const openEditDialog = () => {
     if (user) {
-      setEditNickname(user.nickname);
-      setEditLocation(user.location);
-      setEditError(null);
-      setShowEditDialog(true);
+      setEditNickname(user.nickname)
+      setEditLocation(user.location)
+      setEditError(null)
+      setShowEditDialog(true)
     }
-  };
+  }
 
   // 프로필 수정 제출
   const handleEditSubmit = async () => {
     if (!editNickname.trim() || !editLocation.trim()) {
-      setEditError('닉네임과 지역을 모두 입력해주세요.');
-      return;
+      setEditError('닉네임과 지역을 모두 입력해주세요.')
+      return
     }
 
-    setEditLoading(true);
-    setEditError(null);
+    setEditLoading(true)
+    setEditError(null)
 
     const { data, error } = await userApi.updateProfile({
       nickname: editNickname.trim(),
       location: editLocation.trim(),
-    });
+    })
 
-    setEditLoading(false);
+    setEditLoading(false)
 
     if (error) {
-      setEditError(error);
-      return;
+      setEditError(error)
+      return
     }
 
     if (data) {
-      setUser(data);
-      setShowEditDialog(false);
+      setUser(data)
+      setShowEditDialog(false)
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -165,11 +157,11 @@ export default function MyPage() {
           <IconLoader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       </div>
-    );
+    )
   }
 
   if (!user) {
-    return null;
+    return null
   }
 
   return (
@@ -215,8 +207,8 @@ export default function MyPage() {
         {/* 탭 */}
         <div className="flex border-b mb-6">
           {TAB_CONFIG.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
@@ -230,7 +222,7 @@ export default function MyPage() {
                 <Icon className="w-4 h-4" />
                 {tab.label}
               </button>
-            );
+            )
           })}
         </div>
 
@@ -324,5 +316,5 @@ export default function MyPage() {
         </DialogContent>
       </Dialog>
     </div>
-  );
+  )
 }

@@ -1,47 +1,47 @@
-'use client';
+'use client'
 
-import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { IconLoader2, IconMail } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { authApi } from '@/lib/api';
+import { Suspense, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { IconLoader2, IconMail } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { authApi } from '@/lib/api'
 
 function VerifyEmailContent() {
-  const searchParams = useSearchParams();
-  const email = searchParams.get('email');
+  const searchParams = useSearchParams()
+  const email = searchParams.get('email')
 
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleResendEmail = async () => {
     if (!email) {
-      setError('이메일 주소를 찾을 수 없습니다.');
-      return;
+      setError('이메일 주소를 찾을 수 없습니다.')
+      return
     }
 
-    setResendLoading(true);
-    setError(null);
-    setResendSuccess(false);
+    setResendLoading(true)
+    setError(null)
+    setResendSuccess(false)
 
     try {
-      const { data, error: apiError } = await authApi.resendVerification({ email });
+      const { data, error: apiError } = await authApi.resendVerification({ email })
 
       if (apiError) {
-        setError(apiError);
-        return;
+        setError(apiError)
+        return
       }
 
       if (data) {
-        setResendSuccess(true);
+        setResendSuccess(true)
       }
     } finally {
-      setResendLoading(false);
+      setResendLoading(false)
     }
-  };
+  }
 
   return (
     <Card className="w-full max-w-md">
@@ -110,7 +110,7 @@ function VerifyEmailContent() {
         </div>
       </CardContent>
     </Card>
-  );
+  )
 }
 
 function VerifyEmailLoading() {
@@ -121,7 +121,7 @@ function VerifyEmailLoading() {
         <p className="text-muted-foreground">로딩 중...</p>
       </CardContent>
     </Card>
-  );
+  )
 }
 
 export default function VerifyEmailInfoPage() {
@@ -136,5 +136,5 @@ export default function VerifyEmailInfoPage() {
         <VerifyEmailContent />
       </Suspense>
     </div>
-  );
+  )
 }
