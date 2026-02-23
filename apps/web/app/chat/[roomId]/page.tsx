@@ -1,160 +1,160 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { useSocket } from '@/context/socket-provider';
-import { chatApi, checkAuth } from '@/lib/api';
-import { ChatMessageDto, ChatRoomWithMessagesDto } from '@/types/api';
-import { cn } from '@/lib/utils';
-import { IconChevronLeft, IconSend, IconDotsVertical, IconWifi, IconWifiOff } from '@tabler/icons-react';
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import { useSocket } from '@/context/socket-provider'
+import { chatApi, checkAuth } from '@/lib/api'
+import { ChatMessageDto, ChatRoomWithMessagesDto } from '@/types/api'
+import { cn } from '@/lib/utils'
+import { IconChevronLeft, IconSend, IconDotsVertical, IconWifi, IconWifiOff } from '@tabler/icons-react'
 
 export default function ChatRoomPage() {
-  const router = useRouter();
-  const params = useParams();
-  const roomId = params.roomId as string;
+  const router = useRouter()
+  const params = useParams()
+  const roomId = params.roomId as string
 
-  const { socket, isConnected, isReconnecting, connect } = useSocket();
-  const [chatRoom, setChatRoom] = useState<ChatRoomWithMessagesDto | null>(null);
-  const [messages, setMessages] = useState<ChatMessageDto[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingUser, setTypingUser] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const { socket, isConnected, isReconnecting, connect } = useSocket()
+  const [chatRoom, setChatRoom] = useState<ChatRoomWithMessagesDto | null>(null)
+  const [messages, setMessages] = useState<ChatMessageDto[]>([])
+  const [newMessage, setNewMessage] = useState('')
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isTyping, setIsTyping] = useState(false)
+  const [typingUser, setTypingUser] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load user and connect socket
   useEffect(() => {
     const init = async () => {
-      const { isAuthenticated, user } = await checkAuth();
+      const { isAuthenticated, user } = await checkAuth()
       if (!isAuthenticated) {
-        router.push('/login');
-        return;
+        router.push('/login')
+        return
       }
-      setCurrentUserId(user?.id || null);
-      connect();
-    };
-    init();
-  }, [connect, router]);
+      setCurrentUserId(user?.id || null)
+      connect()
+    }
+    init()
+  }, [connect, router])
 
   // Load chat room data
   useEffect(() => {
     const loadRoom = async () => {
-      const { data, error } = await chatApi.getRoom(roomId);
+      const { data, error } = await chatApi.getRoom(roomId)
       if (error) {
-        router.push('/chat');
-        return;
+        router.push('/chat')
+        return
       }
       if (data) {
-        setChatRoom(data);
-        setMessages(data.messages);
+        setChatRoom(data)
+        setMessages(data.messages)
       }
-      setLoading(false);
-    };
-    loadRoom();
-  }, [roomId, router]);
+      setLoading(false)
+    }
+    loadRoom()
+  }, [roomId, router])
 
   // Join room when connected
   useEffect(() => {
     if (socket && isConnected && roomId && currentUserId) {
-      socket.emit('joinRoom', { roomId, userId: currentUserId });
+      socket.emit('joinRoom', { roomId, userId: currentUserId })
     }
 
     return () => {
       if (socket && roomId) {
-        socket.emit('leaveRoom', roomId);
+        socket.emit('leaveRoom', roomId)
       }
-    };
-  }, [socket, isConnected, roomId, currentUserId]);
+    }
+  }, [socket, isConnected, roomId, currentUserId])
 
   // Socket event listeners
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) return
 
     const handleNewMessage = (msg: ChatMessageDto) => {
-      setMessages((prev) => [...prev, msg]);
+      setMessages((prev) => [...prev, msg])
       // Mark as read if we're viewing
-      socket.emit('markAsRead', { chatRoomId: roomId });
-    };
+      socket.emit('markAsRead', { chatRoomId: roomId })
+    }
 
     const handleUserTyping = ({ userId }: { userId: string }) => {
       if (userId !== currentUserId) {
-        setTypingUser(userId);
+        setTypingUser(userId)
       }
-    };
+    }
 
     const handleUserStoppedTyping = () => {
-      setTypingUser(null);
-    };
+      setTypingUser(null)
+    }
 
-    socket.on('newMessage', handleNewMessage);
-    socket.on('userTyping', handleUserTyping);
-    socket.on('userStoppedTyping', handleUserStoppedTyping);
+    socket.on('newMessage', handleNewMessage)
+    socket.on('userTyping', handleUserTyping)
+    socket.on('userStoppedTyping', handleUserStoppedTyping)
 
     return () => {
-      socket.off('newMessage', handleNewMessage);
-      socket.off('userTyping', handleUserTyping);
-      socket.off('userStoppedTyping', handleUserStoppedTyping);
-    };
-  }, [socket, roomId, currentUserId]);
+      socket.off('newMessage', handleNewMessage)
+      socket.off('userTyping', handleUserTyping)
+      socket.off('userStoppedTyping', handleUserStoppedTyping)
+    }
+  }, [socket, roomId, currentUserId])
 
   // Auto scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
 
   const handleTyping = useCallback(() => {
-    if (!socket || !roomId) return;
+    if (!socket || !roomId) return
 
     if (!isTyping) {
-      setIsTyping(true);
-      socket.emit('typing', { chatRoomId: roomId });
+      setIsTyping(true)
+      socket.emit('typing', { chatRoomId: roomId })
     }
 
     if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+      clearTimeout(typingTimeoutRef.current)
     }
 
     typingTimeoutRef.current = setTimeout(() => {
-      setIsTyping(false);
-      socket.emit('stopTyping', { chatRoomId: roomId });
-    }, 2000);
-  }, [socket, roomId, isTyping]);
+      setIsTyping(false)
+      socket.emit('stopTyping', { chatRoomId: roomId })
+    }, 2000)
+  }, [socket, roomId, isTyping])
 
   const handleSend = () => {
-    if (!socket || !newMessage.trim() || !currentUserId) return;
+    if (!socket || !newMessage.trim() || !currentUserId) return
 
     socket.emit('sendMessage', {
       chatRoomId: roomId,
       senderId: currentUserId,
       content: newMessage.trim(),
-    });
+    })
 
-    setNewMessage('');
-    setIsTyping(false);
+    setNewMessage('')
+    setIsTyping(false)
     if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
+      clearTimeout(typingTimeoutRef.current)
     }
-    socket.emit('stopTyping', { chatRoomId: roomId });
-  };
+    socket.emit('stopTyping', { chatRoomId: roomId })
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+      e.preventDefault()
+      handleSend()
     }
-  };
+  }
 
   if (loading || !chatRoom || !currentUserId) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-pulse text-muted-foreground">로딩 중...</div>
       </div>
-    );
+    )
   }
 
-  const otherUser = chatRoom.buyerId === currentUserId ? chatRoom.seller : chatRoom.buyer;
+  const otherUser = chatRoom.buyerId === currentUserId ? chatRoom.seller : chatRoom.buyer
 
   return (
     <div className="flex flex-col h-dvh bg-background">
@@ -272,8 +272,8 @@ export default function ChatRoomPage() {
             type="text"
             value={newMessage}
             onChange={(e) => {
-              setNewMessage(e.target.value);
-              handleTyping();
+              setNewMessage(e.target.value)
+              handleTyping()
             }}
             onKeyDown={handleKeyDown}
             disabled={!isConnected}
@@ -295,5 +295,5 @@ export default function ChatRoomPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

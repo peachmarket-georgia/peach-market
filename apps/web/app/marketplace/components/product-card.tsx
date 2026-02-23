@@ -1,27 +1,27 @@
-'use client';
+'use client'
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
-import { IconHeart, IconHeartFilled, IconEye } from '@tabler/icons-react';
-import { Badge } from '@/components/ui/badge';
-import { ProductResponseDto } from '@/types/api';
+import Image from 'next/image'
+import Link from 'next/link'
+import { formatDistanceToNow } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { IconHeart, IconHeartFilled, IconEye } from '@tabler/icons-react'
+import { Badge } from '@/components/ui/badge'
+import { ProductResponseDto } from '@/types/api'
 
 const STATUS_CONFIG = {
   SELLING: { label: '판매중', className: 'bg-[#4CAF50] text-white hover:bg-[#4CAF50]' },
   RESERVED: { label: '예약중', className: 'bg-[#FFC107] text-black hover:bg-[#FFC107]' },
   SOLD: { label: '판매완료', className: 'bg-[#9E9E9E] text-white hover:bg-[#9E9E9E]' },
-};
+}
 
 type ProductCardProps = {
-  product: ProductResponseDto;
-  onFavoriteToggle?: (id: string) => void;
-};
+  product: ProductResponseDto
+  onFavoriteToggle?: (id: string) => void
+}
 
 export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
-  const status = STATUS_CONFIG[product.status];
-  const priceDisplay = `$${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const status = STATUS_CONFIG[product.status]
+  const priceDisplay = `$${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
     <Link href={`/marketplace/${product.id}`} className="group block">
@@ -47,9 +47,9 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
         {onFavoriteToggle && (
           <button
             onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onFavoriteToggle(product.id);
+              e.preventDefault()
+              e.stopPropagation()
+              onFavoriteToggle(product.id)
             }}
             className="absolute top-2 right-2 p-1.5 bg-white/80 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-colors"
           >
@@ -90,5 +90,5 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
         </div>
       </div>
     </Link>
-  );
+  )
 }

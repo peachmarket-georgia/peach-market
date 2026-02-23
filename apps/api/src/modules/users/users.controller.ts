@@ -1,15 +1,15 @@
-import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
-import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto';
-import { UserProfileResponseDto } from './dto/user-response.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Controller, Post, Body, Get, Patch, UseGuards, Request } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger'
+import { UsersService } from './users.service'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto'
+import { UserProfileResponseDto } from './dto/user-response.dto'
+import { UpdateUserDto } from './dto/update-user.dto'
 
 interface RequestWithUser extends Request {
   user: {
-    userId: string;
-  };
+    userId: string
+  }
 }
 
 @ApiTags('users')
@@ -32,8 +32,8 @@ export class UsersController {
     type: CheckAvailabilityResponseDto,
   })
   async checkEmail(@Body('email') email: string) {
-    const available = await this.usersService.checkEmailAvailability(email);
-    return { available };
+    const available = await this.usersService.checkEmailAvailability(email)
+    return { available }
   }
 
   @Post('check-nickname')
@@ -51,8 +51,8 @@ export class UsersController {
     type: CheckAvailabilityResponseDto,
   })
   async checkNickname(@Body('nickname') nickname: string) {
-    const available = await this.usersService.checkNicknameAvailability(nickname);
-    return { available };
+    const available = await this.usersService.checkNicknameAvailability(nickname)
+    return { available }
   }
 
   @Get('me')
@@ -66,14 +66,14 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   async getProfile(@Request() req: RequestWithUser) {
-    const user = await this.usersService.findById(req.user.userId);
+    const user = await this.usersService.findById(req.user.userId)
     if (!user) {
-      return null;
+      return null
     }
     // 비밀번호 제외하고 반환
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _password, ...result } = user;
-    return result;
+    const { password: _password, ...result } = user
+    return result
   }
 
   @Patch('me')
@@ -88,6 +88,6 @@ export class UsersController {
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   @ApiResponse({ status: 409, description: '닉네임 중복' })
   async updateProfile(@Request() req: RequestWithUser, @Body() updateDto: UpdateUserDto) {
-    return this.usersService.updateProfile(req.user.userId, updateDto);
+    return this.usersService.updateProfile(req.user.userId, updateDto)
   }
 }

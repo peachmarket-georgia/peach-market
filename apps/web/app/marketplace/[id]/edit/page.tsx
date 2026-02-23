@@ -1,15 +1,15 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useRef, ChangeEvent } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Link from 'next/link';
-import { Camera, X, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef, ChangeEvent } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
+import { Camera, X, Loader2 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Header } from '@/components/layout/header';
-import { checkAuth, productApi, uploadApi } from '@/lib/api';
-import { PaymentMethod, ProductResponseDto, UserProfileResponseDto } from '@/types/api';
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Header } from '@/components/layout/header'
+import { checkAuth, productApi, uploadApi } from '@/lib/api'
+import { PaymentMethod, ProductResponseDto, UserProfileResponseDto } from '@/types/api'
 
 const CATEGORIES = [
   '디지털기기',
@@ -24,144 +24,144 @@ const CATEGORIES = [
   '뷰티/미용',
   '반려동물용품',
   '기타',
-];
+]
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
   { value: 'CASH', label: '현금' },
   { value: 'ZELLE', label: 'Zelle' },
   { value: 'VENMO', label: 'Venmo' },
-];
+]
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 const EditProductPage = () => {
-  const router = useRouter();
-  const params = useParams();
-  const productId = params.id as string;
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter()
+  const params = useParams()
+  const productId = params.id as string
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [product, setProduct] = useState<ProductResponseDto | null>(null);
-  const [currentUser, setCurrentUser] = useState<UserProfileResponseDto | null>(null);
-  const [images, setImages] = useState<string[]>([]);
-  const [title, setTitle] = useState('');
-  const [category, setCategory] = useState('');
-  const [price, setPrice] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [product, setProduct] = useState<ProductResponseDto | null>(null)
+  const [currentUser, setCurrentUser] = useState<UserProfileResponseDto | null>(null)
+  const [images, setImages] = useState<string[]>([])
+  const [title, setTitle] = useState('')
+  const [category, setCategory] = useState('')
+  const [price, setPrice] = useState('')
+  const [description, setDescription] = useState('')
+  const [location, setLocation] = useState('')
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [loading, setLoading] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [initialLoading, setInitialLoading] = useState(true)
 
   // 데이터 로드
   useEffect(() => {
     const loadData = async () => {
-      const [productRes, authRes] = await Promise.all([productApi.getProduct(productId), checkAuth()]);
+      const [productRes, authRes] = await Promise.all([productApi.getProduct(productId), checkAuth()])
 
       if (!authRes.isAuthenticated) {
-        router.push('/login');
-        return;
+        router.push('/login')
+        return
       }
 
       if (!productRes.data) {
-        router.push('/marketplace');
-        return;
+        router.push('/marketplace')
+        return
       }
 
       // 소유자 확인
       if (authRes.user && productRes.data.seller.id !== authRes.user.id) {
-        router.push(`/marketplace/${productId}`);
-        return;
+        router.push(`/marketplace/${productId}`)
+        return
       }
 
-      setCurrentUser(authRes.user ?? null);
-      setProduct(productRes.data);
+      setCurrentUser(authRes.user ?? null)
+      setProduct(productRes.data)
 
       // 폼 초기화
-      const p = productRes.data;
-      setImages(p.images || []);
-      setTitle(p.title);
-      setCategory(p.category);
-      setPrice((p.price / 100).toFixed(2));
-      setDescription(p.description);
-      setLocation(p.location);
-      setPaymentMethods(p.paymentMethods || []);
+      const p = productRes.data
+      setImages(p.images || [])
+      setTitle(p.title)
+      setCategory(p.category)
+      setPrice((p.price / 100).toFixed(2))
+      setDescription(p.description)
+      setLocation(p.location)
+      setPaymentMethods(p.paymentMethods || [])
 
-      setInitialLoading(false);
-    };
+      setInitialLoading(false)
+    }
 
-    loadData();
-  }, [productId, router]);
+    loadData()
+  }, [productId, router])
 
   const handleImageClick = () => {
-    if (images.length >= 5 || uploading) return;
-    fileInputRef.current?.click();
-  };
+    if (images.length >= 5 || uploading) return
+    fileInputRef.current?.click()
+  }
 
   const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const files = e.target.files
+    if (!files || files.length === 0) return
 
     // 최대 5개 제한
-    const remainingSlots = 5 - images.length;
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+    const remainingSlots = 5 - images.length
+    const filesToUpload = Array.from(files).slice(0, remainingSlots)
 
     // 파일 검증
     for (const file of filesToUpload) {
       if (!ALLOWED_TYPES.includes(file.type)) {
-        setError('JPG, PNG, WebP 형식만 업로드 가능합니다.');
-        return;
+        setError('JPG, PNG, WebP 형식만 업로드 가능합니다.')
+        return
       }
       if (file.size > MAX_FILE_SIZE) {
-        setError('파일 크기는 5MB 이하여야 합니다.');
-        return;
+        setError('파일 크기는 5MB 이하여야 합니다.')
+        return
       }
     }
 
-    setUploading(true);
-    setError(null);
+    setUploading(true)
+    setError(null)
 
-    const { data, error: uploadError } = await uploadApi.uploadImages(filesToUpload);
+    const { data, error: uploadError } = await uploadApi.uploadImages(filesToUpload)
 
-    setUploading(false);
+    setUploading(false)
 
     if (uploadError) {
-      setError(uploadError);
-      return;
+      setError(uploadError)
+      return
     }
 
     if (data?.images) {
-      const newUrls = data.images.map((img) => img.url);
-      setImages((prev) => [...prev, ...newUrls]);
+      const newUrls = data.images.map((img) => img.url)
+      setImages((prev) => [...prev, ...newUrls])
     }
 
     // Reset file input
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = ''
     }
-  };
+  }
 
   const handleImageRemove = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
-  };
+    setImages((prev) => prev.filter((_, i) => i !== index))
+  }
 
   const handlePaymentMethodToggle = (method: PaymentMethod) => {
-    setPaymentMethods((prev) => (prev.includes(method) ? prev.filter((m) => m !== method) : [...prev, method]));
-  };
+    setPaymentMethods((prev) => (prev.includes(method) ? prev.filter((m) => m !== method) : [...prev, method]))
+  }
 
-  const isValid = title.trim() && category && price && description.trim() && location.trim() && images.length > 0;
+  const isValid = title.trim() && category && price && description.trim() && location.trim() && images.length > 0
 
   const handleSubmit = async () => {
-    if (!isValid || loading) return;
+    if (!isValid || loading) return
 
-    setLoading(true);
-    setError(null);
+    setLoading(true)
+    setError(null)
 
     // 가격을 센트 단위로 변환 (USD)
-    const priceInCents = Math.round(parseFloat(price) * 100);
+    const priceInCents = Math.round(parseFloat(price) * 100)
 
     const { data, error: apiError } = await productApi.updateProduct(productId, {
       title: title.trim(),
@@ -171,19 +171,19 @@ const EditProductPage = () => {
       images,
       location: location.trim(),
       paymentMethods: paymentMethods.length > 0 ? paymentMethods : undefined,
-    });
+    })
 
-    setLoading(false);
+    setLoading(false)
 
     if (apiError) {
-      setError(apiError);
-      return;
+      setError(apiError)
+      return
     }
 
     if (data) {
-      router.push(`/marketplace/${productId}`);
+      router.push(`/marketplace/${productId}`)
     }
-  };
+  }
 
   if (initialLoading) {
     return (
@@ -193,11 +193,11 @@ const EditProductPage = () => {
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       </div>
-    );
+    )
   }
 
   if (!product || !currentUser) {
-    return null;
+    return null
   }
 
   return (
@@ -408,7 +408,7 @@ const EditProductPage = () => {
         </div>
       </main>
     </div>
-  );
-};
+  )
+}
 
-export default EditProductPage;
+export default EditProductPage
