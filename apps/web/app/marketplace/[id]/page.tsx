@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { notFound, useRouter } from 'next/navigation';
-import { use } from 'react';
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { notFound, useRouter } from 'next/navigation'
+import { use } from 'react'
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -16,73 +16,73 @@ import {
   IconMapPin,
   IconClock,
   IconStar,
-} from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { chatApi, checkAuth } from '@/lib/api';
-import { STATUS_LABEL } from '@/lib/product-types';
-import { cn } from '@/lib/utils';
-import { getProduct, toProduct } from '@/lib/products-api';
-import type { Product } from '@/lib/product-types';
+} from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { chatApi, checkAuth } from '@/lib/api'
+import { STATUS_LABEL } from '@/lib/product-types'
+import { cn } from '@/lib/utils'
+import { getProduct, toProduct } from '@/lib/products-api'
+import type { Product } from '@/lib/product-types'
 
 type ProductDetailPageProps = {
-  params: Promise<{ id: string }>;
-};
+  params: Promise<{ id: string }>
+}
 
 const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
-  const { id } = use(params);
-  const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
+  const { id } = use(params)
+  const router = useRouter()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false)
 
   const handleChat = useCallback(async () => {
-    if (chatLoading) return;
-    setChatLoading(true);
+    if (chatLoading) return
+    setChatLoading(true)
     try {
-      const { isAuthenticated } = await checkAuth();
+      const { isAuthenticated } = await checkAuth()
       if (!isAuthenticated) {
-        router.push('/login');
-        return;
+        router.push('/login')
+        return
       }
-      const { data, error: chatError } = await chatApi.createRoom(id);
+      const { data, error: chatError } = await chatApi.createRoom(id)
       if (chatError) {
-        alert(chatError);
-        return;
+        alert(chatError)
+        return
       }
       if (data) {
-        router.push(`/chat/${data.id}`);
+        router.push(`/chat/${data.id}`)
       }
     } catch {
-      alert('채팅방을 생성할 수 없습니다.');
+      alert('채팅방을 생성할 수 없습니다.')
     } finally {
-      setChatLoading(false);
+      setChatLoading(false)
     }
-  }, [chatLoading, id, router]);
+  }, [chatLoading, id, router])
 
   useEffect(() => {
     getProduct(id)
       .then((data) => setProduct(toProduct(data)))
       .catch(() => setError(true))
-      .finally(() => setLoading(false));
-  }, [id]);
+      .finally(() => setLoading(false))
+  }, [id])
 
   if (loading) {
     return (
       <div className="flex justify-center py-20">
         <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
-    );
+    )
   }
 
   if (error || !product) {
-    notFound();
+    notFound()
   }
 
-  const isSold = product.status === 'SOLD';
-  const isReserved = product.status === 'RESERVED';
-  const isSelling = product.status === 'SELLING';
+  const isSold = product.status === 'SOLD'
+  const isReserved = product.status === 'RESERVED'
+  const isSelling = product.status === 'SELLING'
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
@@ -277,28 +277,28 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
 /** 이미지 캐러셀 컴포넌트 */
 const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string; status: string }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const isSold = status === 'SOLD';
-  const isReserved = status === 'RESERVED';
-  const hasMultiple = images.length > 1;
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const isSold = status === 'SOLD'
+  const isReserved = status === 'RESERVED'
+  const hasMultiple = images.length > 1
 
   const goTo = (idx: number) => {
-    if (idx < 0) setCurrentIndex(images.length - 1);
-    else if (idx >= images.length) setCurrentIndex(0);
-    else setCurrentIndex(idx);
-  };
+    if (idx < 0) setCurrentIndex(images.length - 1)
+    else if (idx >= images.length) setCurrentIndex(0)
+    else setCurrentIndex(idx)
+  }
 
   if (images.length === 0) {
     return (
       <div className="aspect-square rounded-2xl bg-linear-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground text-sm font-semibold shadow-inner">
         이미지 없음
       </div>
-    );
+    )
   }
 
   return (
@@ -387,7 +387,7 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ProductDetailPage;
+export default ProductDetailPage

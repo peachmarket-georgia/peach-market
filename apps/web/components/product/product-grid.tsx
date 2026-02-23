@@ -1,9 +1,9 @@
-import { ProductCard } from './product-card';
-import type { Product } from '@/lib/product-types';
+import { ProductCard } from './product-card'
+import type { Product } from '@/lib/product-types'
 
 type ProductGridProps = {
-  products: Product[];
-};
+  products: Product[]
+}
 
 export const ProductGrid = ({ products }: ProductGridProps) => {
   return (
@@ -12,5 +12,5 @@ export const ProductGrid = ({ products }: ProductGridProps) => {
         <ProductCard key={product.id} product={product} />
       ))}
     </div>
-  );
-};
+  )
+}

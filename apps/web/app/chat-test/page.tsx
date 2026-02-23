@@ -1,12 +1,12 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useSocket } from '@/context/socket-provider';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Check, Wifi, WifiOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSocket } from '@/context/socket-provider'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Check, Wifi, WifiOff } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 // 테스트용 유저 프리셋
 const TEST_USERS = [
@@ -14,26 +14,26 @@ const TEST_USERS = [
   { id: 'user-mango', nickname: '망고', emoji: '🥭' },
   { id: 'user-apple', nickname: '사과', emoji: '🍎' },
   { id: 'user-grape', nickname: '포도', emoji: '🍇' },
-];
+]
 
 // 테스트용 채팅방 (고정)
-const TEST_ROOM_ID = 'test-chat-room';
+const TEST_ROOM_ID = 'test-chat-room'
 
 export default function ChatTestSetupPage() {
-  const router = useRouter();
-  const { isConnected } = useSocket();
-  const [selectedUser, setSelectedUser] = useState<string | null>(null);
-  const [customNickname, setCustomNickname] = useState('');
+  const router = useRouter()
+  const { isConnected } = useSocket()
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [customNickname, setCustomNickname] = useState('')
 
   const handleStartChat = () => {
-    const userId = selectedUser || customNickname.trim();
-    if (!userId) return;
+    const userId = selectedUser || customNickname.trim()
+    if (!userId) return
 
-    const params = new URLSearchParams({ userId });
-    router.push(`/chat-test/${TEST_ROOM_ID}?${params.toString()}`);
-  };
+    const params = new URLSearchParams({ userId })
+    router.push(`/chat-test/${TEST_ROOM_ID}?${params.toString()}`)
+  }
 
-  const isValid = selectedUser || customNickname.trim();
+  const isValid = selectedUser || customNickname.trim()
 
   return (
     <div className="min-h-dvh bg-background flex flex-col">
@@ -73,8 +73,8 @@ export default function ChatTestSetupPage() {
                 <button
                   key={user.id}
                   onClick={() => {
-                    setSelectedUser(user.id);
-                    setCustomNickname('');
+                    setSelectedUser(user.id)
+                    setCustomNickname('')
                   }}
                   className={cn(
                     'relative flex items-center gap-3 p-3 rounded-xl border-2 transition-all',
@@ -109,8 +109,8 @@ export default function ChatTestSetupPage() {
               type="text"
               value={customNickname}
               onChange={(e) => {
-                setCustomNickname(e.target.value);
-                setSelectedUser(null);
+                setCustomNickname(e.target.value)
+                setSelectedUser(null)
               }}
               placeholder="닉네임을 입력하세요"
               className="w-full px-4 py-3 bg-muted rounded-xl text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -137,5 +137,5 @@ export default function ChatTestSetupPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

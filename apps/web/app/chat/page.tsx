@@ -1,53 +1,53 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { chatApi, checkAuth } from '@/lib/api';
-import { ChatRoomDto } from '@/types/api';
-import { useSocket } from '@/context/socket-provider';
-import { formatDistanceToNow } from 'date-fns';
-import { ko } from 'date-fns/locale';
-import { IconMessageCircle, IconChevronLeft } from '@tabler/icons-react';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { chatApi, checkAuth } from '@/lib/api'
+import { ChatRoomDto } from '@/types/api'
+import { useSocket } from '@/context/socket-provider'
+import { formatDistanceToNow } from 'date-fns'
+import { ko } from 'date-fns/locale'
+import { IconMessageCircle, IconChevronLeft } from '@tabler/icons-react'
 
 export default function ChatListPage() {
-  const router = useRouter();
-  const { isConnected, connect } = useSocket();
-  const [rooms, setRooms] = useState<ChatRoomDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const router = useRouter()
+  const { isConnected, connect } = useSocket()
+  const [rooms, setRooms] = useState<ChatRoomDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
-      const { isAuthenticated, user } = await checkAuth();
+      const { isAuthenticated, user } = await checkAuth()
       if (!isAuthenticated) {
-        router.push('/login');
-        return;
+        router.push('/login')
+        return
       }
-      setCurrentUserId(user?.id || null);
-      connect();
-      loadRooms();
-    };
-    init();
-  }, [connect, router]);
+      setCurrentUserId(user?.id || null)
+      connect()
+      loadRooms()
+    }
+    init()
+  }, [connect, router])
 
   const loadRooms = async () => {
-    const { data, error } = await chatApi.getRooms();
+    const { data, error } = await chatApi.getRooms()
     if (data) {
-      setRooms(data);
+      setRooms(data)
     }
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const getOtherUser = (room: ChatRoomDto) => {
-    return room.buyerId === currentUserId ? room.seller : room.buyer;
-  };
+    return room.buyerId === currentUserId ? room.seller : room.buyer
+  }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="animate-pulse text-muted-foreground">로딩 중...</div>
       </div>
-    );
+    )
   }
 
   return (
@@ -75,7 +75,7 @@ export default function ChatListPage() {
       ) : (
         <ul className="divide-y">
           {rooms.map((room) => {
-            const otherUser = getOtherUser(room);
+            const otherUser = getOtherUser(room)
             return (
               <li
                 key={room.id}
@@ -112,10 +112,10 @@ export default function ChatListPage() {
                   </div>
                 </div>
               </li>
-            );
+            )
           })}
         </ul>
       )}
     </div>
-  );
+  )
 }

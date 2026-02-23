@@ -1,16 +1,16 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { IconMapPin } from '@tabler/icons-react';
-import { STATUS_LABEL } from '@/lib/product-types';
-import type { Product } from '@/lib/product-types';
+import Image from 'next/image'
+import Link from 'next/link'
+import { IconMapPin } from '@tabler/icons-react'
+import { STATUS_LABEL } from '@/lib/product-types'
+import type { Product } from '@/lib/product-types'
 
 type ProductCardProps = {
-  product: Product;
-};
+  product: Product
+}
 
 export const ProductCard = ({ product }: ProductCardProps) => {
-  const isSold = product.status === 'SOLD';
-  const isReserved = product.status === 'RESERVED';
+  const isSold = product.status === 'SOLD'
+  const isReserved = product.status === 'RESERVED'
 
   return (
     <Link href={`/marketplace/${product.id}`}>
@@ -67,5 +67,5 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </div>
       </article>
     </Link>
-  );
-};
+  )
+}

@@ -1,61 +1,61 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter, usePathname } from 'next/navigation';
-import { IconSearch, IconBell, IconPlus, IconUser, IconLogout, IconMessage, IconMenu2 } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { useRouter, usePathname } from 'next/navigation'
+import { IconSearch, IconBell, IconPlus, IconUser, IconLogout, IconMessage, IconMenu2 } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { checkAuth, authApi, chatApi } from '@/lib/api';
-import { UserProfileResponseDto } from '@/types/api';
+} from '@/components/ui/dropdown-menu'
+import { checkAuth, authApi, chatApi } from '@/lib/api'
+import { UserProfileResponseDto } from '@/types/api'
 
 type HeaderProps = {
-  initialUser?: UserProfileResponseDto | null;
-};
+  initialUser?: UserProfileResponseDto | null
+}
 
 export function Header({ initialUser }: HeaderProps) {
-  const [user, setUser] = useState<UserProfileResponseDto | null>(initialUser ?? null);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(!initialUser);
-  const router = useRouter();
-  const pathname = usePathname();
+  const [user, setUser] = useState<UserProfileResponseDto | null>(initialUser ?? null)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [loading, setLoading] = useState(!initialUser)
+  const router = useRouter()
+  const pathname = usePathname()
 
   // 클라이언트 사이드에서 인증 상태 확인
   useEffect(() => {
     if (!initialUser) {
       checkAuth().then(({ user }) => {
-        setUser(user ?? null);
-        setLoading(false);
-      });
+        setUser(user ?? null)
+        setLoading(false)
+      })
     }
-  }, [initialUser]);
+  }, [initialUser])
 
   // 안읽은 채팅 메시지 수 조회
   useEffect(() => {
     if (user) {
       chatApi.getUnreadCount().then(({ data }) => {
         if (data) {
-          setUnreadCount(data.count);
+          setUnreadCount(data.count)
         }
-      });
+      })
     }
-  }, [user]);
+  }, [user])
 
   const handleLogout = async () => {
-    await authApi.logout();
-    setUser(null);
-    router.push('/');
-  };
+    await authApi.logout()
+    setUser(null)
+    router.push('/')
+  }
 
   // 현재 페이지가 활성화된 링크인지 확인
-  const isActive = (path: string) => pathname === path;
+  const isActive = (path: string) => pathname === path
 
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
@@ -170,5 +170,5 @@ export function Header({ initialUser }: HeaderProps) {
         </nav>
       </div>
     </header>
-  );
+  )
 }
