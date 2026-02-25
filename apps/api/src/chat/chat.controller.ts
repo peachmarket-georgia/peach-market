@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../modules/auth/jwt-auth.guard';
-import { CurrentUser, type JwtUser } from '../modules/auth/current-user.decorator';
-import { ChatService } from './chat.service';
-import { CreateChatRoomDto } from './dto/create-chat-room.dto';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiParam } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../modules/auth/jwt-auth.guard'
+import { CurrentUser, type JwtUser } from '../modules/auth/current-user.decorator'
+import { ChatService } from './chat.service'
+import { CreateChatRoomDto } from './dto/create-chat-room.dto'
 
 @ApiTags('chat')
 @Controller('chat')
@@ -17,7 +17,7 @@ export class ChatController {
   @ApiResponse({ status: 200, description: '채팅방 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   async getRooms(@CurrentUser() { userId }: JwtUser) {
-    return this.chatService.getChatRoomsWithUnreadCount(userId);
+    return this.chatService.getChatRoomsWithUnreadCount(userId)
   }
 
   @Get('unread-count')
@@ -25,8 +25,8 @@ export class ChatController {
   @ApiResponse({ status: 200, description: '안읽은 메시지 수 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   async getUnreadCount(@CurrentUser() { userId }: JwtUser) {
-    const count = await this.chatService.getTotalUnreadCount(userId);
-    return { count };
+    const count = await this.chatService.getTotalUnreadCount(userId)
+    return { count }
   }
 
   @Get('rooms/:id')
@@ -36,7 +36,7 @@ export class ChatController {
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '채팅방을 찾을 수 없음' })
   async getRoom(@Param('id') id: string) {
-    return this.chatService.findChatRoomByIdWithMessages(id);
+    return this.chatService.findChatRoomByIdWithMessages(id)
   }
 
   @Post('rooms')
@@ -49,7 +49,7 @@ export class ChatController {
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   async createRoom(@Body() dto: CreateChatRoomDto, @CurrentUser() { userId }: JwtUser) {
-    return this.chatService.createChatRoom(dto.productId, userId);
+    return this.chatService.createChatRoom(dto.productId, userId)
   }
 
   @Patch('rooms/:id/read')
@@ -58,7 +58,7 @@ export class ChatController {
   @ApiResponse({ status: 200, description: '읽음 처리 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   async markAsRead(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
-    await this.chatService.markMessagesAsRead(id, userId);
-    return { message: '읽음 처리되었습니다.' };
+    await this.chatService.markMessagesAsRead(id, userId)
+    return { message: '읽음 처리되었습니다.' }
   }
 }

@@ -1,12 +1,12 @@
-import { Controller, Delete, Get, Post, Patch, Param, Query, Body, Req, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
-import type { Request } from 'express';
-import { ProductStatus } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser, type JwtUser } from '../auth/current-user.decorator';
-import { ProductsService } from './products.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
+import { Controller, Delete, Get, Post, Patch, Param, Query, Body, Req, UseGuards } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam } from '@nestjs/swagger'
+import type { Request } from 'express'
+import { ProductStatus } from '@prisma/client'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
+import { ProductsService } from './products.service'
+import { CreateProductDto } from './dto/create-product.dto'
+import { UpdateProductDto } from './dto/update-product.dto'
 
 @ApiTags('products')
 @Controller('products')
@@ -30,7 +30,7 @@ export class ProductsController {
     @Query('status') status?: string,
     @Query('sort') sort?: string
   ) {
-    return this.productsService.findAll({ search, category, status, sort }, userId);
+    return this.productsService.findAll({ search, category, status, sort }, userId)
   }
 
   @Get('favorites')
@@ -38,7 +38,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '찜 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   getFavorites(@CurrentUser() { userId }: JwtUser) {
-    return this.productsService.getFavoritesByUser(userId);
+    return this.productsService.getFavoritesByUser(userId)
   }
 
   @Get('my')
@@ -47,7 +47,7 @@ export class ProductsController {
   @ApiResponse({ status: 200, description: '내 상품 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   findMy(@CurrentUser() { userId }: JwtUser, @Query('status') status?: ProductStatus) {
-    return this.productsService.findMy(userId, status);
+    return this.productsService.findMy(userId, status)
   }
 
   @Get(':id')
@@ -60,8 +60,8 @@ export class ProductsController {
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   findOne(@Param('id') id: string, @Req() req: Request, @CurrentUser() { userId }: JwtUser) {
-    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown';
-    return this.productsService.findOne(id, ip, userId);
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown'
+    return this.productsService.findOne(id, ip, userId)
   }
 
   @Post()
@@ -70,7 +70,7 @@ export class ProductsController {
   @ApiResponse({ status: 400, description: '유효하지 않은 입력' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   create(@Body() dto: CreateProductDto, @CurrentUser() { userId }: JwtUser) {
-    return this.productsService.create(dto, userId);
+    return this.productsService.create(dto, userId)
   }
 
   @Patch(':id')
@@ -81,7 +81,7 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: '본인의 상품만 수정 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   update(@Param('id') id: string, @Body() dto: UpdateProductDto, @CurrentUser() { userId }: JwtUser) {
-    return this.productsService.update(id, dto, userId);
+    return this.productsService.update(id, dto, userId)
   }
 
   @Patch(':id/status')
@@ -92,7 +92,7 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: '본인의 상품만 변경 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   updateStatus(@Param('id') id: string, @Body('status') status: ProductStatus, @CurrentUser() { userId }: JwtUser) {
-    return this.productsService.updateStatus(id, status, userId);
+    return this.productsService.updateStatus(id, status, userId)
   }
 
   @Delete(':id')
@@ -102,7 +102,7 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: '본인의 상품만 삭제 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   remove(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
-    return this.productsService.remove(id, userId);
+    return this.productsService.remove(id, userId)
   }
 
   @Post(':id/favorite')
@@ -112,6 +112,6 @@ export class ProductsController {
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
   toggleFavorite(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
-    return this.productsService.toggleFavorite(id, userId);
+    return this.productsService.toggleFavorite(id, userId)
   }
 }

@@ -1,7 +1,7 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
 import {
   IconSearch,
   IconAdjustmentsHorizontal,
@@ -9,73 +9,73 @@ import {
   IconLoader2,
   IconPlus,
   IconPackage,
-} from '@tabler/icons-react';
-import { ProductCard } from './components/product-card';
-import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { productApi } from '@/lib/products-api';
-import { userApi } from '@/lib/api';
-import type { ProductStatus, Category, SortOption } from '@/lib/product-types';
-import type { ProductResponseDto } from '@/types/api';
+} from '@tabler/icons-react'
+import { ProductCard } from './components/product-card'
+import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+import { productApi } from '@/lib/products-api'
+import { userApi } from '@/lib/api'
+import type { ProductStatus, Category, SortOption } from '@/lib/product-types'
+import type { ProductResponseDto } from '@/types/api'
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
   { value: 'SELLING', label: STATUS_LABEL.SELLING },
   { value: 'RESERVED', label: STATUS_LABEL.RESERVED },
   { value: 'SOLD', label: STATUS_LABEL.SOLD },
-];
+]
 
 const MarketplacePage = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL');
-  const [selectedStatus, setSelectedStatus] = useState<ProductStatus | 'ALL'>('ALL');
-  const [sortBy, setSortBy] = useState<SortOption>('latest');
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [products, setProducts] = useState<ProductResponseDto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL')
+  const [selectedStatus, setSelectedStatus] = useState<ProductStatus | 'ALL'>('ALL')
+  const [sortBy, setSortBy] = useState<SortOption>('latest')
+  const [showSortDropdown, setShowSortDropdown] = useState(false)
+  const [products, setProducts] = useState<ProductResponseDto[]>([])
+  const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const fetchProducts = useCallback(async () => {
-    setLoading(true);
+    setLoading(true)
     try {
       const { data, error } = await productApi.getProducts({
         search: searchQuery.trim() || undefined,
         category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
         status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
         sort: sortBy,
-      });
-      if (error || !data) throw new Error(error);
-      setProducts(Array.isArray(data) ? data : (data.products ?? []));
+      })
+      if (error || !data) throw new Error(error)
+      setProducts(Array.isArray(data) ? data : (data.products ?? []))
     } catch (e) {
-      console.error('Failed to fetch products:', e);
+      console.error('Failed to fetch products:', e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  }, [searchQuery, selectedCategory, selectedStatus, sortBy]);
+  }, [searchQuery, selectedCategory, selectedStatus, sortBy])
 
   useEffect(() => {
-    const timer = setTimeout(fetchProducts, 300);
-    return () => clearTimeout(timer);
-  }, [fetchProducts]);
+    const timer = setTimeout(fetchProducts, 300)
+    return () => clearTimeout(timer)
+  }, [fetchProducts])
 
   useEffect(() => {
     userApi.getMe().then(({ data }) => {
-      if (data) setCurrentUserId(data.id);
-    });
-  }, []);
+      if (data) setCurrentUserId(data.id)
+    })
+  }, [])
 
   const handleFavoriteToggle = async (id: string) => {
-    const { data } = await productApi.toggleFavorite(id);
-    if (!data) return;
+    const { data } = await productApi.toggleFavorite(id)
+    if (!data) return
     setProducts((prev) =>
       prev.map((p) =>
         p.id === id
           ? { ...p, isFavorited: data.isFavorited, favoriteCount: p.favoriteCount + (data.isFavorited ? 1 : -1) }
           : p
       )
-    );
-  };
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4 container mx-auto px-4 md:px-6 md:mt-10">
@@ -172,8 +172,8 @@ const MarketplacePage = () => {
                   <button
                     key={key}
                     onClick={() => {
-                      setSortBy(key);
-                      setShowSortDropdown(false);
+                      setSortBy(key)
+                      setShowSortDropdown(false)
                     }}
                     className={cn(
                       'w-full px-4 py-2 text-left text-sm transition-colors',
@@ -224,7 +224,7 @@ const MarketplacePage = () => {
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default MarketplacePage;
+export default MarketplacePage

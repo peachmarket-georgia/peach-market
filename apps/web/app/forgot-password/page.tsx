@@ -1,49 +1,49 @@
-'use client';
+'use client'
 
-import { useState, type FormEvent } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { IconLoader2, IconArrowLeft, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { authApi } from '@/lib/api';
-import { validateEmail } from '@/utils';
+import { useState, type FormEvent } from 'react'
+import Link from 'next/link'
+import Image from 'next/image'
+import { IconLoader2, IconArrowLeft, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { authApi } from '@/lib/api'
+import { validateEmail } from '@/utils'
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [email, setEmail] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setSuccess(false);
+    e.preventDefault()
+    setError(null)
+    setSuccess(false)
 
     // 클라이언트 측 검증
     if (!validateEmail(email)) {
-      setError('유효한 이메일을 입력해주세요.');
-      return;
+      setError('유효한 이메일을 입력해주세요.')
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const { error: apiError } = await authApi.forgotPassword({ email });
+      const { error: apiError } = await authApi.forgotPassword({ email })
 
       if (apiError) {
-        setError(apiError);
-        return;
+        setError(apiError)
+        return
       }
 
       // 보안상 항상 성공 메시지 표시 (이메일 존재 여부 무관)
-      setSuccess(true);
+      setSuccess(true)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // 성공 화면
   if (success) {
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   // 입력 화면
@@ -151,5 +151,5 @@ export default function ForgotPasswordPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

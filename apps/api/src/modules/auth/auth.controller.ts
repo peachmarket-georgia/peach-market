@@ -1,19 +1,19 @@
-import { Controller, Post, Body, Get, Param, Res, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiCookieAuth } from '@nestjs/swagger';
-import { AuthGuard } from '@nestjs/passport';
-import { Throttle } from '@nestjs/throttler';
-import type { Response, Request } from 'express';
-import { AuthService } from './auth.service';
-import { SignupDto } from './signup.dto';
-import { LoginDto } from './login.dto';
-import { ForgotPasswordDto, ResetPasswordDto } from './reset-password.dto';
-import { ResendVerificationDto } from './dto/resend-verification.dto';
-import { SignupResponseDto } from './dto/signup-response.dto';
-import { LoginResponseDto } from './dto/login-response.dto';
-import { MessageResponseDto } from './dto/message-response.dto';
-import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard';
-import { AppConfigService } from '../../core/config/config.service';
-import { CurrentUser, type JwtRefreshUser } from './current-user.decorator';
+import { Controller, Post, Body, Get, Param, Res, Req, UseGuards, HttpCode, HttpStatus } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiCookieAuth } from '@nestjs/swagger'
+import { AuthGuard } from '@nestjs/passport'
+import { Throttle } from '@nestjs/throttler'
+import type { Response, Request } from 'express'
+import { AuthService } from './auth.service'
+import { SignupDto } from './signup.dto'
+import { LoginDto } from './login.dto'
+import { ForgotPasswordDto, ResetPasswordDto } from './reset-password.dto'
+import { ResendVerificationDto } from './dto/resend-verification.dto'
+import { SignupResponseDto } from './dto/signup-response.dto'
+import { LoginResponseDto } from './dto/login-response.dto'
+import { MessageResponseDto } from './dto/message-response.dto'
+import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard'
+import { AppConfigService } from '../../core/config/config.service'
+import { CurrentUser, type JwtRefreshUser } from './current-user.decorator'
 
 @ApiTags('auth')
 @Controller('auth')
@@ -32,7 +32,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: '입력값 검증 실패' })
   @ApiResponse({ status: 429, description: '요청 횟수 초과 (1시간당 3회 제한)' })
   async signup(@Body() signupDto: SignupDto) {
-    return this.authService.signup(signupDto);
+    return this.authService.signup(signupDto)
   }
 
   @Get('verify-email/:token')
@@ -41,7 +41,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '이메일 인증 성공', type: MessageResponseDto })
   @ApiResponse({ status: 400, description: '유효하지 않거나 만료된 토큰' })
   async verifyEmail(@Param('token') token: string) {
-    return this.authService.verifyEmail(token);
+    return this.authService.verifyEmail(token)
   }
 
   @Post('resend-verification')
@@ -56,7 +56,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: '이미 인증된 계정' })
   @ApiResponse({ status: 429, description: '요청 횟수 초과 (1시간당 3회 제한)' })
   async resendVerification(@Body() resendVerificationDto: ResendVerificationDto) {
-    return await this.authService.resendVerificationEmail(resendVerificationDto);
+    return await this.authService.resendVerificationEmail(resendVerificationDto)
   }
 
   @Post('login')
@@ -75,12 +75,12 @@ export class AuthController {
   @ApiResponse({ status: 401, description: '이메일 미인증 또는 잘못된 인증 정보' })
   @ApiResponse({ status: 429, description: '요청 횟수 초과 (1분당 5회 제한)' })
   async login(@Body() loginDto: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const deviceInfo = req.headers['user-agent'];
-    const result = await this.authService.login(loginDto, deviceInfo);
+    const deviceInfo = req.headers['user-agent']
+    const result = await this.authService.login(loginDto, deviceInfo)
 
-    const isProduction = this.configService.nodeEnv === 'production';
-    const isTest = this.configService.nodeEnv === 'test';
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost';
+    const isProduction = this.configService.nodeEnv === 'production'
+    const isTest = this.configService.nodeEnv === 'test'
+    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -88,7 +88,7 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
       domain: cookieDomain,
-    });
+    })
 
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
@@ -96,11 +96,11 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       domain: cookieDomain,
-    });
+    })
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { accessToken: _accessToken, refreshToken: _refreshToken, ...response } = result;
-    return response;
+    const { accessToken: _accessToken, refreshToken: _refreshToken, ...response } = result
+    return response
   }
 
   @Post('refresh')
@@ -117,13 +117,13 @@ export class AuthController {
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response
   ) {
-    const deviceInfo = req.headers['user-agent'];
+    const deviceInfo = req.headers['user-agent']
 
-    const result = await this.authService.refresh(userId, refreshToken, deviceInfo);
+    const result = await this.authService.refresh(userId, refreshToken, deviceInfo)
 
-    const isProduction = this.configService.nodeEnv === 'production';
-    const isTest = this.configService.nodeEnv === 'test';
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost';
+    const isProduction = this.configService.nodeEnv === 'production'
+    const isTest = this.configService.nodeEnv === 'test'
+    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -131,7 +131,7 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
       domain: cookieDomain,
-    });
+    })
 
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
@@ -139,9 +139,9 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       domain: cookieDomain,
-    });
+    })
 
-    return { message: '토큰이 갱신되었습니다' };
+    return { message: '토큰이 갱신되었습니다' }
   }
 
   @Post('logout')
@@ -151,16 +151,16 @@ export class AuthController {
   @ApiResponse({ status: 201, description: '로그아웃 성공. 쿠키가 삭제됨.', type: MessageResponseDto })
   @ApiResponse({ status: 401, description: '유효하지 않은 Refresh Token' })
   async logout(@CurrentUser() { userId, refreshToken }: JwtRefreshUser, @Res({ passthrough: true }) res: Response) {
-    await this.authService.logout(userId, refreshToken);
+    await this.authService.logout(userId, refreshToken)
 
-    const isProduction = this.configService.nodeEnv === 'production';
-    const isTest = this.configService.nodeEnv === 'test';
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost';
+    const isProduction = this.configService.nodeEnv === 'production'
+    const isTest = this.configService.nodeEnv === 'test'
+    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
 
-    res.clearCookie('access_token', { domain: cookieDomain });
-    res.clearCookie('refresh_token', { domain: cookieDomain });
+    res.clearCookie('access_token', { domain: cookieDomain })
+    res.clearCookie('refresh_token', { domain: cookieDomain })
 
-    return { message: '로그아웃되었습니다' };
+    return { message: '로그아웃되었습니다' }
   }
 
   @Post('forgot-password')
@@ -171,7 +171,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '비밀번호 재설정 이메일 발송 성공', type: MessageResponseDto })
   @ApiResponse({ status: 429, description: '요청 횟수 초과 (1시간당 3회 제한)' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
-    return this.authService.forgotPassword(forgotPasswordDto);
+    return this.authService.forgotPassword(forgotPasswordDto)
   }
 
   @Post('reset-password/:token')
@@ -182,7 +182,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: '비밀번호 재설정 성공', type: MessageResponseDto })
   @ApiResponse({ status: 400, description: '유효하지 않거나 만료된 토큰' })
   async resetPassword(@Param('token') token: string, @Body() resetPasswordDto: ResetPasswordDto) {
-    return this.authService.resetPassword(token, resetPasswordDto);
+    return this.authService.resetPassword(token, resetPasswordDto)
   }
 
   @Get('google')
@@ -198,12 +198,12 @@ export class AuthController {
   @ApiOperation({ summary: 'Google 로그인 콜백', description: 'Google OAuth 콜백 처리' })
   @ApiResponse({ status: 200, description: 'Google 로그인 성공. 쿠키 설정 및 프론트엔드로 리다이렉트.' })
   async googleCallback(@Req() req: Request, @Res() res: Response) {
-    const googleUser = req.user as { googleId: string; email: string; name: string; avatarUrl?: string };
-    const result = await this.authService.googleLogin(googleUser);
+    const googleUser = req.user as { googleId: string; email: string; name: string; avatarUrl?: string }
+    const result = await this.authService.googleLogin(googleUser)
 
-    const isProduction = this.configService.nodeEnv === 'production';
-    const isTest = this.configService.nodeEnv === 'test';
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost';
+    const isProduction = this.configService.nodeEnv === 'production'
+    const isTest = this.configService.nodeEnv === 'test'
+    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -211,7 +211,7 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000,
       domain: cookieDomain,
-    });
+    })
 
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
@@ -219,9 +219,9 @@ export class AuthController {
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       domain: cookieDomain,
-    });
+    })
 
-    const frontendUrl = this.configService.frontendUrl;
-    res.redirect(`${frontendUrl}/marketplace`);
+    const frontendUrl = this.configService.frontendUrl
+    res.redirect(`${frontendUrl}/marketplace`)
   }
 }

@@ -1,35 +1,35 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Resend } from 'resend';
-import { AppConfigService } from '../../core/config/config.service';
+import { Injectable, Logger } from '@nestjs/common'
+import { Resend } from 'resend'
+import { AppConfigService } from '../../core/config/config.service'
 
 @Injectable()
 export class ResendService {
-  private resend: Resend;
-  private readonly logger = new Logger(ResendService.name);
-  private readonly fromEmail: string = 'yourname@resend.dev';
+  private resend: Resend
+  private readonly logger = new Logger(ResendService.name)
+  private readonly fromEmail: string = 'yourname@resend.dev'
 
   constructor(private configService: AppConfigService) {
-    const apiKey = this.configService.resendApiKey;
+    const apiKey = this.configService.resendApiKey
     if (apiKey) {
-      this.resend = new Resend(apiKey);
+      this.resend = new Resend(apiKey)
     } else {
-      this.logger.warn('RESEND_API_KEY not configured. Email sending will be skipped.');
+      this.logger.warn('RESEND_API_KEY not configured. Email sending will be skipped.')
     }
 
     if (configService.nodeEnv === 'production') {
-      this.fromEmail = 'peachmarket215@gmail.com';
+      this.fromEmail = 'peachmarket215@gmail.com'
     }
   }
 
   async sendVerificationEmail(email: string, verificationToken: string) {
-    const frontendUrl = this.configService.frontendUrl;
+    const frontendUrl = this.configService.frontendUrl
 
-    const verifyUrl = `${frontendUrl}/verify-email/${verificationToken}`;
+    const verifyUrl = `${frontendUrl}/verify-email/${verificationToken}`
 
     if (!this.resend) {
-      this.logger.log(`[DEV] 이메일 인증 링크: ${verifyUrl}`);
-      this.logger.log(`[DEV] 수신자: ${email}`);
-      return;
+      this.logger.log(`[DEV] 이메일 인증 링크: ${verifyUrl}`)
+      this.logger.log(`[DEV] 수신자: ${email}`)
+      return
     }
 
     try {
@@ -53,29 +53,29 @@ export class ResendService {
             <p style="color: #999; font-size: 12px;">감사합니다,<br>피치마켓 팀</p>
           </div>
         `,
-      });
+      })
 
       if (res.error) {
         // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw res.error.message;
+        throw res.error.message
       }
 
-      this.logger.log(`Verification email sent to ${email}`);
+      this.logger.log(`Verification email sent to ${email}`)
     } catch (error) {
-      this.logger.error(`Failed to send verification email: ${error instanceof Error ? error.message : String(error)}`);
-      throw error;
+      this.logger.error(`Failed to send verification email: ${error instanceof Error ? error.message : String(error)}`)
+      throw error
     }
   }
 
   async sendPasswordResetEmail(email: string, resetToken: string) {
-    const frontendUrl = this.configService.frontendUrl;
+    const frontendUrl = this.configService.frontendUrl
 
-    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`
 
     if (!this.resend) {
-      this.logger.log(`[DEV] 비밀번호 재설정 링크: ${resetUrl}`);
-      this.logger.log(`[DEV] 수신자: ${email}`);
-      return;
+      this.logger.log(`[DEV] 비밀번호 재설정 링크: ${resetUrl}`)
+      this.logger.log(`[DEV] 수신자: ${email}`)
+      return
     }
 
     try {
@@ -99,19 +99,19 @@ export class ResendService {
             <p style="color: #999; font-size: 12px;">감사합니다,<br>피치마켓 팀</p>
           </div>
         `,
-      });
+      })
 
       if (res.error) {
         // eslint-disable-next-line @typescript-eslint/only-throw-error
-        throw res.error.message;
+        throw res.error.message
       }
 
-      this.logger.log(`Password reset email sent to ${email}`);
+      this.logger.log(`Password reset email sent to ${email}`)
     } catch (error) {
       this.logger.error(
         `Failed to send password reset email: ${error instanceof Error ? error.message : String(error)}`
-      );
-      throw error;
+      )
+      throw error
     }
   }
 }

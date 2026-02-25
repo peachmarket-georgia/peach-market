@@ -1,5 +1,5 @@
-import type { Product } from '@/lib/product-types';
-import { apiRequest } from '@/lib/api';
+import type { Product } from '@/lib/product-types'
+import { apiRequest } from '@/lib/api'
 import type {
   ProductResponseDto,
   ProductListResponseDto,
@@ -7,7 +7,7 @@ import type {
   UpdateProductDto,
   ProductQueryParams,
   ProductStatus,
-} from '@/types/api';
+} from '@/types/api'
 
 // ── Product API ────────────────────────────
 
@@ -17,8 +17,8 @@ export const productApi = {
       Object.entries(params)
         .filter((entry): entry is [string, string | number] => entry[1] != null && entry[1] !== '')
         .map(([k, v]) => [k, String(v)])
-    );
-    return apiRequest<ProductListResponseDto>(`/api/products?${query}`, undefined, cookies);
+    )
+    return apiRequest<ProductListResponseDto>(`/api/products?${query}`, undefined, cookies)
   },
 
   getProduct: (id: string, cookies?: string) =>
@@ -55,42 +55,83 @@ export const productApi = {
   getFavorites: (cookies?: string) => apiRequest<ProductResponseDto[]>('/api/products/favorites', undefined, cookies),
 
   getMyProducts: (status?: ProductStatus, cookies?: string) => {
-    const query = status ? `?status=${status}` : '';
-    return apiRequest<ProductResponseDto[]>(`/api/products/my${query}`, undefined, cookies);
+    const query = status ? `?status=${status}` : ''
+    return apiRequest<ProductResponseDto[]>(`/api/products/my${query}`, undefined, cookies)
   },
-};
+}
 
 // ── Legacy: ApiProduct → Product 변환 (marketplace/[id]/page.tsx 에서 사용) ──
 
 export type ApiProduct = {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  category: string;
-  status: ProductStatus;
-  images: string[];
-  location: string;
-  viewCount: number;
-  createdAt: string;
-  updatedAt: string;
+  id: string
+  title: string
+  description: string
+  price: number
+  category: string
+  status: ProductStatus
+  images: string[]
+  location: string
+  viewCount: number
+  createdAt: string
+  updatedAt: string
   seller: {
-    id: string;
-    nickname: string;
-    avatarUrl: string | null;
-    mannerScore: number;
-  };
-};
+    id: string
+    nickname: string
+    avatarUrl: string | null
+    mannerScore: number
+  }
+}
+
+export async function getProducts(params?: {
+  search?: string
+  category?: string
+  status?: string
+  sort?: string
+}): Promise<ApiProduct[]> {
+  const query = new URLSearchParams()
+  if (params?.search) query.set('search', params.search)
+  if (params?.category) query.set('category', params.category)
+  if (params?.status) query.set('status', params.status)
+  if (params?.sort) query.set('sort', params.sort)
+
+  const qs = query.toString()
+  const { data, error } = await apiRequest<ApiProduct[]>(`/api/products${qs ? `?${qs}` : ''}`)
+  if (error || !data) throw new Error(error || '상품 목록을 불러올 수 없습니다.')
+  return data
+}
+
+export async function getProduct(id: string): Promise<ApiProduct> {
+  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`)
+  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.')
+  return data
+}
+
+export async function createProduct(body: {
+  title: string
+  description: string
+  price: number
+  category: string
+  location: string
+}): Promise<ApiProduct> {
+  const { data, error } = await apiRequest<ApiProduct>('/api/products', {
+    method: 'POST',
+    body,
+  })
+  if (error || !data) throw new Error(error || '상품 등록에 실패했습니다.')
+  return data
+}
+
+// ── ApiProduct → Product 변환 ──────────────
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return '방금 전';
-  if (minutes < 60) return `${minutes}분 전`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}시간 전`;
-  const days = Math.floor(hours / 24);
-  return `${days}일 전`;
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return '방금 전'
+  if (minutes < 60) return `${minutes}분 전`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}시간 전`
+  const days = Math.floor(hours / 24)
+  return `${days}일 전`
 }
 
 export function toProduct(p: ApiProduct): Product {
@@ -114,11 +155,11 @@ export function toProduct(p: ApiProduct): Product {
     viewCount: p.viewCount,
     chatCount: 0,
     likeCount: 0,
-  };
+  }
 }
 
 export async function getProduct(id: string): Promise<ApiProduct> {
-  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`);
-  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.');
-  return data;
+  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`)
+  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.')
+  return data
 }

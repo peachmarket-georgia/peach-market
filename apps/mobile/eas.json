@@ -1,0 +1,15 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://localhost:3003",
+        "EXPO_PUBLIC_WEB_URL": "http://localhost:3000"
+      }
+    }
+  }
+}

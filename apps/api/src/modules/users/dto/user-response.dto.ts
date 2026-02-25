@@ -1,27 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { ApiProperty } from '@nestjs/swagger'
+import { User } from '@prisma/client'
 
-export type UserResponseDto = Omit<User, 'password'>;
+export type UserResponseDto = Omit<User, 'password'>
 
 export class UserProfileResponseDto {
   @ApiProperty({ example: 'user-id' })
-  id: string;
+  id: string
 
   @ApiProperty({ example: 'user@example.com' })
-  email: string;
+  email: string
 
   @ApiProperty({ example: '피치유저' })
-  nickname: string;
+  nickname: string
 
   @ApiProperty({ example: 'Georgia' })
-  location: string;
+  location: string
 
   @ApiProperty({ example: true })
-  isEmailVerified: boolean;
+  isEmailVerified: boolean
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
-  createdAt: Date;
+  createdAt: Date
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
-  updatedAt: Date;
+  updatedAt: Date
 }

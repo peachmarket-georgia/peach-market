@@ -1,78 +1,78 @@
-'use client';
+'use client'
 
-import { useEffect, useState } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { IconLoader2, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { authApi } from '@/lib/api';
+import { useEffect, useState } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { IconLoader2, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { authApi } from '@/lib/api'
 
 export default function VerifyEmailPage() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const token = params.token as string | undefined;
-  const email = searchParams.get('email');
+  const params = useParams()
+  const searchParams = useSearchParams()
+  const token = params.token as string | undefined
+  const email = searchParams.get('email')
 
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [resendLoading, setResendLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [isVerified, setIsVerified] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [resendLoading, setResendLoading] = useState(false)
 
   useEffect(() => {
     if (token) {
-      verifyEmailToken(token);
+      verifyEmailToken(token)
     }
-  }, [token]);
+  }, [token])
 
   // 토큰이 없으면 안내 페이지로 리다이렉트 (이론상 발생하지 않음)
   if (!token) {
     if (typeof window !== 'undefined') {
-      window.location.href = '/verify-email';
+      window.location.href = '/verify-email'
     }
-    return null;
+    return null
   }
 
   const verifyEmailToken = async (token: string) => {
-    setIsVerifying(true);
-    setError(null);
+    setIsVerifying(true)
+    setError(null)
 
     try {
-      const { data, error: apiError } = await authApi.verifyEmail(token);
+      const { data, error: apiError } = await authApi.verifyEmail(token)
 
       if (apiError) {
-        setError(apiError);
-        return;
+        setError(apiError)
+        return
       }
 
       if (data) {
-        setIsVerified(true);
+        setIsVerified(true)
       }
     } finally {
-      setIsVerifying(false);
+      setIsVerifying(false)
     }
-  };
+  }
 
   const handleResendEmail = async () => {
     if (!email) {
-      setError('이메일 주소를 찾을 수 없습니다.');
-      return;
+      setError('이메일 주소를 찾을 수 없습니다.')
+      return
     }
 
-    setResendLoading(true);
-    setError(null);
+    setResendLoading(true)
+    setError(null)
 
     try {
-      const { error: apiError } = await authApi.resendVerification({ email });
+      const { error: apiError } = await authApi.resendVerification({ email })
 
       if (apiError) {
-        setError(apiError);
+        setError(apiError)
       }
     } finally {
-      setResendLoading(false);
+      setResendLoading(false)
     }
-  };
+  }
 
   // 토큰 있음 - 인증 처리 중
   if (token && isVerifying) {
@@ -90,7 +90,7 @@ export default function VerifyEmailPage() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   // 토큰 있음 - 인증 성공
@@ -119,7 +119,7 @@ export default function VerifyEmailPage() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   // 토큰 있음 - 인증 실패
@@ -165,9 +165,9 @@ export default function VerifyEmailPage() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   // 기본값: 로딩 상태 (이론상 도달하지 않음)
-  return null;
+  return null
 }

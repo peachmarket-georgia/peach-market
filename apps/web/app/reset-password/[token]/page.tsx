@@ -1,90 +1,90 @@
-'use client';
+'use client'
 
-import { useState, useEffect, type FormEvent } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { IconEye, IconEyeOff, IconLoader2, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { authApi } from '@/lib/api';
-import { cn } from '@/lib/utils';
-import { validatePassword } from '@/utils';
+import { useState, useEffect, type FormEvent } from 'react'
+import { useParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import Image from 'next/image'
+import { IconEye, IconEyeOff, IconLoader2, IconCircleCheck, IconAlertCircle } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { authApi } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { validatePassword } from '@/utils'
 
-type PasswordStrength = 'weak' | 'medium' | 'strong';
+type PasswordStrength = 'weak' | 'medium' | 'strong'
 
 export default function ResetPasswordPage() {
-  const params = useParams();
-  const router = useRouter();
-  const token = params.token as string;
+  const params = useParams()
+  const router = useRouter()
+  const token = params.token as string
 
-  const [password, setPassword] = useState('');
-  const [passwordConfirm, setPasswordConfirm] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+  const [password, setPassword] = useState('')
+  const [passwordConfirm, setPasswordConfirm] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
 
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [countdown, setCountdown] = useState(3);
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [countdown, setCountdown] = useState(3)
 
-  const passwordStrength = getPasswordStrength(password);
-  const passwordMatch = password && passwordConfirm && password === passwordConfirm;
+  const passwordStrength = getPasswordStrength(password)
+  const passwordMatch = password && passwordConfirm && password === passwordConfirm
 
   // 토큰 유효성 간단 체크
   useEffect(() => {
     if (!token || token.length < 20) {
-      setError('유효하지 않은 링크입니다.');
+      setError('유효하지 않은 링크입니다.')
     }
-  }, [token]);
+  }, [token])
 
   // 성공 시 카운트다운 및 리다이렉트
   useEffect(() => {
     if (success && countdown > 0) {
       const timer = setTimeout(() => {
-        setCountdown(countdown - 1);
-      }, 1000);
+        setCountdown(countdown - 1)
+      }, 1000)
 
-      return () => clearTimeout(timer);
+      return () => clearTimeout(timer)
     }
 
     if (success && countdown === 0) {
-      router.push('/login');
+      router.push('/login')
     }
-  }, [success, countdown, router]);
+  }, [success, countdown, router])
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
+    e.preventDefault()
+    setError(null)
 
     // 클라이언트 측 검증
     if (!validatePassword(password)) {
-      setError('비밀번호는 최소 8자 이상이어야 합니다.');
-      return;
+      setError('비밀번호는 최소 8자 이상이어야 합니다.')
+      return
     }
 
     if (!passwordMatch) {
-      setError('비밀번호가 일치하지 않습니다.');
-      return;
+      setError('비밀번호가 일치하지 않습니다.')
+      return
     }
 
-    setIsLoading(true);
+    setIsLoading(true)
 
     try {
-      const { error: apiError } = await authApi.resetPassword(token, { newPassword: password });
+      const { error: apiError } = await authApi.resetPassword(token, { newPassword: password })
 
       if (apiError) {
-        setError(apiError);
-        return;
+        setError(apiError)
+        return
       }
 
-      setSuccess(true);
+      setSuccess(true)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
   // 성공 화면
   if (success) {
@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
           </CardContent>
         </Card>
       </div>
-    );
+    )
   }
 
   // 입력 화면
@@ -232,23 +232,23 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
 
 // 비밀번호 강도 계산
 function getPasswordStrength(password: string): PasswordStrength {
-  if (!password) return 'weak';
+  if (!password) return 'weak'
 
-  let strength = 0;
-  if (password.length >= 8) strength++;
-  if (password.length >= 12) strength++;
-  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-  if (/\d/.test(password)) strength++;
-  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
+  let strength = 0
+  if (password.length >= 8) strength++
+  if (password.length >= 12) strength++
+  if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++
+  if (/\d/.test(password)) strength++
+  if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++
 
-  if (strength <= 2) return 'weak';
-  if (strength <= 3) return 'medium';
-  return 'strong';
+  if (strength <= 2) return 'weak'
+  if (strength <= 3) return 'medium'
+  return 'strong'
 }
 
 // 비밀번호 강도 표시
@@ -257,9 +257,9 @@ function PasswordStrengthIndicator({ level }: { level: PasswordStrength }) {
     weak: { color: 'bg-destructive', width: '33%', text: '약함' },
     medium: { color: 'bg-warning', width: '66%', text: '보통' },
     strong: { color: 'bg-success', width: '100%', text: '강함' },
-  };
+  }
 
-  const current = config[level];
+  const current = config[level]
 
   return (
     <div className="space-y-1">
@@ -268,5 +268,5 @@ function PasswordStrengthIndicator({ level }: { level: PasswordStrength }) {
       </div>
       <p className="text-xs text-muted-foreground">비밀번호 강도: {current.text}</p>
     </div>
-  );
+  )
 }

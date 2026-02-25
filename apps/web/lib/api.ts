@@ -14,21 +14,21 @@ import {
   ChatRoomWithMessagesDto,
   UnreadCountDto,
   UploadResponseDto,
-} from '@/types/api';
+} from '@/types/api'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
 
 export type ApiResponse<T> = {
-  data?: T;
-  error?: string;
-  status: number;
-};
+  data?: T
+  error?: string
+  status: number
+}
 
 export type RequestOptions = {
-  method?: string;
-  body?: unknown;
-  headers?: HeadersInit;
-};
+  method?: string
+  body?: unknown
+  headers?: HeadersInit
+}
 
 /**
  * 통합 API 요청 함수
@@ -46,35 +46,35 @@ export async function apiRequest<T>(
       'Content-Type': 'application/json',
       ...options?.headers,
       ...(cookies ? { Cookie: cookies } : {}),
-    };
+    }
 
     const response = await fetch(`${API_URL}${endpoint}`, {
       method: options?.method || 'GET',
       headers,
       body: options?.body ? JSON.stringify(options.body) : undefined,
       credentials: 'include',
-    });
+    })
 
-    let data: unknown;
+    let data: unknown
     try {
-      data = await response.json();
+      data = await response.json()
     } catch {
-      data = null;
+      data = null
     }
 
     if (!response.ok) {
       return {
         error: getErrorMessage(response.status, (data as { message?: string })?.message),
         status: response.status,
-      };
+      }
     }
 
-    return { data: data as T, status: response.status };
+    return { data: data as T, status: response.status }
   } catch {
     return {
       error: '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
       status: 0,
-    };
+    }
   }
 }
 
@@ -90,18 +90,18 @@ function getErrorMessage(status: number, message?: string): string {
     409: '이미 사용 중인 이메일 또는 닉네임입니다.',
     429: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.',
     500: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
-  };
+  }
 
   // 특정 메시지 우선 처리
   if (message?.includes('이메일 인증')) {
-    return '이메일 인증이 필요합니다. 인증 메일을 확인해주세요.';
+    return '이메일 인증이 필요합니다. 인증 메일을 확인해주세요.'
   }
 
   if (message?.includes('인증되지 않은')) {
-    return '이메일 인증이 필요합니다. 인증 메일을 확인해주세요.';
+    return '이메일 인증이 필요합니다. 인증 메일을 확인해주세요.'
   }
 
-  return errorMap[status] || message || '알 수 없는 오류가 발생했습니다.';
+  return errorMap[status] || message || '알 수 없는 오류가 발생했습니다.'
 }
 
 // ==================== Auth API ====================
@@ -172,7 +172,7 @@ export const authApi = {
     apiRequest<MessageResponseDto>('/api/auth/refresh', {
       method: 'POST',
     }),
-};
+}
 
 // ==================== User API ====================
 
@@ -209,7 +209,7 @@ export const userApi = {
       method: 'PATCH',
       body: data,
     }),
-};
+}
 
 // ==================== Chat API ====================
 
@@ -252,7 +252,7 @@ export const chatApi = {
    * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
    */
   getUnreadCount: (cookies?: string) => apiRequest<UnreadCountDto>('/api/chat/unread-count', undefined, cookies),
-};
+}
 
 // ==================== Upload API ====================
 
@@ -263,38 +263,38 @@ export const uploadApi = {
    */
   uploadImages: async (files: File[]): Promise<{ data?: UploadResponseDto; error?: string; status: number }> => {
     try {
-      const formData = new FormData();
-      files.forEach((file) => formData.append('files', file));
+      const formData = new FormData()
+      files.forEach((file) => formData.append('files', file))
 
       const response = await fetch(`${API_URL}/api/upload/images`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
-      });
+      })
 
-      let data: unknown;
+      let data: unknown
       try {
-        data = await response.json();
+        data = await response.json()
       } catch {
-        data = null;
+        data = null
       }
 
       if (!response.ok) {
         return {
           error: (data as { message?: string })?.message || '이미지 업로드에 실패했습니다.',
           status: response.status,
-        };
+        }
       }
 
-      return { data: data as UploadResponseDto, status: response.status };
+      return { data: data as UploadResponseDto, status: response.status }
     } catch {
       return {
         error: '서버와 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
         status: 0,
-      };
+      }
     }
   },
-};
+}
 
 // ==================== Helper Functions ====================
 
@@ -302,6 +302,6 @@ export const uploadApi = {
  * 인증 상태 확인
  */
 export const checkAuth = async (cookies?: string) => {
-  const { data, error } = await userApi.getMe(cookies);
-  return { isAuthenticated: !error, user: data };
-};
+  const { data, error } = await userApi.getMe(cookies)
+  return { isAuthenticated: !error, user: data }
+}

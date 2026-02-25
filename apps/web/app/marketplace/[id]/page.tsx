@@ -1,10 +1,10 @@
-'use client';
+'use client'
 
-import { useState, useEffect, useCallback } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { notFound, useRouter } from 'next/navigation';
-import { use } from 'react';
+import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { notFound, useRouter } from 'next/navigation'
+import { use } from 'react'
 import {
   IconChevronLeft,
   IconChevronRight,
@@ -17,111 +17,111 @@ import {
   IconMapPin,
   IconClock,
   IconStar,
-} from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { chatApi, checkAuth } from '@/lib/api';
-import { STATUS_LABEL } from '@/lib/product-types';
-import { cn } from '@/lib/utils';
-import { getProduct, toProduct, productApi } from '@/lib/products-api';
-import { userApi } from '@/lib/api';
-import type { Product, ProductStatus } from '@/lib/product-types';
+} from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { chatApi, checkAuth } from '@/lib/api'
+import { STATUS_LABEL } from '@/lib/product-types'
+import { cn } from '@/lib/utils'
+import { getProduct, toProduct, productApi } from '@/lib/products-api'
+import { userApi } from '@/lib/api'
+import type { Product, ProductStatus } from '@/lib/product-types'
 
 type ProductDetailPageProps = {
-  params: Promise<{ id: string }>;
-};
+  params: Promise<{ id: string }>
+}
 
 const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
-  const { id } = use(params);
-  const router = useRouter();
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [chatLoading, setChatLoading] = useState(false);
+  const { id } = use(params)
+  const router = useRouter()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false)
 
   const handleChat = useCallback(async () => {
-    if (chatLoading) return;
-    setChatLoading(true);
+    if (chatLoading) return
+    setChatLoading(true)
     try {
-      const { isAuthenticated } = await checkAuth();
+      const { isAuthenticated } = await checkAuth()
       if (!isAuthenticated) {
-        router.push('/login');
-        return;
+        router.push('/login')
+        return
       }
-      const { data, error: chatError } = await chatApi.createRoom(id);
+      const { data, error: chatError } = await chatApi.createRoom(id)
       if (chatError) {
-        alert(chatError);
-        return;
+        alert(chatError)
+        return
       }
       if (data) {
-        router.push(`/chat/${data.id}`);
+        router.push(`/chat/${data.id}`)
       }
     } catch {
-      alert('채팅방을 생성할 수 없습니다.');
+      alert('채팅방을 생성할 수 없습니다.')
     } finally {
-      setChatLoading(false);
+      setChatLoading(false)
     }
-  }, [chatLoading, id, router]);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [favoriteCount, setFavoriteCount] = useState(0);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [statusLoading, setStatusLoading] = useState(false);
+  }, [chatLoading, id, router])
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteCount, setFavoriteCount] = useState(0)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
 
   useEffect(() => {
     getProduct(id)
       .then((data) => {
-        setProduct(toProduct(data));
-        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean };
-        setFavoriteCount(raw.favoriteCount ?? 0);
-        setIsFavorited(raw.isFavorited ?? false);
+        setProduct(toProduct(data))
+        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean }
+        setFavoriteCount(raw.favoriteCount ?? 0)
+        setIsFavorited(raw.isFavorited ?? false)
       })
       .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .finally(() => setLoading(false))
 
     userApi.getMe().then(({ data }) => {
-      if (data) setCurrentUserId(data.id);
-    });
-  }, [id]);
+      if (data) setCurrentUserId(data.id)
+    })
+  }, [id])
 
   const handleStatusChange = async (newStatus: ProductStatus) => {
-    if (statusLoading || !product) return;
-    setStatusLoading(true);
-    const { data } = await productApi.updateProductStatus(id, newStatus);
-    if (data) setProduct((prev) => (prev ? { ...prev, status: data.status as ProductStatus } : prev));
-    setStatusLoading(false);
-  };
+    if (statusLoading || !product) return
+    setStatusLoading(true)
+    const { data } = await productApi.updateProductStatus(id, newStatus)
+    if (data) setProduct((prev) => (prev ? { ...prev, status: data.status as ProductStatus } : prev))
+    setStatusLoading(false)
+  }
 
   const handleFavoriteToggle = async () => {
-    if (favoriteLoading) return;
-    setFavoriteLoading(true);
-    const prev = isFavorited;
-    setIsFavorited(!prev);
-    setFavoriteCount((c) => c + (prev ? -1 : 1));
-    const { data } = await productApi.toggleFavorite(id);
+    if (favoriteLoading) return
+    setFavoriteLoading(true)
+    const prev = isFavorited
+    setIsFavorited(!prev)
+    setFavoriteCount((c) => c + (prev ? -1 : 1))
+    const { data } = await productApi.toggleFavorite(id)
     if (!data) {
-      setIsFavorited(prev);
-      setFavoriteCount((c) => c + (prev ? 1 : -1));
+      setIsFavorited(prev)
+      setFavoriteCount((c) => c + (prev ? 1 : -1))
     }
-    setFavoriteLoading(false);
-  };
+    setFavoriteLoading(false)
+  }
 
   if (loading) {
     return (
       <div className="flex justify-center py-20">
         <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
-    );
+    )
   }
 
   if (error || !product) {
-    notFound();
+    notFound()
   }
 
-  const isSold = product.status === 'SOLD';
-  const isReserved = product.status === 'RESERVED';
-  const isSelling = product.status === 'SELLING';
-  const isOwner = !!(currentUserId && currentUserId === product.seller.id);
+  const isSold = product.status === 'SOLD'
+  const isReserved = product.status === 'RESERVED'
+  const isSelling = product.status === 'SELLING'
+  const isOwner = !!(currentUserId && currentUserId === product.seller.id)
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
@@ -411,28 +411,28 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
 /** 이미지 캐러셀 컴포넌트 */
 const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string; status: string }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const isSold = status === 'SOLD';
-  const isReserved = status === 'RESERVED';
-  const hasMultiple = images.length > 1;
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const isSold = status === 'SOLD'
+  const isReserved = status === 'RESERVED'
+  const hasMultiple = images.length > 1
 
   const goTo = (idx: number) => {
-    if (idx < 0) setCurrentIndex(images.length - 1);
-    else if (idx >= images.length) setCurrentIndex(0);
-    else setCurrentIndex(idx);
-  };
+    if (idx < 0) setCurrentIndex(images.length - 1)
+    else if (idx >= images.length) setCurrentIndex(0)
+    else setCurrentIndex(idx)
+  }
 
   if (images.length === 0) {
     return (
       <div className="aspect-square rounded-2xl bg-linear-to-br from-muted to-muted/50 flex items-center justify-center text-muted-foreground text-sm font-semibold shadow-inner">
         이미지 없음
       </div>
-    );
+    )
   }
 
   return (
@@ -521,7 +521,7 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ProductDetailPage;
+export default ProductDetailPage

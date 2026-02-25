@@ -1,6 +1,6 @@
-import Image from 'next/image';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import Image from 'next/image'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 
 const LandingPage = () => {
   return (
@@ -161,7 +161,7 @@ const LandingPage = () => {
         <p className="text-center text-xs text-muted-foreground mt-6">© 2024 PeachMarket</p>
       </footer>
     </div>
-  );
-};
+  )
+}
 
-export default LandingPage;
+export default LandingPage

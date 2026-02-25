@@ -1,16 +1,16 @@
-'use client';
+'use client'
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { IconFilter, IconSortDescending, IconX } from '@tabler/icons-react';
-import { Button } from '@/components/ui/button';
+import { useRouter, useSearchParams } from 'next/navigation'
+import { IconFilter, IconSortDescending, IconX } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
+} from '@/components/ui/dropdown-menu'
+import { Badge } from '@/components/ui/badge'
 
 const CATEGORIES = [
   '디지털기기',
@@ -25,45 +25,45 @@ const CATEGORIES = [
   '뷰티/미용',
   '반려동물용품',
   '기타',
-];
+]
 
 const STATUS_OPTIONS = [
   { value: 'SELLING', label: '판매중' },
   { value: 'RESERVED', label: '예약중' },
   { value: 'SOLD', label: '판매완료' },
-];
+]
 
 const SORT_OPTIONS = [
   { value: 'latest', label: '최신순' },
   { value: 'price_asc', label: '가격 낮은순' },
   { value: 'price_desc', label: '가격 높은순' },
-];
+]
 
 export function FilterBar() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const router = useRouter()
+  const searchParams = useSearchParams()
 
-  const currentCategory = searchParams.get('category') || '';
-  const currentStatus = searchParams.get('status') || '';
-  const currentSort = searchParams.get('sort') || 'latest';
+  const currentCategory = searchParams.get('category') || ''
+  const currentStatus = searchParams.get('status') || ''
+  const currentSort = searchParams.get('sort') || 'latest'
 
   const updateParams = (key: string, value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams.toString())
     if (value) {
-      params.set(key, value);
+      params.set(key, value)
     } else {
-      params.delete(key);
+      params.delete(key)
     }
     // cursor 초기화 (필터 변경 시 처음부터 로드)
-    params.delete('cursor');
-    router.push(`/marketplace?${params.toString()}`);
-  };
+    params.delete('cursor')
+    router.push(`/marketplace?${params.toString()}`)
+  }
 
   const clearAllFilters = () => {
-    router.push('/marketplace');
-  };
+    router.push('/marketplace')
+  }
 
-  const hasActiveFilters = currentCategory || currentStatus;
+  const hasActiveFilters = currentCategory || currentStatus
 
   return (
     <div className="flex flex-col gap-3 mb-4">
@@ -161,5 +161,5 @@ export function FilterBar() {
         </div>
       )}
     </div>
-  );
+  )
 }

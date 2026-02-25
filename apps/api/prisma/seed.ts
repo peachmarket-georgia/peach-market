@@ -1,33 +1,33 @@
-import { PrismaClient, ProductStatus } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
-import * as bcrypt from 'bcrypt';
+import { PrismaClient, ProductStatus } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+import { Pool } from 'pg'
+import * as bcrypt from 'bcrypt'
 
-const TEST_PASSWORD = 'peach1234!';
+const TEST_PASSWORD = 'peach1234!'
 
 if (process.env.NODE_ENV === 'production') {
-  console.error('🚫 Seed는 개발 환경에서만 실행할 수 있습니다.');
-  process.exit(1);
+  console.error('🚫 Seed는 개발 환경에서만 실행할 수 있습니다.')
+  process.exit(1)
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg(pool)
+const prisma = new PrismaClient({ adapter })
 
 async function main() {
   // 기존 데이터 정리 (외래 키 순서 준수)
-  await prisma.message.deleteMany();
-  await prisma.favorite.deleteMany();
-  await prisma.chatRoom.deleteMany();
-  await prisma.review.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.emailVerification.deleteMany();
-  await prisma.passwordReset.deleteMany();
-  await prisma.session.deleteMany();
-  await prisma.account.deleteMany();
-  await prisma.user.deleteMany();
+  await prisma.message.deleteMany()
+  await prisma.favorite.deleteMany()
+  await prisma.chatRoom.deleteMany()
+  await prisma.review.deleteMany()
+  await prisma.product.deleteMany()
+  await prisma.emailVerification.deleteMany()
+  await prisma.passwordReset.deleteMany()
+  await prisma.session.deleteMany()
+  await prisma.account.deleteMany()
+  await prisma.user.deleteMany()
 
-  const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10);
+  const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10)
 
   // 테스트 유저 생성
   const user1 = await prisma.user.create({
@@ -39,7 +39,7 @@ async function main() {
       mannerScore: 4.5,
       isEmailVerified: true,
     },
-  });
+  })
 
   const user2 = await prisma.user.create({
     data: {
@@ -50,7 +50,7 @@ async function main() {
       mannerScore: 4.8,
       isEmailVerified: true,
     },
-  });
+  })
 
   // 테스트 상품 생성
   const products = await Promise.all([
@@ -126,17 +126,17 @@ async function main() {
         viewCount: 55,
       },
     }),
-  ]);
+  ])
 
-  console.log(`Seeded ${products.length} products`);
-  console.log(`Users: ${user1.nickname}, ${user2.nickname}`);
+  console.log(`Seeded ${products.length} products`)
+  console.log(`Users: ${user1.nickname}, ${user2.nickname}`)
 }
 
 main()
   .catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error(e)
+    process.exit(1)
   })
   .finally(async () => {
-    await prisma.$disconnect();
-  });
+    await prisma.$disconnect()
+  })

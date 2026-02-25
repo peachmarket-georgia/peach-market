@@ -1,7 +1,7 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { ApiProperty } from '@nestjs/swagger'
+import { User } from '@prisma/client'
 
-export type UserWithoutPassword = Omit<User, 'password'>;
+export type UserWithoutPassword = Omit<User, 'password'>
 
 export class LoginResponseDto {
   @ApiProperty({
@@ -16,5 +16,5 @@ export class LoginResponseDto {
       updatedAt: '2024-01-01T00:00:00.000Z',
     },
   })
-  user: UserWithoutPassword;
+  user: UserWithoutPassword
 }

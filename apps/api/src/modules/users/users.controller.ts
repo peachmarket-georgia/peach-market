@@ -1,11 +1,11 @@
-import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger';
-import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { CurrentUser, type JwtUser } from '../auth/current-user.decorator';
-import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto';
-import { UserProfileResponseDto } from './dto/user-response.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common'
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger'
+import { UsersService } from './users.service'
+import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
+import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto'
+import { UserProfileResponseDto } from './dto/user-response.dto'
+import { UpdateUserDto } from './dto/update-user.dto'
 
 @ApiTags('users')
 @Controller('users')
@@ -27,8 +27,8 @@ export class UsersController {
     type: CheckAvailabilityResponseDto,
   })
   async checkEmail(@Body('email') email: string) {
-    const available = await this.usersService.checkEmailAvailability(email);
-    return { available };
+    const available = await this.usersService.checkEmailAvailability(email)
+    return { available }
   }
 
   @Post('check-nickname')
@@ -46,8 +46,8 @@ export class UsersController {
     type: CheckAvailabilityResponseDto,
   })
   async checkNickname(@Body('nickname') nickname: string) {
-    const available = await this.usersService.checkNicknameAvailability(nickname);
-    return { available };
+    const available = await this.usersService.checkNicknameAvailability(nickname)
+    return { available }
   }
 
   @Get('me')
@@ -61,14 +61,14 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   async getProfile(@CurrentUser() { userId }: JwtUser) {
-    const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findById(userId)
     if (!user) {
-      return null;
+      return null
     }
     // 비밀번호 제외하고 반환
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _password, ...result } = user;
-    return result;
+    const { password: _password, ...result } = user
+    return result
   }
 
   @Patch('me')
@@ -83,6 +83,6 @@ export class UsersController {
   @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
   @ApiResponse({ status: 409, description: '닉네임 중복' })
   async updateProfile(@CurrentUser() { userId }: JwtUser, @Body() updateDto: UpdateUserDto) {
-    return this.usersService.updateProfile(userId, updateDto);
+    return this.usersService.updateProfile(userId, updateDto)
   }
 }

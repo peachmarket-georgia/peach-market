@@ -12,6 +12,6 @@ export const GEORGIA_LOCATIONS = [
   'Marietta',
   'Roswell',
   '기타 (Georgia)',
-] as const;
+] as const
 
-export type GeorgiaLocation = (typeof GEORGIA_LOCATIONS)[number];
+export type GeorgiaLocation = (typeof GEORGIA_LOCATIONS)[number]
