@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsNotEmpty, IsArray, MaxLength, Min, ArrayMaxSize, IsEnum, IsOptional } from 'class-validator'
+import { IsString, IsInt, IsNotEmpty, IsArray, MaxLength, Min, IsEnum, IsOptional } from 'class-validator'
 import { Transform } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { PaymentMethod } from '@prisma/client'
@@ -25,17 +25,6 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   category!: string
-
-  @ApiPropertyOptional({
-    description: '이미지 URL 배열 (최대 5장, 파일 직접 업로드 시 불필요)',
-    type: [String],
-    example: ['https://example.com/image1.jpg'],
-  })
-  @IsOptional()
-  @IsArray()
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  images?: string[]
 
   @ApiProperty({ example: 'Duluth', description: '거래 희망 지역' })
   @IsString()

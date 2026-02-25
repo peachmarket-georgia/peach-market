@@ -11,13 +11,13 @@ import {
 import { FilesInterceptor } from '@nestjs/platform-express'
 import { ApiTags, ApiOperation, ApiResponse, ApiConsumes, ApiBody, ApiCookieAuth } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
-import { UploadService } from './upload.service'
+import { StorageService } from '../../core/storage/storage.service'
 import { UploadResponseDto } from './dto/upload-response.dto'
 
 @ApiTags('upload')
 @Controller('upload')
 export class UploadController {
-  constructor(private readonly uploadService: UploadService) {}
+  constructor(private readonly storageService: StorageService) {}
 
   @Post('images')
   @UseGuards(JwtAuthGuard)
@@ -66,7 +66,7 @@ export class UploadController {
   @ApiResponse({ status: 400, description: '잘못된 요청 (파일 형식, 크기 등)' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   async uploadImages(@UploadedFiles() files: Express.Multer.File[]): Promise<UploadResponseDto> {
-    const images = await this.uploadService.uploadImages(files)
+    const images = await this.storageService.uploadImages(files)
     return { images }
   }
 }

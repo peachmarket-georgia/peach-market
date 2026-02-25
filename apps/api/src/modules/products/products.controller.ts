@@ -20,6 +20,7 @@ import { ProductStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
 import { ProductsService } from './products.service'
+import { StorageService } from '../../core/storage/storage.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
@@ -28,7 +29,10 @@ import { UpdateProductDto } from './dto/update-product.dto'
 @UseGuards(JwtAuthGuard)
 @ApiCookieAuth('access_token')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly storageService: StorageService
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '상품 목록 조회', description: '검색, 카테고리, 상태 필터 및 정렬 지원' })
@@ -101,12 +105,14 @@ export class ProductsController {
   @ApiResponse({ status: 201, description: '상품 등록 성공' })
   @ApiResponse({ status: 400, description: '유효하지 않은 입력' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  create(
+  async create(
     @UploadedFiles() files: Express.Multer.File[],
     @Body() dto: CreateProductDto,
     @CurrentUser() { userId }: JwtUser
   ) {
-    return this.productsService.create(dto, userId, files)
+    const imageUrls = (await this.storageService.uploadImages(files)).map((img) => img.url)
+
+    return this.productsService.create(dto, userId, imageUrls)
   }
 
   @Patch(':id')

@@ -1,7 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common'
 import { ProductStatus } from '@prisma/client'
 import { PrismaService } from '../../core/database/prisma.service'
-import { UploadService } from '../upload/upload.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
@@ -63,10 +62,7 @@ function formatProduct(product: ProductWithCount, isFavorited = false) {
 
 @Injectable()
 export class ProductsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly uploadService: UploadService
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: { search?: string; category?: string; status?: string; sort?: string }, userId?: string) {
     const conditions: object[] = []
@@ -157,19 +153,9 @@ export class ProductsService {
     return formatProduct(product, isFavorited)
   }
 
-  async create(dto: CreateProductDto, sellerId: string, files?: Express.Multer.File[]) {
-    const hasFiles = files && files.length > 0
-    const hasImageUrls = dto.images && dto.images.length > 0
-
-    if (!hasFiles && !hasImageUrls) {
+  async create(dto: CreateProductDto, sellerId: string, imageUrls: string[]) {
+    if (imageUrls.length === 0) {
       throw new BadRequestException('이미지를 최소 1장 이상 등록해야 합니다.')
-    }
-
-    let imageUrls: string[] = dto.images ?? []
-
-    if (hasFiles) {
-      const uploaded = await this.uploadService.uploadImages(files)
-      imageUrls = uploaded.map((img) => img.url)
     }
 
     const product = await this.prisma.product.create({
