@@ -6,7 +6,7 @@ import { useSocket } from '@/context/socket-provider'
 import { chatApi, checkAuth } from '@/lib/api'
 import { ChatMessageDto, ChatRoomWithMessagesDto } from '@/types/api'
 import { cn } from '@/lib/utils'
-import { IconChevronLeft, IconSend, IconDotsVertical, IconWifi, IconWifiOff } from '@tabler/icons-react'
+import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react'
 
 export default function ChatRoomPage() {
   const router = useRouter()
@@ -178,16 +178,9 @@ export default function ChatRoomPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
-          {isConnected ? (
-            <IconWifi className="w-4 h-4 text-success" />
-          ) : (
-            <IconWifiOff className="w-4 h-4 text-destructive" />
-          )}
-          <button className="p-2 rounded-lg hover:bg-accent">
-            <IconDotsVertical className="w-5 h-5" />
-          </button>
-        </div>
+        <button className="p-2 rounded-lg hover:bg-accent">
+          <IconDotsVertical className="w-5 h-5" />
+        </button>
       </header>
 
       {/* Connection Status Banner */}

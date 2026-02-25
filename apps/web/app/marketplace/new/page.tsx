@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { createProduct } from '@/lib/products-api'
+import { productApi } from '@/lib/products-api'
+import { uploadApi } from '@/lib/api'
 import { ImageUpload } from '@/components/product/image-upload'
 import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
@@ -131,21 +132,26 @@ const ProductCreatePage = (): React.JSX.Element => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 md:px-6 pb-20 md:pb-8 md:mt-10">
+    <div className="max-w-2xl mx-auto px-4 md:px-6 pb-24 md:pb-10 md:mt-10">
       {/* 헤더 */}
-      <div className="mb-6 flex items-center gap-3">
+      <div className="mb-6">
         <Link
           href="/marketplace"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className="inline-flex items-center gap-1 text-sm text-[#757575] hover:text-primary transition-colors mb-3"
         >
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
-        <h1 className="text-lg font-bold text-foreground">상품 등록</h1>
+        <h1 className="text-2xl font-extrabold text-[#212121]">상품 등록</h1>
+        <p className="text-sm text-[#9E9E9E] mt-0.5">조지아 한인 중고마켓에 올려보세요 🍑</p>
       </div>
 
-      <div className="flex flex-col gap-5">
-        {error && <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">{error}</p>}
+      <div className="flex flex-col gap-6">
+        {error && (
+          <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">
+            {error}
+          </div>
+        )}
 
         {/* 이미지 업로드 */}
         <div className="flex flex-col gap-1.5">
@@ -159,129 +165,141 @@ const ProductCreatePage = (): React.JSX.Element => {
           {fieldErrors.images && <span className="text-xs text-destructive">{fieldErrors.images}</span>}
         </div>
 
-        {/* 제목 */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="title">
-            제목 <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="title"
-            placeholder="상품명을 입력하세요"
-            maxLength={50}
-            value={title}
-            onChange={(e) => {
-              setTitle(e.target.value)
-              if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, title: undefined }))
-            }}
-            className={cn(fieldErrors.title && 'border-destructive')}
-          />
-          <div className="flex justify-between">
-            {fieldErrors.title ? <span className="text-xs text-destructive">{fieldErrors.title}</span> : <span />}
-            <span className="text-xs text-muted-foreground">{title.length}/50</span>
-          </div>
-        </div>
-
-        {/* 카테고리 */}
-        <div className="flex flex-col gap-1.5">
-          <Label>
-            카테고리 <span className="text-destructive">*</span>
-          </Label>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => {
-                  setCategory(cat)
-                  setFieldErrors((prev) => ({ ...prev, category: undefined }))
-                }}
-                className={cn(
-                  'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
-                  category === cat
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                )}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-          {fieldErrors.category && <span className="text-xs text-destructive">{fieldErrors.category}</span>}
-        </div>
-
-        {/* 가격 */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="price">
-            가격 (USD) <span className="text-destructive">*</span>
-          </Label>
-          <div className="relative">
-            <IconCurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        {/* 기본 정보 카드 */}
+        <div className="bg-white rounded-2xl border-2 border-orange-100 p-4 shadow-sm flex flex-col gap-5">
+          {/* 제목 */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="title" className="text-sm font-semibold text-[#212121]">
+              제목 <span className="text-primary">*</span>
+            </Label>
             <Input
-              id="price"
-              type="text"
-              placeholder="0"
-              value={price}
-              inputMode="numeric"
-              onChange={(e) => handlePriceChange(e.target.value)}
-              className={cn('pl-9', fieldErrors.price && 'border-destructive')}
-            />
-          </div>
-          {fieldErrors.price && <span className="text-xs text-destructive">{fieldErrors.price}</span>}
-        </div>
-
-        {/* 거래 희망 지역 */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="location">
-            거래 희망 지역 <span className="text-destructive">*</span>
-          </Label>
-          <div className="relative">
-            <Input
-              id="location"
-              placeholder="예: Duluth"
-              value={location}
-              onFocus={() => setIsLocationFocused(true)}
-              onBlur={() => setTimeout(() => setIsLocationFocused(false), 100)}
+              id="title"
+              placeholder="상품명을 입력하세요"
+              maxLength={50}
+              value={title}
               onChange={(e) => {
-                setLocation(e.target.value)
-                if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, location: undefined }))
+                setTitle(e.target.value)
+                if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, title: undefined }))
               }}
-              autoComplete="off"
-              className={cn(fieldErrors.location && 'border-destructive')}
+              className={cn(
+                'h-11 rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                fieldErrors.title && 'border-destructive focus-visible:border-destructive'
+              )}
             />
-            {isLocationFocused && filteredLocations.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-20 rounded-md border bg-popover shadow-md">
-                <ul className="max-h-48 overflow-y-auto p-1">
-                  {filteredLocations.map((item) => (
-                    <li key={item}>
-                      <button
-                        type="button"
-                        className="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                        onMouseDown={() => handleLocationSelect(item)}
-                      >
-                        {item}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            <div className="flex justify-between">
+              {fieldErrors.title ? <span className="text-xs text-destructive">{fieldErrors.title}</span> : <span />}
+              <span className="text-xs text-[#9E9E9E]">{title.length}/50</span>
+            </div>
           </div>
-          {fieldErrors.location && <span className="text-xs text-destructive">{fieldErrors.location}</span>}
+
+          {/* 카테고리 */}
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-sm font-semibold text-[#212121]">
+              카테고리 <span className="text-primary">*</span>
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => {
+                    setCategory(cat)
+                    setFieldErrors((prev) => ({ ...prev, category: undefined }))
+                  }}
+                  className={cn(
+                    'px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+                    category === cat
+                      ? 'bg-primary text-white shadow-md shadow-primary/30'
+                      : 'bg-white border-2 border-orange-100 text-[#757575] hover:border-primary/40 hover:text-primary'
+                  )}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+            {fieldErrors.category && <span className="text-xs text-destructive">{fieldErrors.category}</span>}
+          </div>
+
+          {/* 가격 */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="price" className="text-sm font-semibold text-[#212121]">
+              가격 (USD) <span className="text-primary">*</span>
+            </Label>
+            <div className="relative">
+              <IconCurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
+              <Input
+                id="price"
+                type="text"
+                placeholder="0"
+                value={price}
+                inputMode="numeric"
+                onChange={(e) => handlePriceChange(e.target.value)}
+                className={cn(
+                  'pl-9 h-11 rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                  fieldErrors.price && 'border-destructive focus-visible:border-destructive'
+                )}
+              />
+            </div>
+            {fieldErrors.price && <span className="text-xs text-destructive">{fieldErrors.price}</span>}
+          </div>
+
+          {/* 거래 희망 지역 */}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="location" className="text-sm font-semibold text-[#212121]">
+              거래 희망 지역 <span className="text-primary">*</span>
+            </Label>
+            <div className="relative">
+              <Input
+                id="location"
+                placeholder="예: Duluth"
+                value={location}
+                onFocus={() => setIsLocationFocused(true)}
+                onBlur={() => setTimeout(() => setIsLocationFocused(false), 100)}
+                onChange={(e) => {
+                  setLocation(e.target.value)
+                  if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, location: undefined }))
+                }}
+                autoComplete="off"
+                className={cn(
+                  'h-11 rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                  fieldErrors.location && 'border-destructive focus-visible:border-destructive'
+                )}
+              />
+              {isLocationFocused && filteredLocations.length > 0 && (
+                <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border-2 border-orange-100 rounded-xl shadow-xl py-1.5 overflow-hidden">
+                  <ul className="max-h-48 overflow-y-auto p-1">
+                    {filteredLocations.map((item) => (
+                      <li key={item}>
+                        <button
+                          type="button"
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#757575] hover:bg-orange-50 hover:text-primary transition-colors"
+                          onMouseDown={() => handleLocationSelect(item)}
+                        >
+                          {item}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+            {fieldErrors.location && <span className="text-xs text-destructive">{fieldErrors.location}</span>}
+          </div>
         </div>
 
-        {/* 상품 설명 */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="description">상품 설명</Label>
+        {/* 상품 설명 카드 */}
+        <div className="bg-white rounded-2xl border-2 border-orange-100 p-4 shadow-sm">
+          <Label htmlFor="description" className="text-sm font-semibold text-[#212121] mb-1.5 block">
+            상품 설명
+          </Label>
           <Textarea
-            className="h-40 resize-none"
+            className="h-40 resize-none rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors"
             id="description"
             placeholder={DESCRIPTION_PLACEHOLDER}
             rows={6}
             value={description}
             onFocus={() => {
-              if (!description.trim()) {
-                setDescription(DESCRIPTION_TEMPLATE)
-              }
+              if (!description.trim()) setDescription(DESCRIPTION_TEMPLATE)
             }}
             onChange={(e) => setDescription(e.target.value)}
           />
@@ -289,12 +307,23 @@ const ProductCreatePage = (): React.JSX.Element => {
 
         {/* 등록 버튼 */}
         <Button
-          className={cn('w-full h-12 text-base', !isValid && 'bg-muted text-muted-foreground hover:bg-muted')}
-          disabled={loading}
+          className={cn(
+            'w-full h-12 rounded-full text-base font-bold shadow-md transition-all active:scale-95',
+            isValid
+              ? 'bg-primary hover:bg-primary/90 text-white hover:shadow-lg'
+              : 'bg-orange-100 text-[#9E9E9E] cursor-not-allowed'
+          )}
+          disabled={loading || !isValid}
           onClick={handleSubmit}
         >
-          {loading && <IconLoader2 className="h-4 w-4 mr-2 animate-spin" />}
-          등록하기
+          {loading ? (
+            <>
+              <IconLoader2 className="h-4 w-4 mr-2 animate-spin" />
+              등록 중...
+            </>
+          ) : (
+            '등록하기'
+          )}
         </Button>
       </div>
     </div>

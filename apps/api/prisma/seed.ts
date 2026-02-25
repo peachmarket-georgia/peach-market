@@ -1,6 +1,9 @@
 import { PrismaClient, ProductStatus } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
+import * as bcrypt from 'bcrypt'
+
+const TEST_PASSWORD = 'peach1234!'
 
 if (process.env.NODE_ENV === 'production') {
   console.error('🚫 Seed는 개발 환경에서만 실행할 수 있습니다.')
@@ -24,11 +27,13 @@ async function main() {
   await prisma.account.deleteMany()
   await prisma.user.deleteMany()
 
+  const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10)
+
   // 테스트 유저 생성
   const user1 = await prisma.user.create({
     data: {
       email: 'test1@peachmarket.com',
-      password: '$2b$10$dummyhashedpassword1234567890abc',
+      password: hashedPassword,
       nickname: '복숭아맘',
       location: 'Duluth, GA',
       mannerScore: 4.5,
@@ -39,7 +44,7 @@ async function main() {
   const user2 = await prisma.user.create({
     data: {
       email: 'test2@peachmarket.com',
-      password: '$2b$10$dummyhashedpassword1234567890xyz',
+      password: hashedPassword,
       nickname: '조지아피치',
       location: 'Suwanee, GA',
       mannerScore: 4.8,

@@ -11,8 +11,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ProductCard } from '@/app/marketplace/components/product-card'
-import { checkAuth, productApi, userApi } from '@/lib/api'
+import { checkAuth, userApi } from '@/lib/api'
 import { ProductResponseDto, UserProfileResponseDto } from '@/types/api'
+import { productApi } from '@/lib/products-api'
 
 type TabType = 'selling' | 'sold' | 'favorites'
 
