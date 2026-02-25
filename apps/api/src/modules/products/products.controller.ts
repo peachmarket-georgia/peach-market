@@ -3,12 +3,15 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam }
 import type { Request } from 'express'
 import { ProductStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
 import { ProductsService } from './products.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
 @ApiTags('products')
 @Controller('products')
+@UseGuards(JwtAuthGuard)
+@ApiCookieAuth('access_token')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
@@ -19,35 +22,31 @@ export class ProductsController {
   @ApiQuery({ name: 'status', required: false, description: '상태 필터 (판매중, 예약중, 판매완료)' })
   @ApiQuery({ name: 'sort', required: false, description: '정렬', enum: ['price_asc', 'price_desc'] })
   @ApiResponse({ status: 200, description: '상품 목록 반환' })
+  @ApiResponse({ status: 401, description: '인증 필요' })
   findAll(
+    @CurrentUser() { userId }: JwtUser,
     @Query('search') search?: string,
     @Query('category') category?: string,
     @Query('status') status?: string,
     @Query('sort') sort?: string
   ) {
-    return this.productsService.findAll({ search, category, status, sort })
+    return this.productsService.findAll({ search, category, status, sort }, userId)
   }
 
   @Get('favorites')
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '찜 목록 조회', description: '사용자가 찜한 상품 목록을 조회합니다.' })
   @ApiResponse({ status: 200, description: '찜 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  getFavorites(@Req() req: Request) {
-    const { userId } = req.user as { userId: string }
+  getFavorites(@CurrentUser() { userId }: JwtUser) {
     return this.productsService.getFavoritesByUser(userId)
   }
 
   @Get('my')
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '내 상품 목록 조회', description: '로그인한 사용자가 등록한 상품 목록' })
   @ApiQuery({ name: 'status', enum: ProductStatus, required: false, description: '상품 상태 필터' })
   @ApiResponse({ status: 200, description: '내 상품 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  findMy(@Req() req: Request, @Query('status') status?: ProductStatus) {
-    const { userId } = req.user as { userId: string }
+  findMy(@CurrentUser() { userId }: JwtUser, @Query('status') status?: ProductStatus) {
     return this.productsService.findMy(userId, status)
   }
 
@@ -58,75 +57,61 @@ export class ProductsController {
   })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '상품 상세 정보 반환' })
+  @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  findOne(@Param('id') id: string, @Req() req: Request) {
+  findOne(@Param('id') id: string, @Req() req: Request, @CurrentUser() { userId }: JwtUser) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown'
-    return this.productsService.findOne(id, ip)
+    return this.productsService.findOne(id, ip, userId)
   }
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '상품 등록', description: '새 상품을 등록합니다 (로그인 필요)' })
   @ApiResponse({ status: 201, description: '상품 등록 성공' })
   @ApiResponse({ status: 400, description: '유효하지 않은 입력' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  create(@Body() dto: CreateProductDto, @Req() req: Request) {
-    const { userId } = req.user as { userId: string }
+  create(@Body() dto: CreateProductDto, @CurrentUser() { userId }: JwtUser) {
     return this.productsService.create(dto, userId)
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '상품 수정', description: '본인이 등록한 상품을 수정합니다 (로그인 필요)' })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '상품 수정 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 403, description: '본인의 상품만 수정 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  update(@Param('id') id: string, @Body() dto: UpdateProductDto, @Req() req: Request) {
-    const { userId } = req.user as { userId: string }
+  update(@Param('id') id: string, @Body() dto: UpdateProductDto, @CurrentUser() { userId }: JwtUser) {
     return this.productsService.update(id, dto, userId)
   }
 
   @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '상품 상태 변경', description: '상품 상태를 변경합니다 (판매중/예약중/판매완료)' })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '상태 변경 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 403, description: '본인의 상품만 변경 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  updateStatus(@Param('id') id: string, @Body('status') status: ProductStatus, @Req() req: Request) {
-    const { userId } = req.user as { userId: string }
+  updateStatus(@Param('id') id: string, @Body('status') status: ProductStatus, @CurrentUser() { userId }: JwtUser) {
     return this.productsService.updateStatus(id, status, userId)
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '상품 삭제', description: '본인이 등록한 상품을 삭제합니다 (로그인 필요)' })
   @ApiResponse({ status: 200, description: '상품 삭제 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 403, description: '본인의 상품만 삭제 가능' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  remove(@Param('id') id: string, @Req() req: Request) {
-    const { userId } = req.user as { userId: string }
+  remove(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
     return this.productsService.remove(id, userId)
   }
 
   @Post(':id/favorite')
-  @UseGuards(JwtAuthGuard)
-  @ApiCookieAuth('access_token')
   @ApiOperation({ summary: '찜 토글', description: '상품 찜하기/찜 해제' })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '찜 상태 변경 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  toggleFavorite(@Param('id') id: string, @Req() req: Request) {
-    const { userId } = req.user as { userId: string }
+  toggleFavorite(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
     return this.productsService.toggleFavorite(id, userId)
   }
 }

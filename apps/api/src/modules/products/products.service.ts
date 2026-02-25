@@ -64,7 +64,7 @@ function formatProduct(product: ProductWithCount, isFavorited = false) {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; category?: string; status?: string; sort?: string }) {
+  async findAll(query: { search?: string; category?: string; status?: string; sort?: string }, userId?: string) {
     const conditions: object[] = []
 
     if (query.search) {
@@ -93,7 +93,16 @@ export class ProductsService {
       select: PRODUCT_SELECT,
     })
 
-    return products.map((p) => formatProduct(p))
+    let favoritedIds = new Set<string>()
+    if (userId) {
+      const favorites = await this.prisma.favorite.findMany({
+        where: { userId },
+        select: { productId: true },
+      })
+      favoritedIds = new Set(favorites.map((f) => f.productId))
+    }
+
+    return products.map((p) => formatProduct(p, favoritedIds.has((p as { id: string }).id)))
   }
 
   async findMy(sellerId: string, status?: ProductStatus) {
@@ -109,7 +118,7 @@ export class ProductsService {
     return products.map((p) => formatProduct(p))
   }
 
-  async findOne(id: string, ip?: string) {
+  async findOne(id: string, ip?: string, userId?: string) {
     const product = await this.prisma.product.findUnique({
       where: { id },
       select: PRODUCT_SELECT,
@@ -133,7 +142,15 @@ export class ProductsService {
       ;(product as { viewCount: number }).viewCount += 1
     }
 
-    return formatProduct(product)
+    let isFavorited = false
+    if (userId) {
+      const favorite = await this.prisma.favorite.findUnique({
+        where: { userId_productId: { userId, productId: id } },
+      })
+      isFavorited = !!favorite
+    }
+
+    return formatProduct(product, isFavorited)
   }
 
   async create(dto: CreateProductDto, sellerId: string) {
@@ -226,6 +243,14 @@ export class ProductsService {
 
     if (!product) {
       throw new NotFoundException('상품을 찾을 수 없습니다')
+    }
+
+    if (product.sellerId === userId) {
+      throw new ForbiddenException('본인의 상품은 찜할 수 없습니다')
+    }
+
+    if (product.sellerId === userId) {
+      throw new ForbiddenException('본인의 상품은 찜할 수 없습니다')
     }
 
     const existingFavorite = await this.prisma.favorite.findUnique({

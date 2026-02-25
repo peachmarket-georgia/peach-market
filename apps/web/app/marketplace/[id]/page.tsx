@@ -9,6 +9,7 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconHeart,
+  IconHeartFilled,
   IconMessageCircle,
   IconEye,
   IconShare,
@@ -22,8 +23,9 @@ import { Badge } from '@/components/ui/badge'
 import { chatApi, checkAuth } from '@/lib/api'
 import { STATUS_LABEL } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { getProduct, toProduct } from '@/lib/products-api'
-import type { Product } from '@/lib/product-types'
+import { getProduct, toProduct, productApi } from '@/lib/products-api'
+import { userApi } from '@/lib/api'
+import type { Product, ProductStatus } from '@/lib/product-types'
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>
@@ -60,13 +62,49 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
       setChatLoading(false)
     }
   }, [chatLoading, id, router])
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteCount, setFavoriteCount] = useState(0)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
 
   useEffect(() => {
     getProduct(id)
-      .then((data) => setProduct(toProduct(data)))
+      .then((data) => {
+        setProduct(toProduct(data))
+        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean }
+        setFavoriteCount(raw.favoriteCount ?? 0)
+        setIsFavorited(raw.isFavorited ?? false)
+      })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
+
+    userApi.getMe().then(({ data }) => {
+      if (data) setCurrentUserId(data.id)
+    })
   }, [id])
+
+  const handleStatusChange = async (newStatus: ProductStatus) => {
+    if (statusLoading || !product) return
+    setStatusLoading(true)
+    const { data } = await productApi.updateProductStatus(id, newStatus)
+    if (data) setProduct((prev) => (prev ? { ...prev, status: data.status as ProductStatus } : prev))
+    setStatusLoading(false)
+  }
+
+  const handleFavoriteToggle = async () => {
+    if (favoriteLoading) return
+    setFavoriteLoading(true)
+    const prev = isFavorited
+    setIsFavorited(!prev)
+    setFavoriteCount((c) => c + (prev ? -1 : 1))
+    const { data } = await productApi.toggleFavorite(id)
+    if (!data) {
+      setIsFavorited(prev)
+      setFavoriteCount((c) => c + (prev ? 1 : -1))
+    }
+    setFavoriteLoading(false)
+  }
 
   if (loading) {
     return (
@@ -83,6 +121,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const isSold = product.status === 'SOLD'
   const isReserved = product.status === 'RESERVED'
   const isSelling = product.status === 'SELLING'
+  const isOwner = !!(currentUserId && currentUserId === product.seller.id)
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
@@ -164,7 +203,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-default">
               <IconHeart className="h-4 w-4" />
-              <span className="font-medium">관심 {product.likeCount}</span>
+              <span className="font-medium">관심 {favoriteCount}</span>
             </span>
           </div>
 
@@ -213,68 +252,163 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
           {/* 데스크톱 액션 버튼 */}
           <div className="hidden md:flex gap-3 pt-6">
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-2 border-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:scale-105 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100"
-              disabled={isSold}
-            >
-              <IconHeart className="h-5 w-5" />
-              <span className="font-semibold">관심</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="gap-2 border-2 hover:border-secondary/50 hover:bg-secondary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md"
-            >
-              <IconShare className="h-5 w-5" />
-              <span className="font-semibold">공유</span>
-            </Button>
-            <Button
-              size="lg"
-              className="flex-1 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
-              disabled={isSold || chatLoading}
-              onClick={handleChat}
-            >
-              <IconMessageCircle className="h-5 w-5" />
-              {chatLoading ? '연결 중...' : '채팅하기'}
-            </Button>
+            {isOwner ? (
+              <>
+                {product.status !== 'RESERVED' && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => handleStatusChange('RESERVED')}
+                    disabled={statusLoading}
+                    className="gap-2 border-2 border-[#FFC107] text-[#FFC107] hover:bg-[#FFC107]/10 hover:scale-105 transition-all shadow-sm"
+                  >
+                    예약중
+                  </Button>
+                )}
+                {product.status !== 'SELLING' && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => handleStatusChange('SELLING')}
+                    disabled={statusLoading}
+                    className="gap-2 border-2 border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50]/10 hover:scale-105 transition-all shadow-sm"
+                  >
+                    판매중
+                  </Button>
+                )}
+                {product.status !== 'SOLD' && (
+                  <Button
+                    size="lg"
+                    onClick={() => handleStatusChange('SOLD')}
+                    disabled={statusLoading}
+                    className="flex-1 gap-2 bg-muted text-muted-foreground font-bold shadow-sm hover:bg-muted/80 hover:scale-105 transition-all disabled:opacity-60"
+                  >
+                    판매완료
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className={cn(
+                    'gap-2 border-2 hover:scale-105 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100',
+                    isFavorited
+                      ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary'
+                      : 'border-primary/30 text-primary hover:bg-primary/10 hover:border-primary'
+                  )}
+                  disabled={isSold || favoriteLoading}
+                  onClick={handleFavoriteToggle}
+                >
+                  {isFavorited ? <IconHeartFilled className="h-5 w-5" /> : <IconHeart className="h-5 w-5" />}
+                  <span className="font-semibold">관심 {favoriteCount}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 border-2 hover:border-secondary/50 hover:bg-secondary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                >
+                  <IconShare className="h-5 w-5" />
+                  <span className="font-semibold">공유</span>
+                </Button>
+                <Button
+                  size="lg"
+                  className="flex-1 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  disabled={isSold || chatLoading}
+                  onClick={handleChat}
+                >
+                  <IconMessageCircle className="h-5 w-5" />
+                  {chatLoading ? '연결 중...' : '채팅하기'}
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
 
       {/* 모바일 하단 고정 액션바 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        <Button
-          variant="outline"
-          size="icon"
-          className="shrink-0 h-12 w-12 border-2 border-primary/40 text-primary hover:bg-primary/10 hover:border-primary active:scale-95 transition-all shadow-sm disabled:opacity-50"
-          disabled={isSold}
-        >
-          <IconHeart className="h-6 w-6" />
-        </Button>
-        <div className="border-l border-border/30 h-10 mx-0.5" />
-        <div className="flex-1 flex flex-col min-w-0 mr-2">
-          <span className="text-xs text-muted-foreground font-medium">판매가격</span>
-          <p
-            className={cn(
-              'text-xl font-extrabold truncate',
-              isSold
-                ? 'text-muted-foreground line-through'
-                : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
-            )}
-          >
-            ${product.price.toLocaleString()}
-          </p>
-        </div>
-        <Button
-          className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
-          disabled={isSold || chatLoading}
-          onClick={handleChat}
-        >
-          <IconMessageCircle className="h-5 w-5" />
-          {chatLoading ? '연결 중...' : '채팅하기'}
-        </Button>
+        {isOwner ? (
+          <>
+            <div className="flex-1 flex flex-col min-w-0">
+              <span className="text-xs text-muted-foreground font-medium mb-1">상태 변경</span>
+              <div className="flex gap-2">
+                {product.status !== 'RESERVED' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleStatusChange('RESERVED')}
+                    disabled={statusLoading}
+                    className="flex-1 border-2 border-[#FFC107] text-[#FFC107] hover:bg-[#FFC107]/10 active:scale-95 transition-all h-10"
+                  >
+                    예약중
+                  </Button>
+                )}
+                {product.status !== 'SELLING' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleStatusChange('SELLING')}
+                    disabled={statusLoading}
+                    className="flex-1 border-2 border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50]/10 active:scale-95 transition-all h-10"
+                  >
+                    판매중
+                  </Button>
+                )}
+                {product.status !== 'SOLD' && (
+                  <Button
+                    size="sm"
+                    onClick={() => handleStatusChange('SOLD')}
+                    disabled={statusLoading}
+                    className="flex-1 bg-muted text-muted-foreground font-bold active:scale-95 transition-all h-10 hover:bg-muted/80"
+                  >
+                    판매완료
+                  </Button>
+                )}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(
+                'shrink-0 h-12 w-12 border-2 text-primary active:scale-95 transition-all shadow-sm disabled:opacity-50',
+                isFavorited
+                  ? 'border-primary bg-primary/10 hover:bg-primary/20'
+                  : 'border-primary/40 hover:bg-primary/10 hover:border-primary'
+              )}
+              disabled={isSold || favoriteLoading}
+              onClick={handleFavoriteToggle}
+            >
+              {isFavorited ? <IconHeartFilled className="h-6 w-6" /> : <IconHeart className="h-6 w-6" />}
+            </Button>
+            <div className="border-l border-border/30 h-10 mx-0.5" />
+            <div className="flex-1 flex flex-col min-w-0 mr-2">
+              <span className="text-xs text-muted-foreground font-medium">판매가격</span>
+              <p
+                className={cn(
+                  'text-xl font-extrabold truncate',
+                  isSold
+                    ? 'text-muted-foreground line-through'
+                    : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
+                )}
+              >
+                ${product.price.toLocaleString()}
+              </p>
+            </div>
+            <Button
+              className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
+              disabled={isSold || chatLoading}
+              onClick={handleChat}
+            >
+              <IconMessageCircle className="h-5 w-5" />
+              {chatLoading ? '연결 중...' : '채팅하기'}
+            </Button>
+          </>
+        )}
       </div>
     </div>
   )

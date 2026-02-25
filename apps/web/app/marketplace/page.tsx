@@ -1,5 +1,4 @@
 'use client'
-'use client'
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
@@ -11,12 +10,14 @@ import {
   IconPlus,
   IconPackage,
 } from '@tabler/icons-react'
-import { ProductGrid } from '@/components/product'
+import { ProductCard } from './components/product-card'
 import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
-import { getProducts, toProduct } from '@/lib/products-api'
-import type { ProductStatus, Category, Product, SortOption } from '@/lib/product-types'
+import { productApi } from '@/lib/products-api'
+import { userApi } from '@/lib/api'
+import type { ProductStatus, Category, SortOption } from '@/lib/product-types'
+import type { ProductResponseDto } from '@/types/api'
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
@@ -31,20 +32,21 @@ const MarketplacePage = () => {
   const [selectedStatus, setSelectedStatus] = useState<ProductStatus | 'ALL'>('ALL')
   const [sortBy, setSortBy] = useState<SortOption>('latest')
   const [showSortDropdown, setShowSortDropdown] = useState(false)
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<ProductResponseDto[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
     try {
-      const params: Record<string, string> = {}
-      if (searchQuery.trim()) params.search = searchQuery.trim()
-      if (selectedCategory !== 'ALL') params.category = selectedCategory
-      if (selectedStatus !== 'ALL') params.status = selectedStatus
-      if (sortBy !== 'latest') params.sort = sortBy
-
-      const data = await getProducts(params)
-      setProducts(data.map(toProduct))
+      const { data, error } = await productApi.getProducts({
+        search: searchQuery.trim() || undefined,
+        category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+        status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
+        sort: sortBy,
+      })
+      if (error || !data) throw new Error(error)
+      setProducts(Array.isArray(data) ? data : (data.products ?? []))
     } catch (e) {
       console.error('Failed to fetch products:', e)
     } finally {
@@ -56,6 +58,24 @@ const MarketplacePage = () => {
     const timer = setTimeout(fetchProducts, 300)
     return () => clearTimeout(timer)
   }, [fetchProducts])
+
+  useEffect(() => {
+    userApi.getMe().then(({ data }) => {
+      if (data) setCurrentUserId(data.id)
+    })
+  }, [])
+
+  const handleFavoriteToggle = async (id: string) => {
+    const { data } = await productApi.toggleFavorite(id)
+    if (!data) return
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, isFavorited: data.isFavorited, favoriteCount: p.favoriteCount + (data.isFavorited ? 1 : -1) }
+          : p
+      )
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4 container mx-auto px-4 md:px-6 md:mt-10">
@@ -172,7 +192,7 @@ const MarketplacePage = () => {
       </div>
 
       {/* 결과 수 */}
-      {!loading && (
+      {!loading && products && (
         <p className="text-sm font-medium text-[#757575]">
           <span className="text-primary font-bold">{products.length}</span>개의 매물
         </p>
@@ -185,7 +205,15 @@ const MarketplacePage = () => {
           <p className="text-sm text-[#757575]">상품을 불러오는 중...</p>
         </div>
       ) : products.length > 0 ? (
-        <ProductGrid products={products} />
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 pb-10">
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              onFavoriteToggle={product.seller.id !== currentUserId ? handleFavoriteToggle : undefined}
+            />
+          ))}
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
