@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
+import type { UploadedImage } from '../../../core/storage/storage.service'
 
-export class UploadedImageDto {
+export class UploadedImageDto implements UploadedImage {
   @ApiProperty({ description: '원본 이미지 URL' })
   url: string
 

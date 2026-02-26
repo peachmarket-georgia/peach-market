@@ -10,8 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { productApi } from '@/lib/products-api'
-import { uploadApi } from '@/lib/api'
+import { createProduct } from '@/lib/products-api'
 import { ImageUpload } from '@/components/product/image-upload'
 import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
@@ -53,13 +52,14 @@ const DESCRIPTION_PLACEHOLDER = `예시)
 하자/특이사항: 정품 박스 포함, 환불 불가`
 
 type FieldErrors = {
+  images?: string
   title?: string
   category?: string
   price?: string
   location?: string
 }
 
-const ProductCreatePage = () => {
+const ProductCreatePage = (): React.JSX.Element => {
   const router = useRouter()
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState<Category | ''>('')
@@ -97,6 +97,7 @@ const ProductCreatePage = () => {
   const validate = (): boolean => {
     const errors: FieldErrors = {}
 
+    if (images.length === 0) errors.images = '이미지를 최소 1장 이상 등록해 주세요'
     if (!title.trim()) errors.title = '제목을 입력해 주세요'
     if (!category) errors.category = '카테고리를 선택해 주세요'
     if (!price || !Number.isFinite(numericPrice) || numericPrice < 0) errors.price = '가격을 입력해 주세요'
@@ -111,26 +112,16 @@ const ProductCreatePage = () => {
     setLoading(true)
     setError('')
     try {
-      // 이미지 먼저 업로드
-      let imageUrls: string[] = []
-      if (images.length > 0) {
-        const files = images.map((img) => img.file)
-        const { data, error } = await uploadApi.uploadImages(files)
-        if (error || !data) throw new Error(error || '이미지 업로드에 실패했습니다.')
-        imageUrls = data.images.map((img) => img.url)
-      }
-
-      // 상품 등록
-      const { error } = await productApi.createProduct({
-        title: title.trim(),
-        category: category as Category,
-        price: numericPrice,
-        location: location.trim(),
-        description: description.trim(),
-        images: imageUrls,
-      })
-      if (error) throw new Error(error)
-
+      await createProduct(
+        {
+          title: title.trim(),
+          category: category as Category,
+          price: numericPrice,
+          location: location.trim(),
+          description: description.trim(),
+        },
+        images.map((img) => img.file)
+      )
       router.push('/marketplace')
     } catch (e) {
       setError(e instanceof Error ? e.message : '등록에 실패했습니다')
@@ -162,8 +153,15 @@ const ProductCreatePage = () => {
         )}
 
         {/* 이미지 업로드 */}
-        <div className="bg-white rounded-2xl border-2 border-orange-100 p-4 shadow-sm">
-          <ImageUpload images={images} onChange={setImages} />
+        <div className="flex flex-col gap-1.5">
+          <ImageUpload
+            images={images}
+            onChange={(imgs) => {
+              setImages(imgs)
+              if (imgs.length > 0) setFieldErrors((prev) => ({ ...prev, images: undefined }))
+            }}
+          />
+          {fieldErrors.images && <span className="text-xs text-destructive">{fieldErrors.images}</span>}
         </div>
 
         {/* 기본 정보 카드 */}

@@ -54,7 +54,7 @@ export default function ChatListPage() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 px-4 py-3 bg-background/80 backdrop-blur-md border-b">
-        <button onClick={() => router.back()} className="p-1 -ml-1 rounded-lg hover:bg-accent">
+        <button onClick={() => router.push('/marketplace')} className="p-1 -ml-1 rounded-lg hover:bg-accent">
           <IconChevronLeft className="w-6 h-6" />
         </button>
         <h1 className="text-xl font-bold">채팅</h1>

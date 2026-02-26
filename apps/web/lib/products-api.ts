@@ -100,25 +100,45 @@ export async function getProducts(params?: {
   return data
 }
 
-export async function getProduct(id: string): Promise<ApiProduct> {
-  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`)
-  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.')
-  return data
-}
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
 
-export async function createProduct(body: {
-  title: string
-  description: string
-  price: number
-  category: string
-  location: string
-}): Promise<ApiProduct> {
-  const { data, error } = await apiRequest<ApiProduct>('/api/products', {
+export async function createProduct(
+  body: {
+    title: string
+    description: string
+    price: number
+    category: string
+    location: string
+  },
+  files?: File[]
+): Promise<ApiProduct> {
+  const formData = new FormData()
+  formData.append('title', body.title)
+  formData.append('description', body.description)
+  formData.append('price', String(body.price))
+  formData.append('category', body.category)
+  formData.append('location', body.location)
+  files?.forEach((file) => formData.append('files', file))
+
+  const response = await fetch(`${API_URL}/api/products`, {
     method: 'POST',
-    body,
+    body: formData,
+    credentials: 'include',
   })
-  if (error || !data) throw new Error(error || '상품 등록에 실패했습니다.')
-  return data
+
+  let data: unknown
+  try {
+    data = await response.json()
+  } catch {
+    data = null
+  }
+
+  if (!response.ok) {
+    const message = (data as { message?: string })?.message
+    throw new Error(message || '상품 등록에 실패했습니다.')
+  }
+
+  return data as ApiProduct
 }
 
 // ── ApiProduct → Product 변환 ──────────────

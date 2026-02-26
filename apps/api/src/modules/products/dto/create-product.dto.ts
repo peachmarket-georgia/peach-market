@@ -1,15 +1,5 @@
-import {
-  IsString,
-  IsInt,
-  IsNotEmpty,
-  IsArray,
-  MaxLength,
-  Min,
-  ArrayMaxSize,
-  ArrayMinSize,
-  IsEnum,
-  IsOptional,
-} from 'class-validator'
+import { IsString, IsInt, IsNotEmpty, IsArray, MaxLength, Min, IsEnum, IsOptional } from 'class-validator'
+import { Transform } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { PaymentMethod } from '@prisma/client'
 
@@ -26,6 +16,7 @@ export class CreateProductDto {
   description!: string
 
   @ApiProperty({ example: 500, description: '가격 (USD)', minimum: 0 })
+  @Transform(({ value }) => (typeof value === 'string' ? parseInt(value, 10) : value))
   @IsInt()
   @Min(0)
   price!: number
@@ -34,13 +25,6 @@ export class CreateProductDto {
   @IsString()
   @IsNotEmpty()
   category!: string
-
-  @ApiProperty({ description: '이미지 URL 배열 (1-5장)', type: [String], example: ['https://example.com/image1.jpg'] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(5)
-  @IsString({ each: true })
-  images!: string[]
 
   @ApiProperty({ example: 'Duluth', description: '거래 희망 지역' })
   @IsString()

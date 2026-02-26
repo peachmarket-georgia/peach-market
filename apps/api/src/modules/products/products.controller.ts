@@ -1,10 +1,26 @@
-import { Controller, Delete, Get, Post, Patch, Param, Query, Body, Req, UseGuards } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam } from '@nestjs/swagger'
+import {
+  Controller,
+  Delete,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Query,
+  Body,
+  Req,
+  UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
+} from '@nestjs/common'
+import { FilesInterceptor } from '@nestjs/platform-express'
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam, ApiConsumes } from '@nestjs/swagger'
 import type { Request } from 'express'
 import { ProductStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
 import { ProductsService } from './products.service'
+import { StorageService } from '../../core/storage/storage.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
@@ -13,7 +29,10 @@ import { UpdateProductDto } from './dto/update-product.dto'
 @UseGuards(JwtAuthGuard)
 @ApiCookieAuth('access_token')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly storageService: StorageService
+  ) {}
 
   @Get()
   @ApiOperation({ summary: '상품 목록 조회', description: '검색, 카테고리, 상태 필터 및 정렬 지원' })
@@ -65,12 +84,35 @@ export class ProductsController {
   }
 
   @Post()
-  @ApiOperation({ summary: '상품 등록', description: '새 상품을 등록합니다 (로그인 필요)' })
+  @UseInterceptors(
+    FilesInterceptor('files', 5, {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, callback) => {
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+        if (!allowedTypes.includes(file.mimetype)) {
+          callback(new BadRequestException('JPG, PNG, WebP 형식만 업로드 가능합니다.'), false)
+          return
+        }
+        callback(null, true)
+      },
+    })
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: '상품 등록',
+    description: '새 상품을 등록합니다. 이미지 파일을 files 필드로 함께 전송하세요 (로그인 필요)',
+  })
   @ApiResponse({ status: 201, description: '상품 등록 성공' })
   @ApiResponse({ status: 400, description: '유효하지 않은 입력' })
   @ApiResponse({ status: 401, description: '인증 필요' })
-  create(@Body() dto: CreateProductDto, @CurrentUser() { userId }: JwtUser) {
-    return this.productsService.create(dto, userId)
+  async create(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Body() dto: CreateProductDto,
+    @CurrentUser() { userId }: JwtUser
+  ) {
+    const imageUrls = (await this.storageService.uploadImages(files)).map((img) => img.url)
+
+    return this.productsService.create(dto, userId, imageUrls)
   }
 
   @Patch(':id')

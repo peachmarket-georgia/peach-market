@@ -1,4 +1,4 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common'
+import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common'
 import { ProductStatus } from '@prisma/client'
 import { PrismaService } from '../../core/database/prisma.service'
 import { CreateProductDto } from './dto/create-product.dto'
@@ -153,7 +153,11 @@ export class ProductsService {
     return formatProduct(product, isFavorited)
   }
 
-  async create(dto: CreateProductDto, sellerId: string) {
+  async create(dto: CreateProductDto, sellerId: string, imageUrls: string[]) {
+    if (imageUrls.length === 0) {
+      throw new BadRequestException('이미지를 최소 1장 이상 등록해야 합니다.')
+    }
+
     const product = await this.prisma.product.create({
       data: {
         sellerId,
@@ -162,13 +166,13 @@ export class ProductsService {
         price: dto.price,
         category: dto.category,
         location: dto.location,
-        images: dto.images,
+        images: imageUrls,
         paymentMethods: dto.paymentMethods ?? [],
       },
       select: PRODUCT_SELECT,
     })
 
-    return formatProduct(product)
+    return formatProduct(product as ProductWithCount)
   }
 
   async update(id: string, dto: UpdateProductDto, userId: string) {
