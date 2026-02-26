@@ -5,11 +5,13 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSocket } from '@/context/socket-provider'
 import { chatApi, checkAuth } from '@/lib/api'
 import { productApi } from '@/lib/products-api'
+import { reservationApi } from '@/lib/reservation-api'
 import { ChatMessageDto, ChatRoomWithMessagesDto } from '@/types/api'
+import type { ReservationDto } from '@/types/reservation'
 import { STATUS_LABEL } from '@/lib/product-types'
 import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react'
+import { IconChevronLeft, IconSend, IconDotsVertical, IconCheck } from '@tabler/icons-react'
 
 export default function ChatRoomPage() {
   const router = useRouter()
@@ -26,6 +28,9 @@ export default function ChatRoomPage() {
   const [loading, setLoading] = useState(true)
   const [productStatus, setProductStatus] = useState<ProductStatus>('SELLING')
   const [statusLoading, setStatusLoading] = useState(false)
+  const [reservation, setReservation] = useState<ReservationDto | null>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
+  const [cancelLoading, setCancelLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -43,7 +48,7 @@ export default function ChatRoomPage() {
     init()
   }, [connect, router])
 
-  // Load chat room data
+  // Load chat room data + active reservation
   useEffect(() => {
     const loadRoom = async () => {
       const { data, error } = await chatApi.getRoom(roomId)
@@ -55,18 +60,61 @@ export default function ChatRoomPage() {
         setChatRoom(data)
         setMessages(data.messages)
         setProductStatus(data.product.status as ProductStatus)
+
+        // 활성 예약 조회
+        const { data: resData } = await reservationApi.getByProduct(data.product.id)
+        if (resData) setReservation(resData)
       }
       setLoading(false)
     }
     loadRoom()
   }, [roomId, router])
 
+  /**
+   * 상태 변경 핸들러
+   * - RESERVED: 예약 생성 API (Product 상태도 자동 변경)
+   * - 나머지: 상품 상태 직접 변경
+   */
   const handleStatusChange = async (newStatus: ProductStatus) => {
     if (statusLoading || !chatRoom) return
     setStatusLoading(true)
-    const { data } = await productApi.updateProductStatus(chatRoom.product.id, newStatus)
-    if (data) setProductStatus(data.status as ProductStatus)
+
+    if (newStatus === 'RESERVED') {
+      const { data } = await reservationApi.create(chatRoom.product.id, chatRoom.buyerId)
+      if (data) {
+        setReservation(data)
+        setProductStatus('RESERVED')
+      }
+    } else {
+      const { data } = await productApi.updateProductStatus(chatRoom.product.id, newStatus)
+      if (data) setProductStatus(data.status as ProductStatus)
+    }
+
     setStatusLoading(false)
+  }
+
+  /** 거래 완료 확인 */
+  const handleConfirm = async () => {
+    if (!reservation || confirmLoading) return
+    setConfirmLoading(true)
+    const { data } = await reservationApi.confirm(reservation.id)
+    if (data) {
+      setReservation(data)
+      if (data.status === 'COMPLETED') setProductStatus('CONFIRMED')
+    }
+    setConfirmLoading(false)
+  }
+
+  /** 예약 취소 (판매자 전용) */
+  const handleCancelReservation = async () => {
+    if (!reservation || cancelLoading) return
+    setCancelLoading(true)
+    const { data } = await reservationApi.cancel(reservation.id)
+    if (data) {
+      setReservation(data)
+      setProductStatus('SELLING')
+    }
+    setCancelLoading(false)
   }
 
   // Join room when connected
@@ -74,11 +122,8 @@ export default function ChatRoomPage() {
     if (socket && isConnected && roomId && currentUserId) {
       socket.emit('joinRoom', { roomId, userId: currentUserId })
     }
-
     return () => {
-      if (socket && roomId) {
-        socket.emit('leaveRoom', roomId)
-      }
+      if (socket && roomId) socket.emit('leaveRoom', roomId)
     }
   }, [socket, isConnected, roomId, currentUserId])
 
@@ -88,19 +133,12 @@ export default function ChatRoomPage() {
 
     const handleNewMessage = (msg: ChatMessageDto) => {
       setMessages((prev) => [...prev, msg])
-      // Mark as read if we're viewing
       socket.emit('markAsRead', { chatRoomId: roomId })
     }
-
     const handleUserTyping = ({ userId }: { userId: string }) => {
-      if (userId !== currentUserId) {
-        setTypingUser(userId)
-      }
+      if (userId !== currentUserId) setTypingUser(userId)
     }
-
-    const handleUserStoppedTyping = () => {
-      setTypingUser(null)
-    }
+    const handleUserStoppedTyping = () => setTypingUser(null)
 
     socket.on('newMessage', handleNewMessage)
     socket.on('userTyping', handleUserTyping)
@@ -126,9 +164,7 @@ export default function ChatRoomPage() {
       socket.emit('typing', { chatRoomId: roomId })
     }
 
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
 
     typingTimeoutRef.current = setTimeout(() => {
       setIsTyping(false)
@@ -147,9 +183,7 @@ export default function ChatRoomPage() {
 
     setNewMessage('')
     setIsTyping(false)
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-    }
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     socket.emit('stopTyping', { chatRoomId: roomId })
   }
 
@@ -169,6 +203,10 @@ export default function ChatRoomPage() {
   }
 
   const otherUser = chatRoom.buyerId === currentUserId ? chatRoom.seller : chatRoom.buyer
+  const isSeller = currentUserId === chatRoom.sellerId
+  const isBuyer = currentUserId === chatRoom.buyerId
+  const activeReservation = reservation?.status === 'RESERVED'
+  const completedReservation = reservation?.status === 'COMPLETED'
 
   return (
     <div className="flex flex-col h-dvh bg-background">
@@ -179,7 +217,7 @@ export default function ChatRoomPage() {
         </button>
 
         <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center overflow-hidden flex-shrink-0">
+          <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center overflow-hidden shrink-0">
             {otherUser.avatarUrl ? (
               <img src={otherUser.avatarUrl} alt={otherUser.nickname} className="w-full h-full object-cover" />
             ) : (
@@ -208,7 +246,6 @@ export default function ChatRoomPage() {
 
       {/* Product Card */}
       <div className="border-b border-primary/15 bg-primary/5">
-        {/* Product Info Row */}
         <div className="flex items-center gap-3 px-3 py-3">
           <div className="w-11 h-11 rounded-xl overflow-hidden bg-muted shrink-0">
             {chatRoom.product.images[0] ? (
@@ -241,8 +278,8 @@ export default function ChatRoomPage() {
           </div>
         </div>
 
-        {/* 판매자 전용 상태 변경 버튼 - 가로 스크롤 행 */}
-        {currentUserId === chatRoom.sellerId && (
+        {/* 판매자 상태 변경 버튼 — 예약 진행 중이 아닐 때만 노출 */}
+        {isSeller && !activeReservation && !completedReservation && productStatus !== 'CONFIRMED' && (
           <div className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
             {productStatus !== 'PENDING' && (
               <button
@@ -271,15 +308,6 @@ export default function ChatRoomPage() {
                 예약중
               </button>
             )}
-            {productStatus !== 'CONFIRMED' && (
-              <button
-                onClick={() => handleStatusChange('CONFIRMED')}
-                disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#6B21A8]/30 text-[#6B21A8] bg-[#F3E8FF]/60 hover:bg-[#F3E8FF] transition-colors disabled:opacity-50"
-              >
-                판매확정
-              </button>
-            )}
             {productStatus !== 'ENDED' && (
               <button
                 onClick={() => handleStatusChange('ENDED')}
@@ -292,6 +320,95 @@ export default function ChatRoomPage() {
           </div>
         )}
       </div>
+
+      {/* 거래 완료 확인 섹션 — 예약이 RESERVED 상태일 때 */}
+      {activeReservation && reservation && (
+        <div className="border-b border-primary/15 bg-white px-3 py-3">
+          <p className="text-[11px] font-semibold text-center text-muted-foreground mb-2.5">
+            대면 거래 후 완료 확인을 눌러주세요
+          </p>
+
+          {/* 구매자 — 본인 버튼만 노출 */}
+          {isBuyer && (
+            <button
+              onClick={handleConfirm}
+              disabled={confirmLoading || !!reservation.buyerConfirmedAt}
+              className={cn(
+                'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                reservation.buyerConfirmedAt
+                  ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
+                  : 'bg-primary text-white border-primary hover:bg-primary/90 active:scale-95'
+              )}
+            >
+              {reservation.buyerConfirmedAt && <IconCheck className="w-4 h-4" />}
+              {reservation.buyerConfirmedAt ? '구매 완료 확인됨' : '구매 완료 확인'}
+            </button>
+          )}
+
+          {/* 판매자 — 본인 버튼 + 구매자 확인 여부 표시 + 예약 취소 */}
+          {isSeller && (
+            <>
+              {/* 구매자 확인 상태 표시 */}
+              <div
+                className={cn(
+                  'w-full py-2 text-[12px] font-semibold rounded-xl border mb-2 flex items-center justify-center gap-1.5',
+                  reservation.buyerConfirmedAt
+                    ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
+                    : 'bg-muted/30 border-muted text-muted-foreground'
+                )}
+              >
+                {reservation.buyerConfirmedAt ? (
+                  <>
+                    <IconCheck className="w-3.5 h-3.5" />
+                    구매자 확인 완료
+                  </>
+                ) : (
+                  '구매자 확인 대기 중...'
+                )}
+              </div>
+
+              {/* 판매자 본인 확인 버튼 */}
+              <button
+                onClick={handleConfirm}
+                disabled={confirmLoading || !!reservation.sellerConfirmedAt}
+                className={cn(
+                  'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                  reservation.sellerConfirmedAt
+                    ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
+                    : 'bg-primary text-white border-primary hover:bg-primary/90 active:scale-95'
+                )}
+              >
+                {reservation.sellerConfirmedAt && <IconCheck className="w-4 h-4" />}
+                {reservation.sellerConfirmedAt ? '판매 완료 확인됨' : '판매 완료 확인'}
+              </button>
+
+              <button
+                onClick={handleCancelReservation}
+                disabled={cancelLoading}
+                className="w-full mt-2 py-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+              >
+                예약 취소
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* 거래 완료 배너 */}
+      {completedReservation && reservation && (
+        <div className="border-b border-[#166534]/15 bg-[#DCFCE7]/60 px-3 py-2.5 text-center">
+          <p className="text-sm font-bold text-[#166534]">거래가 완료되었습니다 🎉</p>
+          {reservation.completedAt && (
+            <p className="text-[11px] text-[#166534]/70 mt-0.5">
+              {new Date(reservation.completedAt).toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
@@ -356,7 +473,7 @@ export default function ChatRoomPage() {
             onKeyDown={handleKeyDown}
             disabled={!isConnected}
             placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
-            className="flex-1 px-4 py-2.5 bg-primary/10 border border-primary rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
+            className="flex-1 px-4 py-2.5 bg-white border border-primary/25 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}
@@ -368,7 +485,7 @@ export default function ChatRoomPage() {
                 : 'bg-muted text-muted-foreground scale-95'
             )}
           >
-            <IconSend className="w-4.5 h-4.5" />
+            <IconSend className="w-[18px] h-[18px]" />
           </button>
         </div>
       </div>

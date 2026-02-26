@@ -34,7 +34,7 @@ async function main() {
     data: {
       email: 'test1@peachmarket.com',
       password: hashedPassword,
-      nickname: '복숭아맘',
+      nickname: '판매자',
       location: 'Duluth, GA',
       mannerScore: 4.5,
       isEmailVerified: true,
@@ -45,10 +45,21 @@ async function main() {
     data: {
       email: 'test2@peachmarket.com',
       password: hashedPassword,
-      nickname: '조지아피치',
+      nickname: '구매자',
       location: 'Suwanee, GA',
       mannerScore: 4.8,
       isEmailVerified: true,
+    },
+  })
+
+  const user3 = await prisma.user.create({
+    data: {
+      email: 'test3@peachmarket.com',
+      password: hashedPassword,
+      nickname: '이메일테스트',
+      location: 'Suwanee, GA',
+      mannerScore: 4.8,
+      isEmailVerified: false,
     },
   })
 
@@ -74,7 +85,7 @@ async function main() {
         description: '6개월 사용. 흡입력 좋고 배터리 상태 양호합니다. 박스, 부속품 전부 있습니다.',
         price: 350,
         category: '생활가전',
-        status: ProductStatus.SELLING,
+        status: ProductStatus.PENDING,
         images: ['https://placehold.co/600x400?text=Dyson+V15'],
         location: 'Duluth, GA',
         viewCount: 15,
@@ -104,7 +115,7 @@ async function main() {
         description: '한국 교과서 풀세트입니다. 깨끗하게 사용했고 연필 자국 조금 있습니다.',
         price: 50,
         category: '도서',
-        status: ProductStatus.SOLD,
+        status: ProductStatus.ENDED,
         images: ['https://placehold.co/600x400?text=Korean+Textbooks'],
         location: 'Johns Creek, GA',
         viewCount: 120,
@@ -117,7 +128,7 @@ async function main() {
         description: '이사로 인해 급처합니다. 2년 사용, 상태 아주 좋습니다. 직접 픽업만 가능.',
         price: 400,
         category: '생활가전',
-        status: ProductStatus.SELLING,
+        status: ProductStatus.CONFIRMED,
         images: [
           'https://placehold.co/600x400?text=Kimchi+Fridge+1',
           'https://placehold.co/600x400?text=Kimchi+Fridge+2',
