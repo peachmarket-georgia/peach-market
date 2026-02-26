@@ -9,7 +9,7 @@ type ProductCardProps = {
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
-  const isSold = product.status === 'SOLD'
+  const isSold = product.status === 'ENDED'
   const isReserved = product.status === 'RESERVED'
 
   return (
@@ -39,7 +39,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {/* 판매완료 오버레이 */}
           {isSold && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-              <span className="text-white font-medium">{STATUS_LABEL.SOLD}</span>
+              <span className="text-white font-medium">{STATUS_LABEL.ENDED}</span>
             </div>
           )}
         </div>

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { IconPhoto, IconX, IconCrown, IconGripVertical } from '@tabler/icons-react'
+import { IconPhoto, IconX, IconCrown } from '@tabler/icons-react'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 const MAX_IMAGES = 5
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
@@ -30,8 +31,12 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
     (files: FileList | File[]) => {
       const validFiles = Array.from(files).filter((f) => ACCEPTED_TYPES.includes(f.type))
       const remaining = MAX_IMAGES - images.length
-      const toAdd = validFiles.slice(0, remaining)
 
+      if (images.length >= MAX_IMAGES || validFiles.length > remaining) {
+        toast.error(`이미지는 최대 ${MAX_IMAGES}장까지 등록할 수 있습니다.`)
+      }
+
+      const toAdd = validFiles.slice(0, remaining)
       const newItems: ImageItem[] = toAdd.map((file) => ({
         id: crypto.randomUUID(),
         file,
@@ -49,7 +54,6 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
     onChange(images.filter((i) => i.id !== id))
   }
 
-  // 드래그 앤 드롭 순서 변경
   const handleDragStart = (e: React.DragEvent, idx: number) => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(idx))
@@ -68,7 +72,6 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
       setDragOverIndex(null)
       return
     }
-
     const next = [...images]
     const [moved] = next.splice(dragIndex, 1)
     next.splice(dropIdx, 0, moved!)
@@ -82,7 +85,6 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
     setDragOverIndex(null)
   }
 
-  // 드롭존 (파일 추가용 — 순서 변경 드래그 중에는 무시)
   const isReordering = dragIndex !== null
 
   const handleZoneDragOver = (e: React.DragEvent) => {
@@ -90,21 +92,17 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
     if (!isReordering) setDragOverZone(true)
   }
 
-  const handleZoneDragLeave = () => {
-    setDragOverZone(false)
-  }
+  const handleZoneDragLeave = () => setDragOverZone(false)
 
   const handleZoneDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOverZone(false)
     if (isReordering) return
-    if (e.dataTransfer.files.length > 0) {
-      addImages(e.dataTransfer.files)
-    }
+    if (e.dataTransfer.files.length > 0) addImages(e.dataTransfer.files)
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <Label>
         상품 이미지{' '}
         <span className="text-muted-foreground font-normal">
@@ -112,86 +110,131 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
         </span>
       </Label>
 
-      {/* 이미지 프리뷰 */}
-      {images.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 mb-1">
-          {images.map((img, idx) => (
-            <div
-              key={img.id}
-              draggable
-              onDragStart={(e) => handleDragStart(e, idx)}
-              onDragOver={(e) => handleDragOver(e, idx)}
-              onDrop={(e) => handleDrop(e, idx)}
-              onDragEnd={handleDragEnd}
-              className={cn(
-                'relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
-                dragIndex === idx && 'opacity-40 scale-95',
-                dragOverIndex === idx && dragIndex !== idx && 'ring-2 ring-primary'
-              )}
-            >
-              <Image
-                src={img.preview}
-                alt={`상품 이미지 ${idx + 1}`}
-                fill
-                sizes="80px"
-                className="object-cover pointer-events-none select-none"
-                draggable={false}
-              />
-              {idx === 0 && (
-                <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-primary text-white text-[10px] font-semibold flex items-center gap-0.5">
-                  <IconCrown className="h-2.5 w-2.5" />
-                  대표
-                </span>
-              )}
-              {idx > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/40 to-transparent p-1 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex justify-center">
-                  <IconGripVertical className="h-3 w-3 text-white" />
-                </div>
-              )}
-              <button
-                type="button"
-                onClick={() => removeImage(img.id)}
-                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80 z-10"
-              >
-                <IconX className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 드롭존 */}
-      {images.length < MAX_IMAGES && (
+      {images.length === 0 ? (
+        /* 빈 상태: 큰 드롭존 */
         <div
           onDragOver={handleZoneDragOver}
           onDragLeave={handleZoneDragLeave}
           onDrop={handleZoneDrop}
           onClick={() => fileInputRef.current?.click()}
           className={cn(
-            'flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-8 cursor-pointer transition-colors',
+            'aspect-4/3 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors',
             dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
           )}
         >
-          <IconPhoto className="h-8 w-8 text-muted-foreground" />
+          <IconPhoto className="h-10 w-10 text-muted-foreground" />
           <div className="text-center">
             <p className="text-sm font-medium text-muted-foreground">클릭 또는 드래그하여 이미지 추가</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">
-              JPG, PNG, WebP, GIF · 최대 {MAX_IMAGES - images.length}장
-            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">JPG, PNG, WebP, GIF · 최대 {MAX_IMAGES}장</p>
           </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/gif"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              if (e.target.files) addImages(e.target.files)
-              e.target.value = ''
-            }}
-          />
+        </div>
+      ) : (
+        /*
+         * 모자이크 그리드: [대표(2fr)] [thumb] [thumb]
+         *                  [대표(2fr)] [thumb] [thumb]
+         * → 5장 꽉 채움, 대표 이미지가 자연스럽게 정사각형 비율
+         */
+        <div className="grid grid-cols-[2fr_1fr_1fr] gap-2">
+          {/* 대표 이미지 — 2행 span */}
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, 0)}
+            onDragOver={(e) => handleDragOver(e, 0)}
+            onDrop={(e) => handleDrop(e, 0)}
+            onDragEnd={handleDragEnd}
+            className={cn(
+              'row-span-2 relative rounded-xl overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
+              dragIndex === 0 && 'opacity-40 scale-95',
+              dragOverIndex === 0 && dragIndex !== 0 && 'ring-2 ring-primary'
+            )}
+          >
+            <Image
+              src={images[0]!.preview}
+              alt="대표 이미지"
+              fill
+              unoptimized
+              className="object-cover pointer-events-none select-none"
+              draggable={false}
+            />
+            <span className="absolute bottom-2 left-2 px-2 py-1 rounded-md bg-primary text-white text-xs font-semibold flex items-center gap-1">
+              <IconCrown className="h-3 w-3" />
+              대표
+            </span>
+            <button
+              type="button"
+              onClick={() => removeImage(images[0]!.id)}
+              className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80 z-10"
+            >
+              <IconX className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* 나머지 이미지 (최대 4장) — 오른쪽 2×2 자리 차지 */}
+          {images.slice(1).map((img, i) => {
+            const idx = i + 1
+            return (
+              <div
+                key={img.id}
+                draggable
+                onDragStart={(e) => handleDragStart(e, idx)}
+                onDragOver={(e) => handleDragOver(e, idx)}
+                onDrop={(e) => handleDrop(e, idx)}
+                onDragEnd={handleDragEnd}
+                className={cn(
+                  'aspect-square relative rounded-xl overflow-hidden bg-muted group/thumb cursor-grab active:cursor-grabbing transition-all',
+                  dragIndex === idx && 'opacity-40 scale-95',
+                  dragOverIndex === idx && dragIndex !== idx && 'ring-2 ring-primary'
+                )}
+              >
+                <Image
+                  src={img.preview}
+                  alt={`상품 이미지 ${idx + 1}`}
+                  fill
+                  unoptimized
+                  className="object-cover pointer-events-none select-none"
+                  draggable={false}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(img.id)}
+                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover/thumb:opacity-100 transition-opacity hover:bg-black/80 z-10"
+                >
+                  <IconX className="h-3 w-3" />
+                </button>
+              </div>
+            )
+          })}
+
+          {/* 추가 버튼 — 남은 슬롯에 자연스럽게 배치 */}
+          {images.length < MAX_IMAGES && (
+            <div
+              onDragOver={handleZoneDragOver}
+              onDragLeave={handleZoneDragLeave}
+              onDrop={handleZoneDrop}
+              onClick={() => fileInputRef.current?.click()}
+              className={cn(
+                'aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors',
+                dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
+              )}
+            >
+              <IconPhoto className="h-5 w-5 text-muted-foreground" />
+              <p className="text-[10px] text-muted-foreground">추가</p>
+            </div>
+          )}
         </div>
       )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          if (e.target.files) addImages(e.target.files)
+          e.target.value = ''
+        }}
+      />
 
       {images.length > 1 && (
         <p className="text-xs text-muted-foreground">

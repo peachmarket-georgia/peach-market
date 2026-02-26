@@ -100,12 +100,6 @@ export async function getProducts(params?: {
   return data
 }
 
-export async function getProduct(id: string): Promise<ApiProduct> {
-  const { data, error } = await apiRequest<ApiProduct>(`/api/products/${id}`)
-  if (error || !data) throw new Error(error || '상품을 찾을 수 없습니다.')
-  return data
-}
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
 
 export async function createProduct(

@@ -17,6 +17,7 @@ import {
   IconMapPin,
   IconClock,
   IconStar,
+  IconPencil,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -118,15 +119,13 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
     notFound()
   }
 
-  const isSold = product.status === 'SOLD'
-  const isReserved = product.status === 'RESERVED'
-  const isSelling = product.status === 'SELLING'
+  const isSold = product.status === 'ENDED' || product.status === 'CONFIRMED'
   const isOwner = !!(currentUserId && currentUserId === product.seller.id)
 
   return (
     <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
-      {/* 뒤로가기 */}
-      <div className="mb-6 flex items-center gap-3">
+      {/* 뒤로가기 + 수정 */}
+      <div className="mb-6 flex items-center justify-between">
         <Link
           href="/marketplace"
           className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-all hover:gap-0.5"
@@ -134,6 +133,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
+        {isOwner && (
+          <Link
+            href={`/marketplace/${id}/edit`}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            <IconPencil className="h-4 w-4" />
+            수정
+          </Link>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">
@@ -152,10 +160,12 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </Badge>
             <Badge
               className={cn(
-                'text-xs font-medium px-3 py-1 shadow-md transition-all',
-                isSelling && 'bg-linear-to-r from-[#4CAF50] to-[#66BB6A] text-white hover:shadow-lg hover:scale-105',
-                isReserved && 'bg-linear-to-r from-[#FFC107] to-[#FFD54F] text-white hover:shadow-lg hover:scale-105',
-                isSold && 'bg-[#9E9E9E] text-white opacity-90 hover:opacity-100'
+                'text-xs font-medium px-3 py-1 shadow-sm transition-all',
+                product.status === 'PENDING' && 'bg-[#DBEAFE] text-[#1E40AF]',
+                product.status === 'SELLING' && 'bg-[#DCFCE7] text-[#166534]',
+                product.status === 'RESERVED' && 'bg-[#FEF9C3] text-[#854D0E]',
+                product.status === 'CONFIRMED' && 'bg-[#F3E8FF] text-[#6B21A8]',
+                product.status === 'ENDED' && 'bg-[#F3F4F6] text-[#6B7280]'
               )}
             >
               {STATUS_LABEL[product.status]}
@@ -260,7 +270,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                     size="lg"
                     onClick={() => handleStatusChange('RESERVED')}
                     disabled={statusLoading}
-                    className="gap-2 border-2 border-[#FFC107] text-[#FFC107] hover:bg-[#FFC107]/10 hover:scale-105 transition-all shadow-sm"
+                    className="gap-2 border-2 border-[#854D0E]/40 text-[#854D0E] bg-[#FEF9C3]/50 hover:bg-[#FEF9C3] hover:scale-105 transition-all shadow-sm"
                   >
                     예약중
                   </Button>
@@ -271,17 +281,27 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                     size="lg"
                     onClick={() => handleStatusChange('SELLING')}
                     disabled={statusLoading}
-                    className="gap-2 border-2 border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50]/10 hover:scale-105 transition-all shadow-sm"
+                    className="gap-2 border-2 border-[#166534]/40 text-[#166534] bg-[#DCFCE7]/50 hover:bg-[#DCFCE7] hover:scale-105 transition-all shadow-sm"
                   >
                     판매중
                   </Button>
                 )}
-                {product.status !== 'SOLD' && (
+                {product.status !== 'PENDING' && (
                   <Button
                     size="lg"
-                    onClick={() => handleStatusChange('SOLD')}
+                    onClick={() => handleStatusChange('PENDING')}
                     disabled={statusLoading}
-                    className="flex-1 gap-2 bg-muted text-muted-foreground font-bold shadow-sm hover:bg-muted/80 hover:scale-105 transition-all disabled:opacity-60"
+                    className=" gap-2 border-2 border-[#1E40AF]/40 text-[#1E40AF] bg-[#DBEAFE]/50 hover:bg-[#DBEAFE] hover:scale-105 transition-all shadow-sm disabled:opacity-60"
+                  >
+                    판매대기
+                  </Button>
+                )}
+                {product.status !== 'ENDED' && (
+                  <Button
+                    size="lg"
+                    onClick={() => handleStatusChange('ENDED')}
+                    disabled={statusLoading}
+                    className=" gap-2 border-2 border-mute bg-[#F3F4F6] text-[#6B7280] hover:bg-[#F3F4F6] hover:scale-105 transition-all shadow-sm disabled:opacity-60"
                   >
                     판매완료
                   </Button>
@@ -340,7 +360,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                     variant="outline"
                     onClick={() => handleStatusChange('RESERVED')}
                     disabled={statusLoading}
-                    className="flex-1 border-2 border-[#FFC107] text-[#FFC107] hover:bg-[#FFC107]/10 active:scale-95 transition-all h-10"
+                    className="flex-1 border-2 border-[#854D0E]/40 text-[#854D0E] bg-[#FEF9C3]/50 hover:bg-[#FEF9C3] active:scale-95 transition-all h-10"
                   >
                     예약중
                   </Button>
@@ -351,17 +371,17 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                     variant="outline"
                     onClick={() => handleStatusChange('SELLING')}
                     disabled={statusLoading}
-                    className="flex-1 border-2 border-[#4CAF50] text-[#4CAF50] hover:bg-[#4CAF50]/10 active:scale-95 transition-all h-10"
+                    className="flex-1 border-2 border-[#166534]/40 text-[#166534] bg-[#DCFCE7]/50 hover:bg-[#DCFCE7] active:scale-95 transition-all h-10"
                   >
                     판매중
                   </Button>
                 )}
-                {product.status !== 'SOLD' && (
+                {product.status !== 'ENDED' && (
                   <Button
                     size="sm"
-                    onClick={() => handleStatusChange('SOLD')}
+                    onClick={() => handleStatusChange('ENDED')}
                     disabled={statusLoading}
-                    className="flex-1 bg-muted text-muted-foreground font-bold active:scale-95 transition-all h-10 hover:bg-muted/80"
+                    className="flex-1 border-2 border-[#6B7280]/40 text-[#6B7280] bg-[#F3F4F6]/50 hover:bg-[#F3F4F6] active:scale-95 transition-all h-10"
                   >
                     판매완료
                   </Button>
@@ -417,8 +437,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 /** 이미지 캐러셀 컴포넌트 */
 const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string; status: string }) => {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const isSold = status === 'SOLD'
-  const isReserved = status === 'RESERVED'
+  const isSold = status === 'ENDED' || status === 'CONFIRMED'
   const hasMultiple = images.length > 1
 
   const goTo = (idx: number) => {
@@ -448,15 +467,15 @@ const ImageCarousel = ({ images, alt, status }: { images: string[]; alt: string;
           priority
         />
 
-        {isReserved && (
-          <span className="absolute top-3 left-3 px-4 py-1.5 text-sm font-bold bg-linear-to-r from-[#FFC107] to-[#FFD54F] text-white rounded-lg shadow-lg backdrop-blur-sm">
+        {status === 'RESERVED' && (
+          <span className="absolute top-3 left-3 px-4 py-1.5 text-sm font-bold bg-[#FEF9C3] text-[#854D0E] rounded-lg shadow-sm">
             {STATUS_LABEL.RESERVED}
           </span>
         )}
         {isSold && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
             <span className="text-white text-2xl font-bold bg-black/40 px-6 py-3 rounded-xl backdrop-blur-sm shadow-xl">
-              {STATUS_LABEL.SOLD}
+              {STATUS_LABEL.ENDED}
             </span>
           </div>
         )}

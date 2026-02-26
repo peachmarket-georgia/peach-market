@@ -165,7 +165,7 @@ export interface UnreadCountDto {
 
 // ==================== Product Types ====================
 
-export type ProductStatus = 'SELLING' | 'RESERVED' | 'SOLD'
+export type ProductStatus = 'PENDING' | 'SELLING' | 'RESERVED' | 'CONFIRMED' | 'ENDED'
 export type PaymentMethod = 'CASH' | 'ZELLE' | 'VENMO'
 
 export interface ProductSellerDto {

@@ -3,12 +3,14 @@
 // ===========================================
 
 // ── 상품 상태 ──────────────────────────────
-export type ProductStatus = 'SELLING' | 'RESERVED' | 'SOLD'
+export type ProductStatus = 'PENDING' | 'SELLING' | 'RESERVED' | 'CONFIRMED' | 'ENDED'
 
 export const STATUS_LABEL: Record<ProductStatus, string> = {
-  SELLING: '판매중',
-  RESERVED: '예약중',
-  SOLD: '판매완료',
+  PENDING: '판매 대기',
+  SELLING: '판매 중',
+  RESERVED: '예약 중',
+  CONFIRMED: '판매 확정',
+  ENDED: '판매 종료',
 }
 
 // ── 카테고리 (PRD 4.2 기준) ────────────────

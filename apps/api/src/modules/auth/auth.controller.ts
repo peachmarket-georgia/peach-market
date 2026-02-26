@@ -79,8 +79,7 @@ export class AuthController {
     const result = await this.authService.login(loginDto, deviceInfo)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const isTest = this.configService.nodeEnv === 'test'
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
+    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -122,8 +121,7 @@ export class AuthController {
     const result = await this.authService.refresh(userId, refreshToken, deviceInfo)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const isTest = this.configService.nodeEnv === 'test'
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
+    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -154,8 +152,7 @@ export class AuthController {
     await this.authService.logout(userId, refreshToken)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const isTest = this.configService.nodeEnv === 'test'
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
+    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
 
     res.clearCookie('access_token', { domain: cookieDomain })
     res.clearCookie('refresh_token', { domain: cookieDomain })
@@ -202,8 +199,7 @@ export class AuthController {
     const result = await this.authService.googleLogin(googleUser)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const isTest = this.configService.nodeEnv === 'test'
-    const cookieDomain = isProduction ? '.peachmarket.com' : isTest ? undefined : 'localhost'
+    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,

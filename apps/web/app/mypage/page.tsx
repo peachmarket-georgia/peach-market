@@ -70,7 +70,7 @@ export default function MyPage() {
           result = await productApi.getMyProducts('SELLING')
           break
         case 'sold':
-          result = await productApi.getMyProducts('SOLD')
+          result = await productApi.getMyProducts('ENDED')
           break
         case 'favorites':
           result = await productApi.getFavorites()

@@ -24,6 +24,8 @@ model User {
   reviewsReceived       Review[]             @relation("ReviewsReceived")
   buyerChatRooms        ChatRoom[]           @relation("BuyerChatRooms")
   sellerChatRooms       ChatRoom[]           @relation("SellerChatRooms")
+  buyerReservations     Reservation[]        @relation("BuyerReservations")
+  sellerReservations    Reservation[]        @relation("SellerReservations")
   messages              Message[]
   favorites             Favorite[]
   sessions              Session[] // 여러 디바이스 로그인 지원
@@ -108,9 +110,18 @@ model PasswordReset {
 
 // 상품 상태
 enum ProductStatus {
-  SELLING // 판매중 (🟢)
-  RESERVED // 예약중 (🟡)
-  SOLD // 판매완료 (⚫)
+  PENDING  // 판매 대기 (🔵)
+  SELLING  // 판매 중 (🟢)
+  RESERVED // 예약 중 (🟡)
+  CONFIRMED // 판매 확정 (🟣)
+  ENDED    // 판매 종료 (⚫)
+}
+
+// 예약/거래 상태 (구매자-판매자 간 진행 상태)
+enum ReservationStatus {
+  RESERVED  // 예약중
+  COMPLETED // 양측 거래 완료 확인
+  CANCELED  // 취소
 }
 
 // 결제 수단
@@ -140,11 +151,40 @@ model Product {
   reviews   Review[]
   chatRooms ChatRoom[]
   favorites Favorite[]
+  reservations Reservation[]
 
   @@index([sellerId])
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@map("products")
+}
+
+// 예약/거래 진행 기록 (대면 거래 후 양측 확인)
+model Reservation {
+  id                String            @id @default(uuid())
+  productId         String
+  buyerId           String
+  sellerId          String
+  status            ReservationStatus @default(RESERVED)
+  buyerConfirmedAt  DateTime? // 구매자 "구매완료" 클릭 시각
+  sellerConfirmedAt DateTime? // 판매자 "판매완료" 클릭 시각
+  completedAt       DateTime? // 양측 확인 완료 시각
+  canceledAt        DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  // 관계
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  buyer   User    @relation("BuyerReservations", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller  User    @relation("SellerReservations", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // 같은 상품에 대해 같은 구매자는 중복 예약 방지
+  @@unique([productId, buyerId])
+  @@index([productId])
+  @@index([buyerId])
+  @@index([sellerId])
+  @@index([status])
+  @@map("reservations")
 }
 
 // 리뷰/매너 평가

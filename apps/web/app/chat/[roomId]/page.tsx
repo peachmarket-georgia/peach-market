@@ -4,7 +4,10 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSocket } from '@/context/socket-provider'
 import { chatApi, checkAuth } from '@/lib/api'
+import { productApi } from '@/lib/products-api'
 import { ChatMessageDto, ChatRoomWithMessagesDto } from '@/types/api'
+import { STATUS_LABEL } from '@/lib/product-types'
+import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react'
 
@@ -21,6 +24,8 @@ export default function ChatRoomPage() {
   const [isTyping, setIsTyping] = useState(false)
   const [typingUser, setTypingUser] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [productStatus, setProductStatus] = useState<ProductStatus>('SELLING')
+  const [statusLoading, setStatusLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -49,11 +54,20 @@ export default function ChatRoomPage() {
       if (data) {
         setChatRoom(data)
         setMessages(data.messages)
+        setProductStatus(data.product.status as ProductStatus)
       }
       setLoading(false)
     }
     loadRoom()
   }, [roomId, router])
+
+  const handleStatusChange = async (newStatus: ProductStatus) => {
+    if (statusLoading || !chatRoom) return
+    setStatusLoading(true)
+    const { data } = await productApi.updateProductStatus(chatRoom.product.id, newStatus)
+    if (data) setProductStatus(data.status as ProductStatus)
+    setStatusLoading(false)
+  }
 
   // Join room when connected
   useEffect(() => {
@@ -149,7 +163,7 @@ export default function ChatRoomPage() {
   if (loading || !chatRoom || !currentUserId) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="animate-pulse text-muted-foreground">로딩 중...</div>
+        <div className="animate-pulse text-primary font-medium">로딩 중...</div>
       </div>
     )
   }
@@ -159,94 +173,155 @@ export default function ChatRoomPage() {
   return (
     <div className="flex flex-col h-dvh bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 px-2 py-3 bg-background/80 backdrop-blur-md border-b">
-        <button onClick={() => router.push('/chat')} className="p-1 rounded-lg hover:bg-accent">
-          <IconChevronLeft className="w-6 h-6" />
+      <header className="sticky top-0 z-10 flex items-center gap-3 px-3 py-2.5 bg-primary">
+        <button onClick={() => router.push('/chat')} className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
+          <IconChevronLeft className="w-5 h-5 text-white" />
         </button>
 
-        <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+        <div className="flex items-center gap-2.5 flex-1 min-w-0">
+          <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center overflow-hidden flex-shrink-0">
             {otherUser.avatarUrl ? (
               <img src={otherUser.avatarUrl} alt={otherUser.nickname} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-base font-semibold text-muted-foreground">{otherUser.nickname[0]}</span>
+              <span className="text-sm font-bold text-white">{otherUser.nickname[0]}</span>
             )}
           </div>
           <div className="min-w-0">
-            <span className="font-semibold truncate block">{otherUser.nickname}</span>
-            {typingUser && <span className="text-xs text-primary">입력 중...</span>}
+            <span className="font-semibold text-sm truncate block text-white">{otherUser.nickname}</span>
+            <span className="text-xs text-white/70">
+              {typingUser ? <span className="text-white font-medium">입력 중...</span> : '온라인'}
+            </span>
           </div>
         </div>
 
-        <button className="p-2 rounded-lg hover:bg-accent">
-          <IconDotsVertical className="w-5 h-5" />
+        <button className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
+          <IconDotsVertical className="w-5 h-5 text-white" />
         </button>
       </header>
 
       {/* Connection Status Banner */}
       {!isConnected && (
-        <div className="bg-destructive/10 text-destructive text-center text-sm py-2 px-4">
+        <div className="bg-destructive/10 text-destructive text-center text-xs py-1.5 px-4 font-medium">
           {isReconnecting ? '재연결 중...' : '연결이 끊어졌습니다'}
         </div>
       )}
 
       {/* Product Card */}
-      <div className="flex items-center gap-3 p-3 border-b bg-muted/30">
-        <div className="w-12 h-12 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-          {chatRoom.product.images[0] ? (
-            <img src={chatRoom.product.images[0]} alt={chatRoom.product.title} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
-          )}
-        </div>
-        <div className="flex-1 min-w-0">
-          <span
-            className={cn(
-              'inline-block px-1.5 py-0.5 text-[10px] font-medium rounded',
-              chatRoom.product.status === 'SOLD'
-                ? 'bg-muted text-muted-foreground'
-                : chatRoom.product.status === 'RESERVED'
-                  ? 'bg-warning text-warning-foreground'
-                  : 'bg-success text-success-foreground'
+      <div className="border-b border-primary/15 bg-primary/5">
+        {/* Product Info Row */}
+        <div className="flex items-center gap-3 px-3 py-3">
+          <div className="w-11 h-11 rounded-xl overflow-hidden bg-muted shrink-0">
+            {chatRoom.product.images[0] ? (
+              <img
+                src={chatRoom.product.images[0]}
+                alt={chatRoom.product.title}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                No Image
+              </div>
             )}
-          >
-            {chatRoom.product.status === 'SOLD'
-              ? '판매완료'
-              : chatRoom.product.status === 'RESERVED'
-                ? '예약중'
-                : '판매중'}
-          </span>
-          <p className="text-sm font-medium truncate mt-0.5">{chatRoom.product.title}</p>
-          <p className="text-sm font-bold text-primary">${(chatRoom.product.price / 100).toFixed(2)}</p>
+          </div>
+          <div className="flex-1 min-w-0">
+            <span
+              className={cn(
+                'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
+                productStatus === 'PENDING' && 'bg-[#DBEAFE] text-[#1E40AF]',
+                productStatus === 'SELLING' && 'bg-[#DCFCE7] text-[#166534]',
+                productStatus === 'RESERVED' && 'bg-[#FEF9C3] text-[#854D0E]',
+                productStatus === 'CONFIRMED' && 'bg-[#F3E8FF] text-[#6B21A8]',
+                productStatus === 'ENDED' && 'bg-[#F3F4F6] text-[#6B7280]'
+              )}
+            >
+              {STATUS_LABEL[productStatus]}
+            </span>
+            <p className="text-sm font-medium truncate">{chatRoom.product.title}</p>
+            <p className="text-sm font-bold text-primary">${(chatRoom.product.price / 100).toFixed(2)}</p>
+          </div>
         </div>
+
+        {/* 판매자 전용 상태 변경 버튼 - 가로 스크롤 행 */}
+        {currentUserId === chatRoom.sellerId && (
+          <div className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            {productStatus !== 'PENDING' && (
+              <button
+                onClick={() => handleStatusChange('PENDING')}
+                disabled={statusLoading}
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#1E40AF]/30 text-[#1E40AF] bg-[#DBEAFE]/60 hover:bg-[#DBEAFE] transition-colors disabled:opacity-50"
+              >
+                판매대기
+              </button>
+            )}
+            {productStatus !== 'SELLING' && (
+              <button
+                onClick={() => handleStatusChange('SELLING')}
+                disabled={statusLoading}
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#166534]/30 text-[#166534] bg-[#DCFCE7]/60 hover:bg-[#DCFCE7] transition-colors disabled:opacity-50"
+              >
+                판매중
+              </button>
+            )}
+            {productStatus !== 'RESERVED' && (
+              <button
+                onClick={() => handleStatusChange('RESERVED')}
+                disabled={statusLoading}
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#854D0E]/30 text-[#854D0E] bg-[#FEF9C3]/60 hover:bg-[#FEF9C3] transition-colors disabled:opacity-50"
+              >
+                예약중
+              </button>
+            )}
+            {productStatus !== 'CONFIRMED' && (
+              <button
+                onClick={() => handleStatusChange('CONFIRMED')}
+                disabled={statusLoading}
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#6B21A8]/30 text-[#6B21A8] bg-[#F3E8FF]/60 hover:bg-[#F3E8FF] transition-colors disabled:opacity-50"
+              >
+                판매확정
+              </button>
+            )}
+            {productStatus !== 'ENDED' && (
+              <button
+                onClick={() => handleStatusChange('ENDED')}
+                disabled={statusLoading}
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#6B7280]/30 text-[#6B7280] bg-[#F3F4F6]/60 hover:bg-[#F3F4F6] transition-colors disabled:opacity-50"
+              >
+                판매종료
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-            메시지가 없습니다. 대화를 시작해보세요!
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <p className="text-muted-foreground text-sm">아직 메시지가 없어요</p>
+              <p className="text-muted-foreground/60 text-xs mt-1">먼저 인사를 건네보세요 👋</p>
+            </div>
           </div>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
               className={cn(
-                'flex flex-col gap-1 max-w-[80%]',
+                'flex flex-col gap-0.5 max-w-[78%]',
                 msg.senderId === currentUserId ? 'ml-auto items-end' : 'mr-auto items-start'
               )}
             >
               <div
                 className={cn(
-                  'px-4 py-2.5 text-[15px] leading-relaxed rounded-2xl',
+                  'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl',
                   msg.senderId === currentUserId
-                    ? 'bg-primary text-primary-foreground rounded-br-sm'
-                    : 'bg-accent text-foreground rounded-bl-sm'
+                    ? 'bg-primary text-white rounded-br-md'
+                    : 'bg-primary/10 text-foreground rounded-bl-md'
                 )}
               >
                 {msg.content}
               </div>
-              <span className="text-xs text-muted-foreground px-1">
+              <span className="text-[11px] text-muted-foreground px-1">
                 {new Date(msg.createdAt).toLocaleTimeString('ko-KR', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -255,11 +330,21 @@ export default function ChatRoomPage() {
             </div>
           ))
         )}
+
+        {/* 타이핑 인디케이터 */}
+        {typingUser && (
+          <div className="mr-auto flex items-center gap-1 px-3.5 py-3 bg-primary/10 rounded-2xl rounded-bl-md w-fit">
+            <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:0ms]" />
+            <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:150ms]" />
+            <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:300ms]" />
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-background border-t px-3 py-2 safe-area-pb">
+      <div className="sticky bottom-0 bg-background border-t border-primary/15 px-3 py-2.5 safe-area-pb">
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -270,20 +355,20 @@ export default function ChatRoomPage() {
             }}
             onKeyDown={handleKeyDown}
             disabled={!isConnected}
-            placeholder={isConnected ? '메시지를 입력하세요' : '연결 중...'}
-            className="flex-1 px-4 py-2.5 bg-muted rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+            placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
+            className="flex-1 px-4 py-2.5 bg-primary/10 border border-primary rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}
             disabled={!newMessage.trim() || !isConnected}
             className={cn(
-              'p-2.5 rounded-full transition-colors',
+              'w-10 h-10 rounded-full flex items-center justify-center transition-all',
               newMessage.trim() && isConnected
                 ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                : 'bg-muted text-muted-foreground'
+                : 'bg-muted text-muted-foreground scale-95'
             )}
           >
-            <IconSend className="w-5 h-5" />
+            <IconSend className="w-4.5 h-4.5" />
           </button>
         </div>
       </div>

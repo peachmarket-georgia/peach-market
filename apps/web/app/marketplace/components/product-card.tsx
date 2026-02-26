@@ -9,9 +9,11 @@ import { Badge } from '@/components/ui/badge'
 import { ProductResponseDto } from '@/types/api'
 
 const STATUS_CONFIG = {
-  SELLING: { label: '판매중', className: 'bg-[#4CAF50] text-white hover:bg-[#4CAF50]' },
-  RESERVED: { label: '예약중', className: 'bg-[#FFC107] text-black hover:bg-[#FFC107]' },
-  SOLD: { label: '판매완료', className: 'bg-[#9E9E9E] text-white hover:bg-[#9E9E9E]' },
+  PENDING: { label: '판매 대기', className: 'bg-[#DBEAFE] text-[#1E40AF] hover:bg-[#DBEAFE]' },
+  SELLING: { label: '판매 중', className: 'bg-[#DCFCE7] text-[#166534] hover:bg-[#DCFCE7]' },
+  RESERVED: { label: '예약 중', className: 'bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FEF9C3]' },
+  CONFIRMED: { label: '판매 확정', className: 'bg-[#F3E8FF] text-[#6B21A8] hover:bg-[#F3E8FF]' },
+  ENDED: { label: '판매 종료', className: 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#F3F4F6]' },
 }
 
 type ProductCardProps = {
@@ -32,7 +34,7 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
             alt={product.title}
             fill
             className="object-cover group-hover:scale-105 transition-transform duration-200"
-            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-muted">
@@ -61,10 +63,12 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
           </button>
         )}
 
-        {/* SOLD 오버레이 */}
-        {product.status === 'SOLD' && (
+        {/* 종료 오버레이 */}
+        {(product.status === 'CONFIRMED' || product.status === 'ENDED') && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">판매완료</span>
+            <span className="text-white font-bold text-lg">
+              {product.status === 'CONFIRMED' ? '판매 확정' : '판매 종료'}
+            </span>
           </div>
         )}
       </div>

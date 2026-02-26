@@ -9,6 +9,7 @@ import {
   IconLoader2,
   IconPlus,
   IconPackage,
+  IconX,
 } from '@tabler/icons-react'
 import { ProductCard } from './components/product-card'
 import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
@@ -21,9 +22,11 @@ import type { ProductResponseDto } from '@/types/api'
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
+  { value: 'PENDING', label: STATUS_LABEL.PENDING },
   { value: 'SELLING', label: STATUS_LABEL.SELLING },
   { value: 'RESERVED', label: STATUS_LABEL.RESERVED },
-  { value: 'SOLD', label: STATUS_LABEL.SOLD },
+  { value: 'CONFIRMED', label: STATUS_LABEL.CONFIRMED },
+  { value: 'ENDED', label: STATUS_LABEL.ENDED },
 ]
 
 const MarketplacePage = () => {
@@ -64,6 +67,15 @@ const MarketplacePage = () => {
       if (data) setCurrentUserId(data.id)
     })
   }, [])
+
+  const isFiltered = searchQuery !== '' || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' || sortBy !== 'latest'
+
+  const resetFilters = () => {
+    setSearchQuery('')
+    setSelectedCategory('ALL')
+    setSelectedStatus('ALL')
+    setSortBy('latest')
+  }
 
   const handleFavoriteToggle = async (id: string) => {
     const { data } = await productApi.toggleFavorite(id)
@@ -138,7 +150,7 @@ const MarketplacePage = () => {
 
       {/* 상태 필터 + 정렬 */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-1">
+        <div className="flex items-center gap-1">
           {STATUS_FILTERS.map((filter) => (
             <button
               key={filter.value}
@@ -153,6 +165,15 @@ const MarketplacePage = () => {
               {filter.label}
             </button>
           ))}
+          {isFiltered && (
+            <button
+              onClick={resetFilters}
+              className="flex items-center gap-1 ml-1 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-[#757575] hover:text-[#212121] hover:bg-orange-50 transition-all"
+            >
+              <IconX className="h-3.5 w-3.5" />
+              초기화
+            </button>
+          )}
         </div>
 
         <div className="relative">
@@ -205,7 +226,7 @@ const MarketplacePage = () => {
           <p className="text-sm text-[#757575]">상품을 불러오는 중...</p>
         </div>
       ) : products.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4 pb-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xl:grid-cols-5 md:gap-5 pb-10">
           {products.map((product) => (
             <ProductCard
               key={product.id}
