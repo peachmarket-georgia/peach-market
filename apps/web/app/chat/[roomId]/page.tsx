@@ -33,6 +33,8 @@ export default function ChatRoomPage() {
   const [cancelLoading, setCancelLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const chatRoomRef = useRef<ChatRoomWithMessagesDto | null>(null)
+  chatRoomRef.current = chatRoom
 
   // Load user and connect socket
   useEffect(() => {
@@ -93,14 +95,37 @@ export default function ChatRoomPage() {
     setStatusLoading(false)
   }
 
-  /** 거래 완료 확인 */
-  const handleConfirm = async () => {
-    if (!reservation || confirmLoading) return
+  /** 판매자 거래 완료 확인 → 구매자에게 확인 요청 메세지 자동 발송 */
+  const handleSellerConfirm = async () => {
+    if (!reservation || confirmLoading || !currentUserId) return
+    setConfirmLoading(true)
+    const { data } = await reservationApi.confirm(reservation.id)
+    if (data) {
+      setReservation(data)
+      // 구매자에게 확인 요청 시스템 메세지 발송
+      socket?.emit('sendMessage', {
+        chatRoomId: roomId,
+        senderId: currentUserId,
+        content: JSON.stringify({ type: 'confirm_request', reservationId: reservation.id }),
+      })
+    }
+    setConfirmLoading(false)
+  }
+
+  /** 구매자 거래 완료 확인 (채팅 메세지 버튼에서 호출) */
+  const handleBuyerConfirm = async () => {
+    if (!reservation || confirmLoading || !currentUserId) return
     setConfirmLoading(true)
     const { data } = await reservationApi.confirm(reservation.id)
     if (data) {
       setReservation(data)
       if (data.status === 'COMPLETED') setProductStatus('CONFIRMED')
+      // 판매자에게 구매 확인 완료 알림 발송
+      socket?.emit('sendMessage', {
+        chatRoomId: roomId,
+        senderId: currentUserId,
+        content: JSON.stringify({ type: 'buyer_confirmed', reservationId: reservation.id }),
+      })
     }
     setConfirmLoading(false)
   }
@@ -131,9 +156,28 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!socket) return
 
-    const handleNewMessage = (msg: ChatMessageDto) => {
+    const handleNewMessage = async (msg: ChatMessageDto) => {
       setMessages((prev) => [...prev, msg])
       socket.emit('markAsRead', { chatRoomId: roomId })
+
+      // 거래 관련 시스템 메세지 수신 시 예약 상태 갱신
+      if (chatRoomRef.current) {
+        try {
+          const parsed = JSON.parse(msg.content)
+          const type = parsed?.type
+          // confirm_request: 구매자 reservation null 방지용 재조회
+          // buyer_confirmed: 판매자 화면 실시간 갱신
+          if (type === 'confirm_request' || type === 'buyer_confirmed') {
+            const { data: resData } = await reservationApi.getByProduct(chatRoomRef.current.product.id)
+            if (resData) {
+              setReservation(resData)
+              if (resData.status === 'COMPLETED') setProductStatus('CONFIRMED')
+            }
+          }
+        } catch {
+          /* 일반 메세지는 JSON 파싱 실패 — 무시 */
+        }
+      }
     }
     const handleUserTyping = ({ userId }: { userId: string }) => {
       if (userId !== currentUserId) setTypingUser(userId)
@@ -324,31 +368,19 @@ export default function ChatRoomPage() {
       {/* 거래 완료 확인 섹션 — 예약이 RESERVED 상태일 때 */}
       {activeReservation && reservation && (
         <div className="border-b border-primary/15 bg-white px-3 py-3">
-          <p className="text-[11px] font-semibold text-center text-muted-foreground mb-2.5">
-            대면 거래 후 완료 확인을 눌러주세요
-          </p>
-
-          {/* 구매자 — 본인 버튼만 노출 */}
+          {/* 구매자 — 판매자 확인 대기 안내 */}
           {isBuyer && (
-            <button
-              onClick={handleConfirm}
-              disabled={confirmLoading || !!reservation.buyerConfirmedAt}
-              className={cn(
-                'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
-                reservation.buyerConfirmedAt
-                  ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
-                  : 'bg-primary text-white border-primary hover:bg-primary/90 active:scale-95'
-              )}
-            >
-              {reservation.buyerConfirmedAt && <IconCheck className="w-4 h-4" />}
-              {reservation.buyerConfirmedAt ? '구매 완료 확인됨' : '구매 완료 확인'}
-            </button>
+            <p className="text-[12px] font-semibold text-center text-muted-foreground py-1">
+              {reservation.sellerConfirmedAt
+                ? '👇 아래 채팅에서 구매 완료를 확인해주세요'
+                : '판매자의 거래 완료 확인을 기다리는 중...'}
+            </p>
           )}
 
-          {/* 판매자 — 본인 버튼 + 구매자 확인 여부 표시 + 예약 취소 */}
+          {/* 판매자 — 판매 완료 확인 버튼 + 구매자 확인 여부 + 예약 취소 */}
           {isSeller && (
             <>
-              {/* 구매자 확인 상태 표시 */}
+              {/* 구매자 확인 상태 */}
               <div
                 className={cn(
                   'w-full py-2 text-[12px] font-semibold rounded-xl border mb-2 flex items-center justify-center gap-1.5',
@@ -367,9 +399,9 @@ export default function ChatRoomPage() {
                 )}
               </div>
 
-              {/* 판매자 본인 확인 버튼 */}
+              {/* 판매자 확인 버튼 — 클릭 시 구매자에게 메세지 자동 발송 */}
               <button
-                onClick={handleConfirm}
+                onClick={handleSellerConfirm}
                 disabled={confirmLoading || !!reservation.sellerConfirmedAt}
                 className={cn(
                   'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
@@ -420,32 +452,97 @@ export default function ChatRoomPage() {
             </div>
           </div>
         ) : (
-          messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={cn(
-                'flex flex-col gap-0.5 max-w-[78%]',
-                msg.senderId === currentUserId ? 'ml-auto items-end' : 'mr-auto items-start'
-              )}
-            >
+          messages.map((msg) => {
+            // 시스템 메세지 타입 감지
+            let msgType: string | null = null
+            try {
+              const parsed = JSON.parse(msg.content)
+              if (parsed?.type) msgType = parsed.type
+            } catch {}
+
+            // 구매자 확인 완료 알림
+            if (msgType === 'buyer_confirmed') {
+              return (
+                <div key={msg.id} className="flex justify-center my-2">
+                  <span className="text-[11px] text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <IconCheck className="w-3 h-3 text-[#166534]" />
+                    구매자가 거래 완료를 확인했습니다
+                  </span>
+                </div>
+              )
+            }
+
+            if (msgType === 'confirm_request') {
+              return (
+                <div key={msg.id} className="flex justify-center my-2">
+                  <div className="w-full max-w-[85%] bg-white border border-primary/15 rounded-2xl px-4 py-3.5 shadow-sm">
+                    <p className="text-[12px] text-center text-muted-foreground mb-1">거래 완료 확인 요청</p>
+                    <p className="text-[15px] font-semibold text-center text-foreground mb-3">
+                      판매자가 거래 완료를 요청했어요. 실제로 거래가 완료되었는지 확인해주세요.
+                    </p>
+
+                    {isBuyer && (
+                      <button
+                        onClick={handleBuyerConfirm}
+                        disabled={confirmLoading || !!reservation?.buyerConfirmedAt}
+                        className={cn(
+                          'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
+                          reservation?.buyerConfirmedAt
+                            ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
+                            : 'bg-primary text-white border-primary hover:bg-primary/90 active:scale-95'
+                        )}
+                      >
+                        {reservation?.buyerConfirmedAt && <IconCheck className="w-4 h-4" />}
+                        {reservation?.buyerConfirmedAt ? '구매 완료 확인됨' : '구매 완료 확인'}
+                      </button>
+                    )}
+
+                    {isSeller && (
+                      <p
+                        className={cn(
+                          'text-[12px] text-center font-semibold',
+                          reservation?.buyerConfirmedAt ? 'text-[#166534]' : 'text-muted-foreground'
+                        )}
+                      >
+                        {reservation?.buyerConfirmedAt ? '✓ 구매자 확인 완료' : '구매자 확인 대기 중...'}
+                      </p>
+                    )}
+
+                    <p className="text-[10px] text-muted-foreground/50 text-right mt-2">
+                      {new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
               <div
+                key={msg.id}
                 className={cn(
-                  'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl',
-                  msg.senderId === currentUserId
-                    ? 'bg-primary text-white rounded-br-md'
-                    : 'bg-primary/10 text-foreground rounded-bl-md'
+                  'flex flex-col gap-0.5 max-w-[78%]',
+                  msg.senderId === currentUserId ? 'ml-auto items-end' : 'mr-auto items-start'
                 )}
               >
-                {msg.content}
+                <div
+                  className={cn(
+                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl',
+                    msg.senderId === currentUserId
+                      ? 'bg-primary text-white rounded-br-md'
+                      : 'bg-primary/10 text-foreground rounded-bl-md'
+                  )}
+                >
+                  {msg.content}
+                </div>
+                <span className="text-[11px] text-muted-foreground px-1">
+                  {new Date(msg.createdAt).toLocaleTimeString('ko-KR', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
               </div>
-              <span className="text-[11px] text-muted-foreground px-1">
-                {new Date(msg.createdAt).toLocaleTimeString('ko-KR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-            </div>
-          ))
+            )
+          })
         )}
 
         {/* 타이핑 인디케이터 */}
