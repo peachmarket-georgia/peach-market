@@ -1,0 +1,22 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔄 Checking for Prisma schema changes after merge/pull..."
+
+# 이전 커밋과 현재 커밋 사이에 prisma/ 폴더 변경사항이 있는지 확인
+if git diff-tree -r --name-only ORIG_HEAD HEAD | grep -q "apps/api/prisma/"; then
+  echo "⚠️  Prisma schema modifications detected!"
+  echo "🛠️  Running prisma generate & db push..."
+  
+  # api 패키지 폴더로 이동하여 prisma 명령어 실행
+  cd apps/api
+  pnpm dlx prisma generate
+  
+  # 주의: 개발 환경에서는 migrate dev 대신 db push로 우선 스키마를 맞추거나, 
+  # 팀 컨벤션에 따라 아래 명령어를 `npx prisma migrate deploy`로 변경 가능
+  pnpm dlx prisma db push
+  
+  echo "✅ Prisma synchronization complete."
+else
+  echo "👌 No Prisma changes detected. Environment is up to date."
+fi
