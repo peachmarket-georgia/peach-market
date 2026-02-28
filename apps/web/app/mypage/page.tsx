@@ -79,7 +79,7 @@ export default function MyPage() {
 
       if (activeTab === 'purchased') {
         const { data } = await reservationApi.getMy('buyer')
-        setPurchasedReservations(data ? data.filter((r) => r.status === 'COMPLETED') : [])
+        setPurchasedReservations(data ? data.filter((r) => r.status === 'CONFIRMED') : [])
       } else {
         let result: { data?: ProductResponseDto[]; error?: string }
 
@@ -88,7 +88,7 @@ export default function MyPage() {
             result = await productApi.getMyProducts('SELLING')
             break
           case 'sold':
-            result = await productApi.getMyProducts('ENDED')
+            result = await productApi.getMyProducts('CONFIRMED')
             break
           case 'favorites':
             result = await productApi.getFavorites()

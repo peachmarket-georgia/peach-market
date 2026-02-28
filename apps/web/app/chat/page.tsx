@@ -9,6 +9,24 @@ import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { IconMessageCircle, IconChevronLeft } from '@tabler/icons-react'
 
+const SYSTEM_MESSAGE_LABELS: Record<string, string> = {
+  confirm_request: '거래 확인 중',
+  buyer_confirmed: '거래 확인 중',
+}
+
+function formatLastMessage(lastMessage: string | null, productTitle: string): string {
+  if (!lastMessage) return productTitle
+  try {
+    const parsed = JSON.parse(lastMessage) as { type?: string }
+    if (parsed.type && SYSTEM_MESSAGE_LABELS[parsed.type]) {
+      return SYSTEM_MESSAGE_LABELS[parsed.type]!
+    }
+  } catch {
+    // 일반 텍스트 메세지
+  }
+  return lastMessage
+}
+
 export default function ChatListPage() {
   const router = useRouter()
   const { isConnected, connect } = useSocket()
@@ -87,7 +105,9 @@ export default function ChatListPage() {
                   {otherUser.avatarUrl ? (
                     <img src={otherUser.avatarUrl} alt={otherUser.nickname} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-lg font-semibold text-muted-foreground">{otherUser.nickname[0]}</span>
+                    <span className="text-lg font-semibold text-muted-foreground">
+                      {(otherUser.nickname ?? '?')[0]}
+                    </span>
                   )}
                 </div>
 
@@ -103,7 +123,9 @@ export default function ChatListPage() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between mt-1">
-                    <p className="text-sm text-muted-foreground truncate">{room.lastMessage || room.product.title}</p>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {formatLastMessage(room.lastMessage, room.product.title)}
+                    </p>
                     {room.unreadCount > 0 && (
                       <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full flex-shrink-0">
                         {room.unreadCount > 99 ? '99+' : room.unreadCount}

@@ -1,6 +1,6 @@
 import type { ProductStatus } from './api'
 
-export type ReservationStatus = 'RESERVED' | 'COMPLETED' | 'CANCELED'
+export type ReservationStatus = 'RESERVED' | 'COMPLETED' | 'CANCELED' | 'CONFIRMED'
 
 export interface ReservationUserDto {
   id: string
