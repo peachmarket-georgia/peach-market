@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { IconLoader2 } from '@tabler/icons-react'
 import { Card, CardContent } from '@/components/ui/card'
-import { VerifyEmailClient } from './verify-email-client'
+import { VerifyEmailClient } from '@/components/auth/verify-email-client'
 
 export const metadata = {
   title: '이메일 인증 안내',
