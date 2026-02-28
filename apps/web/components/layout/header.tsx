@@ -37,16 +37,14 @@ export function Header({ initialUser }: HeaderProps) {
     }
   }, [initialUser])
 
-  // 안읽은 채팅 메시지 수 조회
+  // 안읽은 채팅 메시지 수 조회 (최초 + 페이지 이동 시마다 갱신)
   useEffect(() => {
     if (user) {
       chatApi.getUnreadCount().then(({ data }) => {
-        if (data) {
-          setUnreadCount(data.count)
-        }
+        if (data) setUnreadCount(data.count)
       })
     }
-  }, [user])
+  }, [user, pathname])
 
   const handleLogout = async () => {
     await authApi.logout()

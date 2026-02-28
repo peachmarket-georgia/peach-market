@@ -142,10 +142,11 @@ export default function ChatRoomPage() {
     setCancelLoading(false)
   }
 
-  // Join room when connected
+  // Join room when connected + 입장 시 읽음 처리
   useEffect(() => {
     if (socket && isConnected && roomId && currentUserId) {
       socket.emit('joinRoom', { roomId, userId: currentUserId })
+      socket.emit('markAsRead', { chatRoomId: roomId, userId: currentUserId })
     }
     return () => {
       if (socket && roomId) socket.emit('leaveRoom', roomId)
@@ -158,7 +159,7 @@ export default function ChatRoomPage() {
 
     const handleNewMessage = async (msg: ChatMessageDto) => {
       setMessages((prev) => [...prev, msg])
-      socket.emit('markAsRead', { chatRoomId: roomId })
+      if (currentUserId) socket.emit('markAsRead', { chatRoomId: roomId, userId: currentUserId })
 
       // 거래 관련 시스템 메세지 수신 시 예약 상태 갱신
       if (chatRoomRef.current) {

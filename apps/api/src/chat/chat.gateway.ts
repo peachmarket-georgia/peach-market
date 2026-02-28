@@ -47,6 +47,16 @@ export class ChatGateway {
     return savedMessage
   }
 
+  @SubscribeMessage('markAsRead')
+  async handleMarkAsRead(
+    @MessageBody() data: { chatRoomId: string; userId: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    await this.chatService.markMessagesAsRead(data.chatRoomId, data.userId)
+    // 같은 방의 상대방에게 읽음 처리 알림 (선택적)
+    client.to(data.chatRoomId).emit('messagesRead', { chatRoomId: data.chatRoomId, userId: data.userId })
+  }
+
   // 테스트용: DB 저장 없이 메시지만 브로드캐스트
   @SubscribeMessage('sendTestMessage')
   handleSendTestMessage(
