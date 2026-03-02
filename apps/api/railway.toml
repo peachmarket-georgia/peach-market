@@ -1,5 +1,7 @@
 [build]
 dockerfilePath = "Dockerfile"
+# Only rebuild when API-related files change
+watchPatterns = ["apps/api/**", "packages/shared/**", "pnpm-lock.yaml"]
 
 [deploy]
 healthcheckPath = "/api/health"

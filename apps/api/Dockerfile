@@ -5,45 +5,89 @@ FROM node:22-alpine AS deps
 
 WORKDIR /app
 
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Install dependencies needed for native modules (bcrypt, sharp)
+RUN apk add --no-cache python3 make g++ vips-dev
+
+# Copy package.json (no lockfile in this sub-package)
 COPY package.json ./
 COPY prisma ./prisma/
 
-RUN npm install
-RUN npx prisma generate
+# Install all dependencies (need devDeps for build)
+RUN pnpm install
+
+# Generate Prisma client
+RUN pnpm exec prisma generate
 
 # ============================================
-# Stage 2: Build NestJS
+# Stage 2: Build
 # ============================================
 FROM deps AS build
 
 WORKDIR /app
 
+# Copy source code
 COPY . .
 
-RUN npm run build && ls -la dist/ && echo "Build output verified"
+# Build NestJS
+RUN pnpm run build
+
+# Verify build output
+RUN if [ ! -f dist/main.js ]; then echo "ERROR: dist/main.js not found!" && exit 1; fi
 
 # ============================================
-# Stage 3: Production
+# Stage 3: Production Dependencies
+# ============================================
+FROM node:22-alpine AS prod-deps
+
+WORKDIR /app
+
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+
+# Install dependencies needed for native modules
+RUN apk add --no-cache python3 make g++ vips-dev
+
+COPY package.json ./
+COPY prisma ./prisma/
+
+# Install production dependencies only
+RUN pnpm install --prod
+
+# Generate Prisma client
+RUN pnpm exec prisma generate
+
+# ============================================
+# Stage 4: Production Runner
 # ============================================
 FROM node:22-alpine AS runner
 
+WORKDIR /app
+
+# Runtime dependencies for sharp
+RUN apk add --no-cache vips
+
+# Non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nestjs
 
-    WORKDIR /app
+ENV NODE_ENV=production
 
-    ENV NODE_ENV=production
-    ENV PORT=3003
+# Copy only necessary files from build stages
+COPY --from=prod-deps --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=prod-deps --chown=nestjs:nodejs /app/prisma ./prisma
+COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
+COPY --from=build --chown=nestjs:nodejs /app/package.json ./package.json
 
-    COPY --from=build /app/dist ./dist
-    COPY --from=deps /app/node_modules ./node_modules
-    COPY --from=deps /app/prisma ./prisma
-    COPY --from=build /app/package.json ./package.json
+USER nestjs
 
-    RUN ls -la dist/ && echo "Dist verified in runner stage"
+# Railway injects PORT env variable
+EXPOSE 3003
 
-    USER nestjs
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health || exit 1
 
-    EXPOSE 3003
-
-    CMD ["node", "dist/main.js"]
+CMD ["node", "dist/main.js"]

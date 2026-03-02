@@ -5,15 +5,55 @@ import { AppModule } from './app.module'
 import { AppLoggerService } from './core/logger/logger.service'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 
+/**
+ * Get CORS origins from environment variables
+ */
+function getCorsOrigins(): string[] {
+  const origins: string[] = []
+
+  // Development defaults
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push('http://localhost:3000', 'http://localhost:3003')
+  }
+
+  // Frontend URL (required for production)
+  if (process.env.FRONTEND_URL) {
+    origins.push(process.env.FRONTEND_URL)
+  }
+
+  // Additional allowed origins (comma-separated)
+  if (process.env.ALLOWED_ORIGINS) {
+    const additional = process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    origins.push(...additional)
+  }
+
+  return [...new Set(origins)]
+}
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
 
   const logger = app.get(AppLoggerService)
   logger.setContext(bootstrap.name)
 
-  // CORS 설정
+  // Dynamic CORS settings
+  const allowedOrigins = getCorsOrigins()
+  logger.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`)
+
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3003'],
+    origin: (origin, callback) => {
+      // Allow requests with no origin (server-to-server, curl, etc.)
+      if (!origin) {
+        callback(null, true)
+        return
+      }
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true)
+      } else {
+        logger.warn(`CORS blocked origin: ${origin}`)
+        callback(new Error('Not allowed by CORS'))
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -22,9 +62,9 @@ async function bootstrap() {
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // DTO에 없는 속성 제거
-      forbidNonWhitelisted: true, // DTO에 없는 속성이 있으면 에러
-      transform: true, // 자동 타입 변환
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
     })
   )
 
@@ -34,41 +74,47 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api')
 
-  // Swagger 설정
-  const config = new DocumentBuilder()
-    .setTitle('Peach Market API')
-    .setDescription('피치마켓 API 문서 - 미국 조지아주 한인 중고거래 플랫폼')
-    .setVersion('1.0')
-    .addTag('auth', '인증 관련 API (회원가입, 로그인, 토큰 관리)')
-    .addTag('users', '사용자 관련 API (프로필, 중복 체크)')
-    .addCookieAuth('access_token', {
-      type: 'apiKey',
-      in: 'cookie',
-      name: 'access_token',
-      description: 'Access Token (httpOnly 쿠키)',
+  // Swagger (disabled in production)
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Peach Market API')
+      .setDescription('피치마켓 API 문서 - 미국 조지아주 한인 중고거래 플랫폼')
+      .setVersion('1.0')
+      .addTag('auth', '인증 관련 API (회원가입, 로그인, 토큰 관리)')
+      .addTag('users', '사용자 관련 API (프로필, 중복 체크)')
+      .addTag('health', 'Health check API')
+      .addCookieAuth('access_token', {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'access_token',
+        description: 'Access Token (httpOnly 쿠키)',
+      })
+      .addCookieAuth('refresh_token', {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'refresh_token',
+        description: 'Refresh Token (httpOnly 쿠키)',
+      })
+      .build()
+
+    const document = SwaggerModule.createDocument(app, config)
+    SwaggerModule.setup('api/docs', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
     })
-    .addCookieAuth('refresh_token', {
-      type: 'apiKey',
-      in: 'cookie',
-      name: 'refresh_token',
-      description: 'Refresh Token (httpOnly 쿠키)',
-    })
-    .build()
+  }
 
-  const document = SwaggerModule.createDocument(app, config)
-  SwaggerModule.setup('api/docs', app, document, {
-    swaggerOptions: {
-      persistAuthorization: true,
-      tagsSorter: 'alpha',
-      operationsSorter: 'alpha',
-    },
-  })
+  const port = process.env.PORT || 3003
+  await app.listen(port)
 
-  await app.listen(3003)
-
-  logger.log(`🍑 Peach Market API is running`)
-  logger.log(`🚀 Server: http://localhost:3003`)
-  logger.log(`📝 API Docs: http://localhost:3003/api/docs`)
+  logger.log(`Peach Market API is running`)
+  logger.log(`Server: http://localhost:${port}`)
+  if (process.env.NODE_ENV !== 'production') {
+    logger.log(`API Docs: http://localhost:${port}/api/docs`)
+  }
 }
 
 void bootstrap()
