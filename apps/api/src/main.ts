@@ -94,24 +94,62 @@ async function bootstrap() {
     logger.warn('Swagger is NOT protected — set SWAGGER_USER & SWAGGER_PASSWORD to enable auth')
   }
 
+  const isProduction = process.env.NODE_ENV === 'production'
+
   const config = new DocumentBuilder()
     .setTitle('Peach Market API')
-    .setDescription('피치마켓 API 문서 - 미국 조지아주 한인 중고거래 플랫폼')
-    .setVersion('1.0')
-    .addTag('auth', '인증 관련 API (회원가입, 로그인, 토큰 관리)')
-    .addTag('users', '사용자 관련 API (프로필, 중복 체크)')
-    .addTag('health', 'Health check API')
+    .setDescription(
+      `## 피치마켓 API
+
+미국 조지아주 한인을 위한 중고거래 플랫폼 API입니다.
+
+### 인증 방식
+- **Cookie 기반 JWT 인증**: 로그인 시 \`access_token\`과 \`refresh_token\`이 httpOnly 쿠키로 설정됩니다.
+- **Access Token**: 15분 유효, API 요청 시 자동 전송
+- **Refresh Token**: 7일 유효, 토큰 갱신 시 사용
+
+### Rate Limiting
+| 엔드포인트 | 제한 |
+|-----------|------|
+| 일반 API | 100회/분 |
+| 로그인 | 5회/분 |
+| 회원가입/비밀번호 찾기 | 3회/시간 |
+
+### 에러 응답 형식
+\`\`\`json
+{
+  "statusCode": 400,
+  "message": "에러 메시지",
+  "error": "Bad Request"
+}
+\`\`\`
+`
+    )
+    .setVersion('1.0.0')
+    .setContact('Peach Market Team', 'https://github.com/peachmarket-georgia', 'support@peachmarket.com')
+    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    .addServer(
+      isProduction ? 'https://peach-market-production.up.railway.app' : 'http://localhost:3003',
+      isProduction ? 'Production' : 'Development'
+    )
+    .addTag('auth', '🔐 인증 - 회원가입, 로그인, 토큰 관리, OAuth')
+    .addTag('users', '👤 사용자 - 프로필 조회/수정, 중복 체크')
+    .addTag('products', '🛍️ 상품 - 상품 CRUD, 검색, 찜하기')
+    .addTag('chat', '💬 채팅 - 채팅방 관리, 메시지')
+    .addTag('reservations', '📅 예약 - 거래 예약, 확인, 취소')
+    .addTag('upload', '📁 업로드 - 이미지 업로드')
+    .addTag('health', '💚 헬스체크 - 서버 상태 확인')
     .addCookieAuth('access_token', {
       type: 'apiKey',
       in: 'cookie',
       name: 'access_token',
-      description: 'Access Token (httpOnly 쿠키)',
+      description: 'Access Token (httpOnly 쿠키) - 15분 유효',
     })
     .addCookieAuth('refresh_token', {
       type: 'apiKey',
       in: 'cookie',
       name: 'refresh_token',
-      description: 'Refresh Token (httpOnly 쿠키)',
+      description: 'Refresh Token (httpOnly 쿠키) - 7일 유효',
     })
     .build()
 
