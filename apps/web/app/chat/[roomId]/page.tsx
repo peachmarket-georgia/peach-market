@@ -322,7 +322,7 @@ export default function ChatRoomPage() {
               {STATUS_LABEL[productStatus]}
             </span>
             <p className="text-sm font-medium truncate">{chatRoom.product.title}</p>
-            <p className="text-sm font-bold text-primary">${(chatRoom.product.price / 100).toFixed(2)}</p>
+            <p className="text-sm font-bold text-primary">${chatRoom.product.price.toLocaleString('en-US')}</p>
           </div>
         </div>
 

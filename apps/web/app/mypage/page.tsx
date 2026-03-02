@@ -283,7 +283,7 @@ export default function MyPage() {
                     </div>
                     <div className="p-3">
                       <p className="text-sm font-medium truncate">{res.product.title}</p>
-                      <p className="text-sm font-bold text-primary">${(res.product.price / 100).toFixed(2)}</p>
+                      <p className="text-sm font-bold text-primary">${res.product.price.toLocaleString('en-US')}</p>
                       <p className="text-xs text-muted-foreground mt-1 truncate">판매자: {res.seller.nickname}</p>
                     </div>
                   </div>

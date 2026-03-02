@@ -114,7 +114,7 @@ const EditProductPage = () => {
       setImages(p.images || [])
       setTitle(p.title)
       setCategory(p.category as Category)
-      setPrice(Math.round(p.price / 100).toLocaleString('en-US'))
+      setPrice(p.price.toLocaleString('en-US'))
       setDescription(p.description)
       setLocation(p.location)
       setPaymentMethods(p.paymentMethods || [])
@@ -194,7 +194,7 @@ const EditProductPage = () => {
       const { data, error } = await productApi.updateProduct(productId, {
         title: title.trim(),
         description: description.trim(),
-        price: numericPrice * 100,
+        price: numericPrice,
         category,
         images,
         location: location.trim(),

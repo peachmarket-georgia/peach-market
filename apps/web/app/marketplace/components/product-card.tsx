@@ -22,7 +22,7 @@ type ProductCardProps = {
 
 export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
   const status = STATUS_CONFIG[product.status] ?? STATUS_CONFIG.SELLING
-  const priceDisplay = `$${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  const priceDisplay = `$${product.price.toLocaleString('en-US')}`
 
   return (
     <Link href={`/marketplace/${product.id}`} className="group block">
