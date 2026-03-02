@@ -16,7 +16,6 @@ import {
   IconLoader2,
   IconMapPin,
   IconClock,
-  IconStar,
   IconPencil,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
@@ -239,12 +238,6 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">
                   {product.seller.nickname}
                 </p>
-                <div className="flex items-center gap-1 text-sm">
-                  <IconStar className="h-4 w-4 text-secondary fill-secondary drop-shadow-sm" />
-                  <span className="font-semibold text-transparent bg-linear-to-r from-secondary to-primary bg-clip-text">
-                    매너점수 {product.seller.mannerScore}
-                  </span>
-                </div>
               </div>
             </div>
           </div>
