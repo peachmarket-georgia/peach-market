@@ -16,7 +16,14 @@ import {
   UploadResponseDto,
 } from '@/types/api'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
+const getApiUrl = () => {
+  if (typeof window === 'undefined') {
+    return process.env.API_URL || 'http://localhost:3003'
+  }
+  return ''
+}
+
+const API_SECRET_KEY = process.env.API_SECRET_KEY
 
 export type ApiResponse<T> = {
   data?: T
@@ -44,13 +51,17 @@ export async function apiRequest<T>(
   _isRetry = false
 ): Promise<ApiResponse<T>> {
   try {
+    const isServer = typeof window === 'undefined'
+    const apiUrl = getApiUrl()
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options?.headers,
       ...(cookies ? { Cookie: cookies } : {}),
+      ...(isServer && API_SECRET_KEY ? { 'X-API-Key': API_SECRET_KEY } : {}),
     }
 
-    const response = await fetch(`${API_URL}${endpoint}`, {
+    const response = await fetch(`${apiUrl}${endpoint}`, {
       method: options?.method || 'GET',
       headers,
       body: options?.body ? JSON.stringify(options.body) : undefined,
@@ -66,9 +77,10 @@ export async function apiRequest<T>(
 
     // 401 → refresh token 시도 후 재요청 (auth 엔드포인트 제외, 재시도 1회만)
     if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/')) {
-      const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, {
+      const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
+        headers: isServer && API_SECRET_KEY ? { 'X-API-Key': API_SECRET_KEY } : {},
       })
 
       if (refreshRes.ok) {
@@ -285,7 +297,9 @@ export const uploadApi = {
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
 
-      const response = await fetch(`${API_URL}/api/upload/images`, {
+      const apiUrl = getApiUrl()
+
+      const response = await fetch(`${apiUrl}/api/upload/images`, {
         method: 'POST',
         body: formData,
         credentials: 'include',
