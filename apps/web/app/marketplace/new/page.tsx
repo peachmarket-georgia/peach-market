@@ -136,13 +136,13 @@ const ProductCreatePage = (): React.JSX.Element => {
       <div className="mb-6">
         <Link
           href="/marketplace"
-          className="inline-flex items-center gap-1 text-sm text-[#757575] hover:text-primary transition-colors mb-3"
+          className="inline-flex items-center gap-1 text-sm text-fg-secondary hover:text-primary transition-colors mb-3"
         >
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
-        <h1 className="text-2xl font-extrabold text-[#212121]">상품 등록</h1>
-        <p className="text-sm text-[#9E9E9E] mt-0.5">조지아 한인 중고마켓에 올려보세요 🍑</p>
+        <h1 className="text-2xl font-extrabold text-foreground">상품 등록</h1>
+        <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓에 올려보세요 🍑</p>
       </div>
 
       <div className="flex flex-col gap-6">
@@ -165,10 +165,10 @@ const ProductCreatePage = (): React.JSX.Element => {
         </div>
 
         {/* 기본 정보 카드 */}
-        <div className="bg-white rounded-2xl border-2 border-orange-100 p-4 shadow-sm flex flex-col gap-5">
+        <div className="bg-white rounded-2xl border-2 border-peach-muted p-4 shadow-sm flex flex-col gap-5">
           {/* 제목 */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="title" className="text-sm font-semibold text-[#212121]">
+            <Label htmlFor="title" className="text-sm font-semibold text-foreground">
               제목 <span className="text-primary">*</span>
             </Label>
             <Input
@@ -181,19 +181,19 @@ const ProductCreatePage = (): React.JSX.Element => {
                 if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, title: undefined }))
               }}
               className={cn(
-                'h-11 rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                'h-11 rounded-xl border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary transition-colors',
                 fieldErrors.title && 'border-destructive focus-visible:border-destructive'
               )}
             />
             <div className="flex justify-between">
               {fieldErrors.title ? <span className="text-xs text-destructive">{fieldErrors.title}</span> : <span />}
-              <span className="text-xs text-[#9E9E9E]">{title.length}/50</span>
+              <span className="text-xs text-fg-tertiary">{title.length}/50</span>
             </div>
           </div>
 
           {/* 카테고리 */}
           <div className="flex flex-col gap-1.5">
-            <Label className="text-sm font-semibold text-[#212121]">
+            <Label className="text-sm font-semibold text-foreground">
               카테고리 <span className="text-primary">*</span>
             </Label>
             <div className="flex flex-wrap gap-2">
@@ -209,7 +209,7 @@ const ProductCreatePage = (): React.JSX.Element => {
                     'px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
                     category === cat
                       ? 'bg-primary text-white shadow-md shadow-primary/30'
-                      : 'bg-white border-2 border-orange-100 text-[#757575] hover:border-primary/40 hover:text-primary'
+                      : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
                   )}
                 >
                   {cat}
@@ -221,7 +221,7 @@ const ProductCreatePage = (): React.JSX.Element => {
 
           {/* 가격 */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="price" className="text-sm font-semibold text-[#212121]">
+            <Label htmlFor="price" className="text-sm font-semibold text-foreground">
               가격 (USD) <span className="text-primary">*</span>
             </Label>
             <div className="relative">
@@ -234,7 +234,7 @@ const ProductCreatePage = (): React.JSX.Element => {
                 inputMode="numeric"
                 onChange={(e) => handlePriceChange(e.target.value)}
                 className={cn(
-                  'pl-9 h-11 rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                  'pl-9 h-11 rounded-xl border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary transition-colors',
                   fieldErrors.price && 'border-destructive focus-visible:border-destructive'
                 )}
               />
@@ -244,7 +244,7 @@ const ProductCreatePage = (): React.JSX.Element => {
 
           {/* 거래 희망 지역 */}
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="location" className="text-sm font-semibold text-[#212121]">
+            <Label htmlFor="location" className="text-sm font-semibold text-foreground">
               거래 희망 지역 <span className="text-primary">*</span>
             </Label>
             <div className="relative">
@@ -260,18 +260,18 @@ const ProductCreatePage = (): React.JSX.Element => {
                 }}
                 autoComplete="off"
                 className={cn(
-                  'h-11 rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                  'h-11 rounded-xl border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary transition-colors',
                   fieldErrors.location && 'border-destructive focus-visible:border-destructive'
                 )}
               />
               {isLocationFocused && filteredLocations.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border-2 border-orange-100 rounded-xl shadow-xl py-1.5 overflow-hidden">
+                <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 overflow-hidden">
                   <ul className="max-h-48 overflow-y-auto p-1">
                     {filteredLocations.map((item) => (
                       <li key={item}>
                         <button
                           type="button"
-                          className="w-full rounded-lg px-3 py-2 text-left text-sm text-[#757575] hover:bg-orange-50 hover:text-primary transition-colors"
+                          className="w-full rounded-lg px-3 py-2 text-left text-sm text-fg-secondary hover:bg-peach-subtle hover:text-primary transition-colors"
                           onMouseDown={() => handleLocationSelect(item)}
                         >
                           {item}
@@ -287,12 +287,12 @@ const ProductCreatePage = (): React.JSX.Element => {
         </div>
 
         {/* 상품 설명 카드 */}
-        <div className="bg-white rounded-2xl border-2 border-orange-100 p-4 shadow-sm">
-          <Label htmlFor="description" className="text-sm font-semibold text-[#212121] mb-1.5 block">
+        <div className="bg-white rounded-2xl border-2 border-peach-muted p-4 shadow-sm">
+          <Label htmlFor="description" className="text-sm font-semibold text-foreground mb-1.5 block">
             상품 설명
           </Label>
           <Textarea
-            className="h-40 resize-none rounded-xl border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary transition-colors"
+            className="h-40 resize-none rounded-xl border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary transition-colors"
             id="description"
             placeholder={DESCRIPTION_PLACEHOLDER}
             rows={6}
@@ -310,7 +310,7 @@ const ProductCreatePage = (): React.JSX.Element => {
             'w-full h-12 rounded-full text-base font-bold shadow-md transition-all active:scale-95',
             isValid
               ? 'bg-primary hover:bg-primary/90 text-white hover:shadow-lg'
-              : 'bg-orange-100 text-[#9E9E9E] cursor-not-allowed'
+              : 'bg-peach-muted text-fg-tertiary cursor-not-allowed'
           )}
           disabled={loading || !isValid}
           onClick={handleSubmit}

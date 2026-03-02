@@ -29,6 +29,12 @@ export class ChatGateway {
     return { event: 'leftRoom', data: roomId }
   }
 
+  @SubscribeMessage('joinUserRoom')
+  handleJoinUserRoom(@MessageBody() data: { userId: string }, @ConnectedSocket() client: Socket) {
+    client.join(`user:${data.userId}`)
+    return { event: 'joinedUserRoom', data: `user:${data.userId}` }
+  }
+
   @SubscribeMessage('sendMessage')
   async handleSendMessage(
     @MessageBody()
@@ -44,7 +50,24 @@ export class ChatGateway {
     // 2. 해당 방의 모든 클라이언트에게 메시지 전송
     this.server.to(data.chatRoomId).emit('newMessage', savedMessage)
 
+    // 3. 수신자의 개인 채널에 안읽은 메시지 알림
+    const room = await this.chatService.findChatRoomById(data.chatRoomId)
+    if (room) {
+      const recipientId = room.buyerId === data.senderId ? room.sellerId : room.buyerId
+      this.server.to(`user:${recipientId}`).emit('newUnreadMessage', { chatRoomId: data.chatRoomId })
+    }
+
     return savedMessage
+  }
+
+  @SubscribeMessage('markAsRead')
+  async handleMarkAsRead(
+    @MessageBody() data: { chatRoomId: string; userId: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    await this.chatService.markMessagesAsRead(data.chatRoomId, data.userId)
+    // 같은 방의 상대방에게 읽음 처리 알림 (선택적)
+    client.to(data.chatRoomId).emit('messagesRead', { chatRoomId: data.chatRoomId, userId: data.userId })
   }
 
   // 테스트용: DB 저장 없이 메시지만 브로드캐스트

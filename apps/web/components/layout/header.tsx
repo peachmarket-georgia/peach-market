@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { checkAuth, authApi, chatApi } from '@/lib/api'
 import { UserProfileResponseDto } from '@/types/api'
+import { useSocket } from '@/context/socket-provider'
 
 type HeaderProps = {
   initialUser?: UserProfileResponseDto | null
@@ -26,6 +27,7 @@ export function Header({ initialUser }: HeaderProps) {
   const [loading, setLoading] = useState(!initialUser)
   const router = useRouter()
   const pathname = usePathname()
+  const { socket } = useSocket()
 
   // 클라이언트 사이드에서 인증 상태 확인
   useEffect(() => {
@@ -37,16 +39,35 @@ export function Header({ initialUser }: HeaderProps) {
     }
   }, [initialUser])
 
-  // 안읽은 채팅 메시지 수 조회
+  // 안읽은 채팅 메시지 수 초기 조회
   useEffect(() => {
     if (user) {
       chatApi.getUnreadCount().then(({ data }) => {
-        if (data) {
-          setUnreadCount(data.count)
-        }
+        if (data) setUnreadCount(data.count)
       })
     }
   }, [user])
+
+  // 소켓 개인 채널 join + 실시간 unread count 갱신
+  useEffect(() => {
+    if (!socket || !user) return
+
+    socket.emit('joinUserRoom', { userId: user.id })
+
+    const handleNewUnread = () => setUnreadCount((prev) => prev + 1)
+    socket.on('newUnreadMessage', handleNewUnread)
+
+    return () => {
+      socket.off('newUnreadMessage', handleNewUnread)
+    }
+  }, [socket, user])
+
+  // 채팅 페이지 진입 시 unread count 초기화
+  useEffect(() => {
+    if (pathname === '/chat' || pathname.startsWith('/chat/')) {
+      setUnreadCount(0)
+    }
+  }, [pathname])
 
   const handleLogout = async () => {
     await authApi.logout()

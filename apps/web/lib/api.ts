@@ -35,11 +35,13 @@ export type RequestOptions = {
  * @param endpoint - API 엔드포인트
  * @param options - 요청 옵션
  * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
+ * @param _isRetry - 내부용: 토큰 갱신 후 재시도 여부 (무한 루프 방지)
  */
 export async function apiRequest<T>(
   endpoint: string,
   options?: RequestOptions,
-  cookies?: string
+  cookies?: string,
+  _isRetry = false
 ): Promise<ApiResponse<T>> {
   try {
     const headers: HeadersInit = {
@@ -60,6 +62,23 @@ export async function apiRequest<T>(
       data = await response.json()
     } catch {
       data = null
+    }
+
+    // 401 → refresh token 시도 후 재요청 (auth 엔드포인트 제외, 재시도 1회만)
+    if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/')) {
+      const refreshRes = await fetch(`${API_URL}/api/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (refreshRes.ok) {
+        return apiRequest<T>(endpoint, options, cookies, true)
+      }
+
+      // refresh 실패 → 로그인 페이지로 이동
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login'
+      }
     }
 
     if (!response.ok) {

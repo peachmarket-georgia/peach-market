@@ -22,7 +22,6 @@ import type { ProductResponseDto } from '@/types/api'
 
 const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
   { value: 'ALL', label: '전체' },
-  { value: 'PENDING', label: STATUS_LABEL.PENDING },
   { value: 'SELLING', label: STATUS_LABEL.SELLING },
   { value: 'RESERVED', label: STATUS_LABEL.RESERVED },
   { value: 'CONFIRMED', label: STATUS_LABEL.CONFIRMED },
@@ -93,8 +92,8 @@ const MarketplacePage = () => {
     <div className="flex flex-col gap-4 container mx-auto px-4 md:px-6 md:mt-10">
       {/* 헤딩 */}
       <div className="mb-1">
-        <h1 className="text-2xl font-extrabold text-[#212121]">중고거래</h1>
-        <p className="text-sm text-[#9E9E9E] mt-0.5">조지아 한인 중고마켓 🍑</p>
+        <h1 className="text-2xl font-extrabold text-foreground">중고거래</h1>
+        <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓 🍑</p>
       </div>
 
       {/* 검색 + 등록 */}
@@ -105,7 +104,7 @@ const MarketplacePage = () => {
             placeholder="상품명, 설명으로 검색"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11 rounded-full bg-white border-2 border-orange-100 focus-visible:ring-0 focus-visible:border-primary shadow-sm placeholder:text-[#9E9E9E] text-[#212121] transition-colors"
+            className="pl-10 h-11 rounded-full bg-white border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary shadow-sm placeholder:text-fg-tertiary text-foreground transition-colors"
           />
         </div>
         <Link
@@ -126,7 +125,7 @@ const MarketplacePage = () => {
               'shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
               selectedCategory === 'ALL'
                 ? 'bg-primary text-white shadow-md shadow-primary/30'
-                : 'bg-white border-2 border-orange-100 text-[#757575] hover:border-primary/40 hover:text-primary'
+                : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
             )}
           >
             전체
@@ -139,7 +138,7 @@ const MarketplacePage = () => {
                 'shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
                 selectedCategory === cat
                   ? 'bg-primary text-white shadow-md shadow-primary/30'
-                  : 'bg-white border-2 border-orange-100 text-[#757575] hover:border-primary/40 hover:text-primary'
+                  : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
               )}
             >
               {cat}
@@ -159,7 +158,7 @@ const MarketplacePage = () => {
                 'px-3 py-1.5 rounded-lg text-sm font-semibold transition-all',
                 selectedStatus === filter.value
                   ? 'bg-primary/10 text-primary'
-                  : 'text-[#757575] hover:text-[#212121] hover:bg-orange-50'
+                  : 'text-fg-secondary hover:text-foreground hover:bg-peach-subtle'
               )}
             >
               {filter.label}
@@ -168,7 +167,7 @@ const MarketplacePage = () => {
           {isFiltered && (
             <button
               onClick={resetFilters}
-              className="flex items-center gap-1 ml-1 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-[#757575] hover:text-[#212121] hover:bg-orange-50 transition-all"
+              className="flex items-center gap-1 ml-1 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-fg-secondary hover:text-foreground hover:bg-peach-subtle transition-all"
             >
               <IconX className="h-3.5 w-3.5" />
               초기화
@@ -179,7 +178,7 @@ const MarketplacePage = () => {
         <div className="relative">
           <button
             onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className="flex items-center gap-1 text-sm font-medium text-[#757575] hover:text-primary transition-colors"
+            className="flex items-center gap-1 text-sm font-medium text-fg-secondary hover:text-primary transition-colors"
           >
             <IconAdjustmentsHorizontal className="h-3.5 w-3.5" />
             <span>{SORT_LABELS[sortBy]}</span>
@@ -188,7 +187,7 @@ const MarketplacePage = () => {
           {showSortDropdown && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
-              <div className="absolute right-0 top-full mt-2 z-20 bg-white border-2 border-orange-100 rounded-xl shadow-xl py-1.5 min-w-32 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 min-w-32 overflow-hidden">
                 {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
                   <button
                     key={key}
@@ -200,7 +199,7 @@ const MarketplacePage = () => {
                       'w-full px-4 py-2 text-left text-sm transition-colors',
                       sortBy === key
                         ? 'bg-primary/10 text-primary font-semibold'
-                        : 'text-[#757575] hover:bg-orange-50 hover:text-[#212121]'
+                        : 'text-fg-secondary hover:bg-peach-subtle hover:text-foreground'
                     )}
                   >
                     {label}
@@ -214,7 +213,7 @@ const MarketplacePage = () => {
 
       {/* 결과 수 */}
       {!loading && products && (
-        <p className="text-sm font-medium text-[#757575]">
+        <p className="text-sm font-medium text-fg-secondary">
           <span className="text-primary font-bold">{products.length}</span>개의 매물
         </p>
       )}
@@ -223,7 +222,7 @@ const MarketplacePage = () => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-[#757575]">상품을 불러오는 중...</p>
+          <p className="text-sm text-fg-secondary">상품을 불러오는 중...</p>
         </div>
       ) : products.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xl:grid-cols-5 md:gap-5 pb-10">
@@ -240,8 +239,8 @@ const MarketplacePage = () => {
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
             <IconPackage className="h-10 w-10 text-primary/50" />
           </div>
-          <p className="text-base font-semibold text-[#212121]">검색 결과가 없어요</p>
-          <p className="text-sm text-[#757575]">다른 키워드로 검색해 보세요</p>
+          <p className="text-base font-semibold text-foreground">검색 결과가 없어요</p>
+          <p className="text-sm text-fg-secondary">다른 키워드로 검색해 보세요</p>
         </div>
       )}
     </div>

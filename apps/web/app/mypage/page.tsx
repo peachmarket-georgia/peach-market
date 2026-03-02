@@ -3,9 +3,19 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
-import { IconLoader2, IconMapPin, IconCalendar, IconEdit, IconHeart, IconPackage, IconCheck } from '@tabler/icons-react'
+import {
+  IconLoader2,
+  IconMapPin,
+  IconCalendar,
+  IconEdit,
+  IconHeart,
+  IconPackage,
+  IconCheck,
+  IconShoppingBag,
+} from '@tabler/icons-react'
 import { Header } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,12 +24,15 @@ import { ProductCard } from '@/app/marketplace/components/product-card'
 import { checkAuth, userApi } from '@/lib/api'
 import { ProductResponseDto, UserProfileResponseDto } from '@/types/api'
 import { productApi } from '@/lib/products-api'
+import { reservationApi } from '@/lib/reservation-api'
+import type { ReservationDto } from '@/types/reservation'
 
-type TabType = 'selling' | 'sold' | 'favorites'
+type TabType = 'selling' | 'sold' | 'purchased' | 'favorites'
 
 const TAB_CONFIG: { id: TabType; label: string; icon: typeof IconPackage }[] = [
   { id: 'selling', label: '판매중', icon: IconPackage },
   { id: 'sold', label: '판매완료', icon: IconCheck },
+  { id: 'purchased', label: '구매완료', icon: IconShoppingBag },
   { id: 'favorites', label: '찜 목록', icon: IconHeart },
 ]
 
@@ -28,6 +41,7 @@ export default function MyPage() {
 
   const [user, setUser] = useState<UserProfileResponseDto | null>(null)
   const [products, setProducts] = useState<ProductResponseDto[]>([])
+  const [purchasedReservations, setPurchasedReservations] = useState<ReservationDto[]>([])
   const [activeTab, setActiveTab] = useState<TabType>('selling')
   const [loading, setLoading] = useState(true)
   const [productsLoading, setProductsLoading] = useState(false)
@@ -63,22 +77,26 @@ export default function MyPage() {
     const loadProducts = async () => {
       setProductsLoading(true)
 
-      let result: { data?: ProductResponseDto[]; error?: string }
+      if (activeTab === 'purchased') {
+        const { data } = await reservationApi.getMy('buyer')
+        setPurchasedReservations(data ? data.filter((r) => r.status === 'CONFIRMED') : [])
+      } else {
+        let result: { data?: ProductResponseDto[]; error?: string }
 
-      switch (activeTab) {
-        case 'selling':
-          result = await productApi.getMyProducts('SELLING')
-          break
-        case 'sold':
-          result = await productApi.getMyProducts('ENDED')
-          break
-        case 'favorites':
-          result = await productApi.getFavorites()
-          break
-      }
+        switch (activeTab) {
+          case 'selling':
+            result = await productApi.getMyProducts('SELLING')
+            break
+          case 'sold':
+            result = await productApi.getMyProducts('CONFIRMED')
+            break
+          case 'favorites':
+            result = await productApi.getFavorites()
+            break
+        }
 
-      if (result.data) {
-        setProducts(result.data)
+        if (result!.data) setProducts(result!.data)
+        else setProducts([])
       }
 
       setProductsLoading(false)
@@ -232,6 +250,47 @@ export default function MyPage() {
           <div className="flex items-center justify-center h-40">
             <IconLoader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           </div>
+        ) : activeTab === 'purchased' ? (
+          purchasedReservations.length === 0 ? (
+            <div className="text-center py-16">
+              <p className="text-muted-foreground mb-4">구매완료한 상품이 없습니다</p>
+              <Link href="/marketplace">
+                <Button variant="outline">마켓플레이스 둘러보기</Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
+              {purchasedReservations.map((res) => (
+                <Link key={res.id} href={`/marketplace/${res.product.id}`}>
+                  <div className="bg-card rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="aspect-square overflow-hidden bg-muted relative">
+                      {res.product.images[0] ? (
+                        <Image
+                          src={res.product.images[0]}
+                          alt={res.product.title}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                          No Image
+                        </div>
+                      )}
+                      <span className="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold rounded-md bg-[#F3E8FF] text-[#6B21A8]">
+                        구매완료
+                      </span>
+                    </div>
+                    <div className="p-3">
+                      <p className="text-sm font-medium truncate">{res.product.title}</p>
+                      <p className="text-sm font-bold text-primary">${res.product.price.toLocaleString('en-US')}</p>
+                      <p className="text-xs text-muted-foreground mt-1 truncate">판매자: {res.seller.nickname}</p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
         ) : products.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground mb-4">
