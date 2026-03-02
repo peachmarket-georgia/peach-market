@@ -6,6 +6,7 @@ import { AppService } from './app.service'
 import { AppConfigModule } from './core/config/config.module'
 import { AppLoggerModule } from './core/logger/logger.module'
 import { PrismaModule } from './core/database/prisma.module'
+import { HealthModule } from './core/health/health.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { UsersModule } from './modules/users/users.module'
 import { ProductsModule } from './modules/products/products.module'
@@ -19,6 +20,7 @@ import { UploadModule } from './modules/upload/upload.module'
     AppConfigModule,
     AppLoggerModule,
     PrismaModule,
+    HealthModule,
 
     // Rate Limiting (개발환경에서는 더 높은 limit 적용)
     ThrottlerModule.forRoot([
