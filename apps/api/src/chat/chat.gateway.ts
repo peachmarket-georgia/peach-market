@@ -1,31 +1,71 @@
-import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets'
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayInit,
+} from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { ChatService } from './chat.service'
+import { Logger } from '@nestjs/common'
+
+/**
+ * Get WebSocket CORS origins from environment variables
+ */
+function getWebSocketCorsOrigins(): string[] {
+  const origins: string[] = []
+
+  if (process.env.NODE_ENV !== 'production') {
+    origins.push('http://localhost:3000', 'http://localhost:3003')
+  }
+
+  if (process.env.FRONTEND_URL) {
+    origins.push(process.env.FRONTEND_URL)
+  }
+
+  if (process.env.ALLOWED_ORIGINS) {
+    const additional = process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+    origins.push(...additional)
+  }
+
+  return [...new Set(origins)]
+}
 
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3003'],
+    origin: getWebSocketCorsOrigins(),
     credentials: true,
   },
   namespace: 'chat',
+  transports: ['websocket', 'polling'],
+  pingTimeout: 60000,
+  pingInterval: 25000,
 })
-export class ChatGateway {
+export class ChatGateway implements OnGatewayInit {
   @WebSocketServer()
   server: Server
 
+  private readonly logger = new Logger(ChatGateway.name)
+
   constructor(private readonly chatService: ChatService) {}
+
+  afterInit() {
+    this.logger.log('WebSocket Gateway initialized')
+    this.logger.log(`CORS origins: ${getWebSocketCorsOrigins().join(', ')}`)
+  }
 
   @SubscribeMessage('joinRoom')
   handleJoinRoom(@MessageBody() data: { roomId: string; userId: string }, @ConnectedSocket() client: Socket) {
     client.join(data.roomId)
-    console.log(`Client ${client.id} joined room ${data.roomId}`)
+    this.logger.log(`Client ${client.id} joined room ${data.roomId}`)
     return { event: 'joinedRoom', data: data.roomId }
   }
 
   @SubscribeMessage('leaveRoom')
   handleLeaveRoom(@MessageBody() roomId: string, @ConnectedSocket() client: Socket) {
     client.leave(roomId)
-    console.log(`Client ${client.id} left room ${roomId}`)
+    this.logger.log(`Client ${client.id} left room ${roomId}`)
     return { event: 'leftRoom', data: roomId }
   }
 
@@ -44,10 +84,7 @@ export class ChatGateway {
       content: string
     }
   ) {
-    // 1. DB에 메시지 저장
     const savedMessage = await this.chatService.saveMessage(data.chatRoomId, data.senderId, data.content)
-
-    // 2. 해당 방의 모든 클라이언트에게 메시지 전송
     this.server.to(data.chatRoomId).emit('newMessage', savedMessage)
 
     // 3. 수신자의 개인 채널에 안읽은 메시지 알림
