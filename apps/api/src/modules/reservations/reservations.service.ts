@@ -118,9 +118,9 @@ export class ReservationsService {
   }
 
   /**
-   * 거래 완료 확인
-   * - 구매자 또는 판매자가 각자 "거래 완료" 버튼 클릭
-   * - 양측 모두 확인 시 → COMPLETED + Product→CONFIRMED (트랜잭션)
+   * 거래 완료 확인 (판매자 전용)
+   * - 판매자가 확인하면 즉시 COMPLETED + Product→CONFIRMED (트랜잭션)
+   * - 구매자 쌍방 확인 로직 보류 (buyerConfirmedAt 컬럼은 기록용으로 유지)
    */
   async confirm(reservationId: string, userId: string) {
     const reservation = await this.prisma.reservation.findUnique({
@@ -128,10 +128,8 @@ export class ReservationsService {
       select: {
         id: true,
         productId: true,
-        buyerId: true,
         sellerId: true,
         status: true,
-        buyerConfirmedAt: true,
         sellerConfirmedAt: true,
       },
     })
@@ -140,11 +138,8 @@ export class ReservationsService {
       throw new NotFoundException('예약을 찾을 수 없습니다')
     }
 
-    const isBuyer = reservation.buyerId === userId
-    const isSeller = reservation.sellerId === userId
-
-    if (!isBuyer && !isSeller) {
-      throw new ForbiddenException('해당 거래의 참여자만 확인할 수 있습니다')
+    if (reservation.sellerId !== userId) {
+      throw new ForbiddenException('판매자만 거래 완료를 확인할 수 있습니다')
     }
 
     if (reservation.status !== ReservationStatus.RESERVED) {
@@ -153,49 +148,29 @@ export class ReservationsService {
       )
     }
 
-    if (isBuyer && reservation.buyerConfirmedAt) {
-      throw new BadRequestException('이미 구매 완료를 확인했습니다')
-    }
-
-    if (isSeller && reservation.sellerConfirmedAt) {
+    if (reservation.sellerConfirmedAt) {
       throw new BadRequestException('이미 판매 완료를 확인했습니다')
     }
 
     const now = new Date()
-    const newBuyerConfirmedAt = isBuyer ? now : reservation.buyerConfirmedAt
-    const newSellerConfirmedAt = isSeller ? now : reservation.sellerConfirmedAt
-    const bothConfirmed = !!(newBuyerConfirmedAt && newSellerConfirmedAt)
 
-    if (bothConfirmed) {
-      // 양측 모두 확인 → COMPLETED + Product→CONFIRMED (트랜잭션)
-      const [updated] = await this.prisma.$transaction([
-        this.prisma.reservation.update({
-          where: { id: reservationId },
-          data: {
-            buyerConfirmedAt: newBuyerConfirmedAt,
-            sellerConfirmedAt: newSellerConfirmedAt,
-            status: ReservationStatus.COMPLETED,
-            completedAt: now,
-          },
-          select: RESERVATION_SELECT,
-        }),
-        this.prisma.product.update({
-          where: { id: reservation.productId },
-          data: { status: ProductStatus.CONFIRMED },
-        }),
-      ])
-      return updated
-    }
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.reservation.update({
+        where: { id: reservationId },
+        data: {
+          sellerConfirmedAt: now,
+          status: ReservationStatus.COMPLETED,
+          completedAt: now,
+        },
+        select: RESERVATION_SELECT,
+      }),
+      this.prisma.product.update({
+        where: { id: reservation.productId },
+        data: { status: ProductStatus.CONFIRMED },
+      }),
+    ])
 
-    // 한쪽만 확인
-    return this.prisma.reservation.update({
-      where: { id: reservationId },
-      data: {
-        ...(isBuyer && { buyerConfirmedAt: now }),
-        ...(isSeller && { sellerConfirmedAt: now }),
-      },
-      select: RESERVATION_SELECT,
-    })
+    return updated
   }
 
   /**

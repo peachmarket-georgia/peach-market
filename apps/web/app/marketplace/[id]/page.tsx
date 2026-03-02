@@ -123,7 +123,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const isOwner = !!(currentUserId && currentUserId === product.seller.id)
 
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
+    <div className="max-w-5xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
       {/* 뒤로가기 + 수정 */}
       <div className="mb-6 flex items-center justify-between">
         <Link

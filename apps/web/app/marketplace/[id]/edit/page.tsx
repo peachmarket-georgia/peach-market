@@ -3,7 +3,15 @@
 import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { IconChevronLeft, IconCurrencyDollar, IconLoader2, IconPhoto, IconX, IconCrown } from '@tabler/icons-react'
+import {
+  IconChevronLeft,
+  IconCurrencyDollar,
+  IconLoader2,
+  IconPhoto,
+  IconX,
+  IconCrown,
+  IconTrash,
+} from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -83,6 +91,8 @@ const EditProductPage = () => {
   const [uploading, setUploading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const normalizedLocation = location.trim().toLowerCase()
   const filteredLocations = GEORGIA_LOCATIONS.filter((item) => item.toLowerCase().includes(normalizedLocation)).slice(
@@ -186,6 +196,18 @@ const EditProductPage = () => {
 
   const numericPrice = Number(price.replaceAll(',', ''))
   const isValid = title.trim() && category && price && location.trim() && images.length > 0
+
+  const handleDelete = async () => {
+    setDeleteLoading(true)
+    const { error } = await productApi.deleteProduct(productId)
+    if (error) {
+      toast.error('삭제에 실패했습니다')
+      setDeleteLoading(false)
+      return
+    }
+    toast.success('매물이 삭제되었습니다')
+    router.push('/marketplace')
+  }
 
   const handleSubmit = async () => {
     if (!validate() || loading) return
@@ -502,7 +524,51 @@ const EditProductPage = () => {
             '수정하기'
           )}
         </Button>
+
+        {/* 삭제 버튼 */}
+        <button
+          type="button"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={deleteLoading}
+          className="w-full h-11 rounded-full text-sm font-semibold text-destructive border border-destructive/30 hover:bg-destructive/5 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
+        >
+          <IconTrash className="h-4 w-4" />
+          매물 삭제
+        </button>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:px-6"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-foreground mb-1.5">매물 삭제</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              정말 삭제하시겠습니까?{'\n'}삭제된 매물은 복구할 수 없습니다.
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3 text-sm font-semibold rounded-xl border border-border text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteLoading}
+                className="flex-1 py-3 text-sm font-bold rounded-xl bg-destructive text-white hover:bg-destructive/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {deleteLoading ? <IconLoader2 className="h-4 w-4 animate-spin" /> : '삭제하기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
