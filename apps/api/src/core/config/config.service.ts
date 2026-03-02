@@ -44,8 +44,4 @@ export class AppConfigService {
   get supabaseServiceRoleKey(): string {
     return this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY', '')
   }
-
-  get apiSecretKey(): string {
-    return this.configService.get<string>('API_SECRET_KEY', '')
-  }
 }

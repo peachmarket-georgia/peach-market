@@ -43,11 +43,19 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (server-to-server, curl, etc.)
-      if (!origin) {
+      // Development: allow requests with no origin (server-side rendering, curl)
+      if (!origin && process.env.NODE_ENV !== 'production') {
         callback(null, true)
         return
       }
+
+      // Production: block requests with no origin (curl, postman, etc.)
+      if (!origin) {
+        logger.warn('CORS blocked: no origin header (direct API call)')
+        callback(new Error('Origin header required'))
+        return
+      }
+
       if (allowedOrigins.includes(origin)) {
         callback(null, true)
       } else {
