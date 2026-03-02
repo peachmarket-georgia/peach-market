@@ -15,8 +15,8 @@ RUN apk add --no-cache python3 make g++ vips-dev
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Install all dependencies (need devDeps for build)
-RUN pnpm install
+# Add node-gyp for sharp build, then install all dependencies
+RUN pnpm add -D node-gyp && pnpm install
 
 # Generate Prisma client
 RUN pnpm exec prisma generate
@@ -34,8 +34,8 @@ COPY . .
 # Build NestJS
 RUN pnpm run build
 
-# Verify build output
-RUN if [ ! -f dist/main.js ]; then echo "ERROR: dist/main.js not found!" && exit 1; fi
+# Verify build output (NestJS outputs to dist/src/)
+RUN if [ ! -f dist/src/main.js ]; then echo "ERROR: dist/src/main.js not found!" && exit 1; fi
 
 # ============================================
 # Stage 3: Production Dependencies
@@ -53,11 +53,12 @@ RUN apk add --no-cache python3 make g++ vips-dev
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Install production dependencies only
-RUN pnpm install --prod
-
-# Generate Prisma client
-RUN pnpm exec prisma generate
+# Add node-gyp first, install all deps (so sharp builds),
+# generate prisma client, then prune to prod only
+RUN pnpm add -D node-gyp && \
+    pnpm install && \
+    pnpm exec prisma generate && \
+    pnpm prune --prod
 
 # ============================================
 # Stage 4: Production Runner
@@ -90,4 +91,4 @@ EXPOSE 3003
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health || exit 1
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
