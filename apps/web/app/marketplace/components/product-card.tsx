@@ -9,11 +9,10 @@ import { Badge } from '@/components/ui/badge'
 import { ProductResponseDto } from '@/types/api'
 
 const STATUS_CONFIG = {
-  PENDING: { label: '판매 대기', className: 'bg-[#DBEAFE] text-[#1E40AF] hover:bg-[#DBEAFE]' },
-  SELLING: { label: '판매 중', className: 'bg-[#DCFCE7] text-[#166534] hover:bg-[#DCFCE7]' },
-  RESERVED: { label: '예약 중', className: 'bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FEF9C3]' },
-  CONFIRMED: { label: '판매 확정', className: 'bg-[#F3E8FF] text-[#6B21A8] hover:bg-[#F3E8FF]' },
-  ENDED: { label: '판매 종료', className: 'bg-[#F3F4F6] text-[#6B7280] hover:bg-[#F3F4F6]' },
+  SELLING: { label: '판매 중', className: 'bg-success-subtle text-success hover:bg-success-subtle' },
+  RESERVED: { label: '예약 중', className: 'bg-warning-subtle text-warning hover:bg-warning-subtle' },
+  CONFIRMED: { label: '판매 확정', className: 'bg-success-subtle text-success hover:bg-success-subtle' },
+  ENDED: { label: '판매 종료', className: 'bg-muted text-muted-foreground hover:bg-muted' },
 }
 
 type ProductCardProps = {
@@ -22,7 +21,7 @@ type ProductCardProps = {
 }
 
 export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
-  const status = STATUS_CONFIG[product.status]
+  const status = STATUS_CONFIG[product.status] ?? STATUS_CONFIG.SELLING
   const priceDisplay = `$${(product.price / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (

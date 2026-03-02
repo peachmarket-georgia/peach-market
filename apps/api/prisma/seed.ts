@@ -85,7 +85,7 @@ async function main() {
         description: '6개월 사용. 흡입력 좋고 배터리 상태 양호합니다. 박스, 부속품 전부 있습니다.',
         price: 350,
         category: '생활가전',
-        status: ProductStatus.PENDING,
+        status: ProductStatus.SELLING,
         images: ['https://placehold.co/600x400?text=Dyson+V15'],
         location: 'Duluth, GA',
         viewCount: 15,

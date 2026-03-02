@@ -162,11 +162,10 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             <Badge
               className={cn(
                 'text-xs font-medium px-3 py-1 shadow-sm transition-all',
-                product.status === 'PENDING' && 'bg-[#DBEAFE] text-[#1E40AF]',
-                product.status === 'SELLING' && 'bg-[#DCFCE7] text-[#166534]',
-                product.status === 'RESERVED' && 'bg-[#FEF9C3] text-[#854D0E]',
-                product.status === 'CONFIRMED' && 'bg-[#F3E8FF] text-[#6B21A8]',
-                product.status === 'ENDED' && 'bg-[#F3F4F6] text-[#6B7280]'
+                product.status === 'SELLING' && 'bg-success-subtle text-success',
+                product.status === 'RESERVED' && 'bg-warning-subtle text-warning',
+                product.status === 'CONFIRMED' && 'bg-success-subtle text-success',
+                product.status === 'ENDED' && 'bg-muted text-muted-foreground'
               )}
             >
               {STATUS_LABEL[product.status]}
@@ -195,7 +194,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 'text-3xl md:text-4xl font-extrabold transition-colors',
                 isSold
                   ? 'text-muted-foreground line-through'
-                  : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
+                  : 'text-transparent bg-linear-to-r from-peach to-peach-hover bg-clip-text'
               )}
             >
               ${product.price.toLocaleString()}
@@ -232,7 +231,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                   />
                 </div>
               ) : (
-                <div className="w-12 h-12 rounded-full bg-linear-to-br from-primary to-secondary flex items-center justify-center text-white font-bold text-base shadow-md">
+                <div className="w-12 h-12 rounded-full bg-linear-to-br from-peach to-peach-hover flex items-center justify-center text-white font-bold text-base shadow-md">
                   {product.seller.nickname[0]}
                 </div>
               )}
@@ -253,7 +252,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           {/* 설명 */}
           <div className="py-5 border-b border-border/50">
             <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-              <span className="w-1 h-4 bg-linear-to-b from-primary to-secondary rounded-full" />
+              <span className="w-1 h-4 bg-linear-to-b from-peach to-peach-hover rounded-full" />
               상품 설명
             </h2>
             <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed pl-3">
@@ -277,30 +276,20 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                         size="lg"
                         onClick={() => handleStatusChange('SELLING')}
                         disabled={statusLoading}
-                        className="gap-2 border-2 border-[#166534]/40 text-[#166534] bg-[#DCFCE7]/50 hover:bg-[#DCFCE7] hover:scale-105 transition-all shadow-sm"
+                        className="gap-2 border-2 border-success/40 text-success bg-success-subtle/50 hover:bg-success-subtle hover:scale-105 transition-all shadow-sm"
                       >
                         판매중
                       </Button>
                     )}
-                    {product.status !== 'PENDING' && (
+                    {product.status !== 'ENDED' && (
                       <Button
                         variant="outline"
                         size="lg"
-                        onClick={() => handleStatusChange('PENDING')}
-                        disabled={statusLoading}
-                        className="gap-2 border-2 border-[#1E40AF]/40 text-[#1E40AF] bg-[#DBEAFE]/50 hover:bg-[#DBEAFE] hover:scale-105 transition-all shadow-sm disabled:opacity-60"
-                      >
-                        판매대기
-                      </Button>
-                    )}
-                    {product.status !== 'ENDED' && (
-                      <Button
-                        size="lg"
                         onClick={() => handleStatusChange('ENDED')}
                         disabled={statusLoading}
-                        className="gap-2 border-2 border-muted bg-[#F3F4F6] text-[#6B7280] hover:bg-[#F3F4F6] hover:scale-105 transition-all shadow-sm disabled:opacity-60"
+                        className="gap-2 border-2 border-border text-muted-foreground bg-muted/50 hover:bg-muted hover:scale-105 transition-all shadow-sm disabled:opacity-60"
                       >
-                        판매완료
+                        판매종료
                       </Button>
                     )}
                   </>
@@ -333,7 +322,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 </Button>
                 <Button
                   size="lg"
-                  className="flex-1 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  className="flex-1 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
                   disabled={isSold || chatLoading}
                   onClick={handleChat}
                 >
@@ -407,14 +396,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                   'text-xl font-extrabold truncate',
                   isSold
                     ? 'text-muted-foreground line-through'
-                    : 'text-transparent bg-linear-to-r from-primary to-secondary bg-clip-text'
+                    : 'text-transparent bg-linear-to-r from-peach to-peach-hover bg-clip-text'
                 )}
               >
                 ${product.price.toLocaleString()}
               </p>
             </div>
             <Button
-              className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-primary to-secondary text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
+              className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
               disabled={isSold || chatLoading}
               onClick={handleChat}
             >

@@ -3,10 +3,9 @@
 // ===========================================
 
 // ── 상품 상태 ──────────────────────────────
-export type ProductStatus = 'PENDING' | 'SELLING' | 'RESERVED' | 'CONFIRMED' | 'ENDED'
+export type ProductStatus = 'SELLING' | 'RESERVED' | 'CONFIRMED' | 'ENDED'
 
 export const STATUS_LABEL: Record<ProductStatus, string> = {
-  PENDING: '판매 대기',
   SELLING: '판매 중',
   RESERVED: '예약 중',
   CONFIRMED: '판매 확정',

@@ -63,8 +63,8 @@ export class ReservationsService {
       throw new ForbiddenException('본인의 상품만 예약 처리할 수 있습니다')
     }
 
-    if (product.status !== ProductStatus.SELLING && product.status !== ProductStatus.PENDING) {
-      throw new BadRequestException('판매 중이거나 판매 대기 중인 상품만 예약할 수 있습니다')
+    if (product.status !== ProductStatus.SELLING) {
+      throw new BadRequestException('판매 중인 상품만 예약할 수 있습니다')
     }
 
     if (sellerId === dto.buyerId) {

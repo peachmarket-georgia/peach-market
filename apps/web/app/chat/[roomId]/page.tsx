@@ -313,11 +313,10 @@ export default function ChatRoomPage() {
             <span
               className={cn(
                 'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
-                productStatus === 'PENDING' && 'bg-[#DBEAFE] text-[#1E40AF]',
-                productStatus === 'SELLING' && 'bg-[#DCFCE7] text-[#166534]',
-                productStatus === 'RESERVED' && 'bg-[#FEF9C3] text-[#854D0E]',
-                productStatus === 'CONFIRMED' && 'bg-[#F3E8FF] text-[#6B21A8]',
-                productStatus === 'ENDED' && 'bg-[#F3F4F6] text-[#6B7280]'
+                productStatus === 'SELLING' && 'bg-success-subtle text-success',
+                productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
+                productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
+                productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
               )}
             >
               {STATUS_LABEL[productStatus]}
@@ -330,20 +329,11 @@ export default function ChatRoomPage() {
         {/* 판매자 상태 변경 버튼 — 예약 진행 중이 아닐 때만 노출 */}
         {isSeller && !activeReservation && !completedReservation && productStatus !== 'CONFIRMED' && (
           <div className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {productStatus !== 'PENDING' && (
-              <button
-                onClick={() => handleStatusChange('PENDING')}
-                disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#1E40AF]/30 text-[#1E40AF] bg-[#DBEAFE]/60 hover:bg-[#DBEAFE] transition-colors disabled:opacity-50"
-              >
-                판매대기
-              </button>
-            )}
             {productStatus !== 'SELLING' && (
               <button
                 onClick={() => handleStatusChange('SELLING')}
                 disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#166534]/30 text-[#166534] bg-[#DCFCE7]/60 hover:bg-[#DCFCE7] transition-colors disabled:opacity-50"
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-success/30 text-success bg-success-subtle/60 hover:bg-success-subtle transition-colors disabled:opacity-50"
               >
                 판매중
               </button>
@@ -352,7 +342,7 @@ export default function ChatRoomPage() {
               <button
                 onClick={() => handleStatusChange('RESERVED')}
                 disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#854D0E]/30 text-[#854D0E] bg-[#FEF9C3]/60 hover:bg-[#FEF9C3] transition-colors disabled:opacity-50"
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-warning/30 text-warning bg-warning-subtle/60 hover:bg-warning-subtle transition-colors disabled:opacity-50"
               >
                 예약중
               </button>
@@ -361,7 +351,7 @@ export default function ChatRoomPage() {
               <button
                 onClick={() => handleStatusChange('ENDED')}
                 disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-[#6B7280]/30 text-[#6B7280] bg-[#F3F4F6]/60 hover:bg-[#F3F4F6] transition-colors disabled:opacity-50"
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-border text-muted-foreground bg-muted/60 hover:bg-muted transition-colors disabled:opacity-50"
               >
                 판매종료
               </button>
