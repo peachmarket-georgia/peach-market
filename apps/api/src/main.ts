@@ -52,11 +52,12 @@ async function bootstrap() {
         callback(null, true)
       } else {
         logger.warn(`CORS blocked origin: ${origin}`)
-        callback(new Error('Not allowed by CORS'))
+        // Return false instead of throwing error to avoid 500
+        callback(null, false)
       }
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
     credentials: true,
   })
 
