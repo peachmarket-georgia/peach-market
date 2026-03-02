@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { ValidationPipe } from '@nestjs/common'
 import cookieParser from 'cookie-parser'
+import basicAuth from 'express-basic-auth'
 import { AppModule } from './app.module'
 import { AppLoggerService } from './core/logger/logger.service'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
@@ -74,47 +75,60 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api')
 
-  // Swagger (disabled in production)
-  if (process.env.NODE_ENV !== 'production') {
-    const config = new DocumentBuilder()
-      .setTitle('Peach Market API')
-      .setDescription('피치마켓 API 문서 - 미국 조지아주 한인 중고거래 플랫폼')
-      .setVersion('1.0')
-      .addTag('auth', '인증 관련 API (회원가입, 로그인, 토큰 관리)')
-      .addTag('users', '사용자 관련 API (프로필, 중복 체크)')
-      .addTag('health', 'Health check API')
-      .addCookieAuth('access_token', {
-        type: 'apiKey',
-        in: 'cookie',
-        name: 'access_token',
-        description: 'Access Token (httpOnly 쿠키)',
-      })
-      .addCookieAuth('refresh_token', {
-        type: 'apiKey',
-        in: 'cookie',
-        name: 'refresh_token',
-        description: 'Refresh Token (httpOnly 쿠키)',
-      })
-      .build()
+  // Swagger with Basic Auth protection
+  const swaggerUser = process.env.SWAGGER_USER
+  const swaggerPassword = process.env.SWAGGER_PASSWORD
 
-    const document = SwaggerModule.createDocument(app, config)
-    SwaggerModule.setup('api/docs', app, document, {
-      swaggerOptions: {
-        persistAuthorization: true,
-        tagsSorter: 'alpha',
-        operationsSorter: 'alpha',
-      },
-    })
+  if (swaggerUser && swaggerPassword) {
+    app.use(
+      ['/api/docs', '/api/docs-json', '/api/docs-yaml'],
+      basicAuth({
+        users: { [swaggerUser]: swaggerPassword },
+        challenge: true,
+        realm: 'Peach Market API Docs',
+      })
+    )
+    logger.log('Swagger protected with Basic Auth')
+  } else {
+    logger.warn('Swagger is NOT protected — set SWAGGER_USER & SWAGGER_PASSWORD to enable auth')
   }
+
+  const config = new DocumentBuilder()
+    .setTitle('Peach Market API')
+    .setDescription('피치마켓 API 문서 - 미국 조지아주 한인 중고거래 플랫폼')
+    .setVersion('1.0')
+    .addTag('auth', '인증 관련 API (회원가입, 로그인, 토큰 관리)')
+    .addTag('users', '사용자 관련 API (프로필, 중복 체크)')
+    .addTag('health', 'Health check API')
+    .addCookieAuth('access_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'access_token',
+      description: 'Access Token (httpOnly 쿠키)',
+    })
+    .addCookieAuth('refresh_token', {
+      type: 'apiKey',
+      in: 'cookie',
+      name: 'refresh_token',
+      description: 'Refresh Token (httpOnly 쿠키)',
+    })
+    .build()
+
+  const document = SwaggerModule.createDocument(app, config)
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+    },
+  })
 
   const port = process.env.PORT || 3003
   await app.listen(port)
 
   logger.log(`Peach Market API is running`)
   logger.log(`Server: http://localhost:${port}`)
-  if (process.env.NODE_ENV !== 'production') {
-    logger.log(`API Docs: http://localhost:${port}/api/docs`)
-  }
+  logger.log(`API Docs: http://localhost:${port}/api/docs`)
 }
 
 void bootstrap()
