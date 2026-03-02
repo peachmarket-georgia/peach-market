@@ -60,6 +60,14 @@ export class ChatGateway {
     return savedMessage
   }
 
+  @SubscribeMessage('productStatusUpdate')
+  handleProductStatusUpdate(
+    @MessageBody() data: { chatRoomId: string; status: string },
+    @ConnectedSocket() client: Socket
+  ) {
+    client.to(data.chatRoomId).emit('productStatusUpdated', { status: data.status })
+  }
+
   @SubscribeMessage('markAsRead')
   async handleMarkAsRead(
     @MessageBody() data: { chatRoomId: string; userId: string },

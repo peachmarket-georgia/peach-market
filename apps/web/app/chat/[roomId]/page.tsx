@@ -12,6 +12,7 @@ import { STATUS_LABEL } from '@/lib/product-types'
 import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react'
+import { toast } from 'sonner'
 
 type PendingAction = ProductStatus | 'confirm' | 'cancel'
 
@@ -42,6 +43,7 @@ export default function ChatRoomPage() {
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const productDeleted = chatRoom !== null && chatRoom.product === null
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load user and connect socket
@@ -69,15 +71,22 @@ export default function ChatRoomPage() {
       if (data) {
         setChatRoom(data)
         setMessages(data.messages)
-        setProductStatus(data.product.status as ProductStatus)
+        if (data.product) setProductStatus(data.product.status as ProductStatus)
 
-        const { data: resData } = await reservationApi.getByProduct(data.product.id)
+        const { data: resData } = data.product ? await reservationApi.getByProduct(data.product.id) : { data: null }
         if (resData) setReservation(resData)
       }
       setLoading(false)
     }
     loadRoom()
   }, [roomId, router])
+
+  const emitStatusUpdate = useCallback(
+    (newStatus: ProductStatus) => {
+      socket?.emit('productStatusUpdate', { chatRoomId: roomId, status: newStatus })
+    },
+    [socket, roomId]
+  )
 
   /** 상태 변경 실행 (모달 확인 후 호출) */
   const executeAction = async () => {
@@ -86,10 +95,15 @@ export default function ChatRoomPage() {
     setPendingAction(null)
 
     if (pendingAction === 'RESERVED') {
+      if (!chatRoom.product) {
+        setStatusLoading(false)
+        return
+      }
       const { data } = await reservationApi.create(chatRoom.product.id, chatRoom.buyerId)
       if (data) {
         setReservation(data)
         setProductStatus('RESERVED')
+        emitStatusUpdate('RESERVED')
       }
     } else if (pendingAction === 'confirm') {
       if (!reservation) {
@@ -100,6 +114,7 @@ export default function ChatRoomPage() {
       if (data) {
         setReservation(data)
         setProductStatus('CONFIRMED')
+        emitStatusUpdate('CONFIRMED')
       }
     } else if (pendingAction === 'cancel') {
       if (!reservation) {
@@ -110,10 +125,18 @@ export default function ChatRoomPage() {
       if (data) {
         setReservation(data)
         setProductStatus('SELLING')
+        emitStatusUpdate('SELLING')
       }
     } else {
+      if (!chatRoom.product) {
+        setStatusLoading(false)
+        return
+      }
       const { data } = await productApi.updateProductStatus(chatRoom.product.id, pendingAction)
-      if (data) setProductStatus(data.status as ProductStatus)
+      if (data) {
+        setProductStatus(data.status as ProductStatus)
+        emitStatusUpdate(data.status as ProductStatus)
+      }
     }
 
     setStatusLoading(false)
@@ -142,15 +165,20 @@ export default function ChatRoomPage() {
       if (userId !== currentUserId) setTypingUser(userId)
     }
     const handleUserStoppedTyping = () => setTypingUser(null)
+    const handleProductStatusUpdated = ({ status }: { status: ProductStatus }) => {
+      setProductStatus(status)
+    }
 
     socket.on('newMessage', handleNewMessage)
     socket.on('userTyping', handleUserTyping)
     socket.on('userStoppedTyping', handleUserStoppedTyping)
+    socket.on('productStatusUpdated', handleProductStatusUpdated)
 
     return () => {
       socket.off('newMessage', handleNewMessage)
       socket.off('userTyping', handleUserTyping)
       socket.off('userStoppedTyping', handleUserStoppedTyping)
+      socket.off('productStatusUpdated', handleProductStatusUpdated)
     }
   }, [socket, roomId, currentUserId])
 
@@ -248,9 +276,14 @@ export default function ChatRoomPage() {
 
       {/* Product Card */}
       <div className="border-b border-primary/15 bg-primary/5">
-        <div className="flex items-center gap-3 px-3 py-3">
+        <div
+          className="flex items-center gap-3 px-3 py-3 cursor-pointer active:bg-primary/10 transition-colors"
+          onClick={() =>
+            productDeleted ? toast.error('삭제된 매물입니다') : router.push(`/marketplace/${chatRoom.product!.id}`)
+          }
+        >
           <div className="w-11 h-11 rounded-xl overflow-hidden bg-muted shrink-0">
-            {chatRoom.product.images[0] ? (
+            {chatRoom.product?.images[0] ? (
               <img
                 src={chatRoom.product.images[0]}
                 alt={chatRoom.product.title}
@@ -263,24 +296,30 @@ export default function ChatRoomPage() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <span
-              className={cn(
-                'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
-                productStatus === 'SELLING' && 'bg-success-subtle text-success',
-                productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
-                productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
-                productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
-              )}
-            >
-              {STATUS_LABEL[productStatus]}
-            </span>
-            <p className="text-sm font-medium truncate">{chatRoom.product.title}</p>
-            <p className="text-sm font-bold text-primary">${chatRoom.product.price.toLocaleString('en-US')}</p>
+            {productDeleted ? (
+              <p className="text-sm text-fg-tertiary italic">삭제된 매물입니다</p>
+            ) : (
+              <>
+                <span
+                  className={cn(
+                    'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
+                    productStatus === 'SELLING' && 'bg-success-subtle text-success',
+                    productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
+                    productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
+                    productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {STATUS_LABEL[productStatus]}
+                </span>
+                <p className="text-sm font-medium truncate">{chatRoom.product!.title}</p>
+                <p className="text-sm font-bold text-primary">${chatRoom.product!.price.toLocaleString('en-US')}</p>
+              </>
+            )}
           </div>
         </div>
 
-        {/* 판매자 상태 변경 버튼 */}
-        {isSeller && productStatus !== 'CONFIRMED' && (
+        {/* 판매자 상태 변경 버튼 — 상품이 존재할 때만 */}
+        {isSeller && !productDeleted && productStatus !== 'CONFIRMED' && (
           <div className="flex gap-2 px-3 pb-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
             {productStatus === 'SELLING' && (
               <>

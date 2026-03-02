@@ -210,7 +210,7 @@ model Review {
 // 채팅방
 model ChatRoom {
   id          String   @id @default(uuid())
-  productId   String
+  productId   String?  // nullable — 상품 삭제 후에도 채팅 기록 보존
   buyerId     String
   sellerId    String
   lastMessage String?
@@ -218,12 +218,12 @@ model ChatRoom {
   updatedAt   DateTime @updatedAt
 
   // 관계
-  product  Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product  Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
   buyer    User      @relation("BuyerChatRooms", fields: [buyerId], references: [id], onDelete: Cascade)
   seller   User      @relation("SellerChatRooms", fields: [sellerId], references: [id], onDelete: Cascade)
   messages Message[]
 
-  // 같은 상품에 대해 구매자-판매자 채팅방은 하나만
+  // 같은 상품에 대해 구매자-판매자 채팅방은 하나만 (productId null 시 PostgreSQL에서 NULL != NULL이므로 중복 허용)
   @@unique([productId, buyerId])
   @@index([buyerId])
   @@index([sellerId])
