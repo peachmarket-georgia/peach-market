@@ -139,13 +139,13 @@ export interface ChatMessageDto {
 
 export interface ChatRoomDto {
   id: string
-  productId: string
+  productId: string | null
   buyerId: string
   sellerId: string
   lastMessage: string | null
   createdAt: string
   updatedAt: string
-  product: ChatProductDto
+  product: ChatProductDto | null
   buyer: ChatUserDto
   seller: ChatUserDto
   unreadCount: number

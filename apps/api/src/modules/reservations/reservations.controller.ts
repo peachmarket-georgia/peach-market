@@ -75,21 +75,18 @@ export class ReservationsController {
   }
 
   /**
-   * 거래 완료 확인
-   * 구매자 → buyerConfirmedAt 저장
-   * 판매자 → sellerConfirmedAt 저장
-   * 양측 모두 → COMPLETED + Product→CONFIRMED
+   * 거래 완료 확인 (판매자 전용)
+   * 판매자 확인 즉시 → COMPLETED + Product→CONFIRMED
    */
   @Patch(':id/confirm')
   @ApiOperation({
-    summary: '거래 완료 확인',
-    description:
-      '구매자 또는 판매자가 대면 거래 완료를 확인합니다. 양측 모두 확인 시 예약이 COMPLETED 상태가 되고 상품이 CONFIRMED로 변경됩니다.',
+    summary: '거래 완료 확인 (판매자 전용)',
+    description: '판매자가 거래 완료를 확인합니다. 즉시 예약이 COMPLETED 상태가 되고 상품이 CONFIRMED로 변경됩니다.',
   })
   @ApiParam({ name: 'id', description: '예약 ID' })
   @ApiResponse({ status: 200, description: '확인 처리 성공' })
   @ApiResponse({ status: 400, description: '이미 확인했거나 완료/취소된 예약' })
-  @ApiResponse({ status: 403, description: '해당 예약의 참여자가 아님' })
+  @ApiResponse({ status: 403, description: '판매자만 확인 가능' })
   @ApiResponse({ status: 404, description: '예약을 찾을 수 없음' })
   confirm(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
     return this.reservationsService.confirm(id, userId)

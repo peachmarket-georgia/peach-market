@@ -89,7 +89,7 @@ const MarketplacePage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 container mx-auto px-4 md:px-6 md:mt-10">
+    <div className="flex flex-col gap-4 container mx-auto px-4 max-w-5xl md:px-6 md:mt-10">
       {/* 헤딩 */}
       <div className="mb-1">
         <h1 className="text-2xl font-extrabold text-foreground">중고거래</h1>

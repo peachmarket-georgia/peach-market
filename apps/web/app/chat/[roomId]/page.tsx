@@ -11,7 +11,19 @@ import type { ReservationDto } from '@/types/reservation'
 import { STATUS_LABEL } from '@/lib/product-types'
 import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { IconChevronLeft, IconSend, IconDotsVertical, IconCheck } from '@tabler/icons-react'
+import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react'
+import { toast } from 'sonner'
+
+type PendingAction = ProductStatus | 'confirm' | 'cancel'
+
+const MODAL_CONFIG: Record<PendingAction, { title: string; description: string }> = {
+  SELLING: { title: '판매중으로 변경', description: '상품이 다시 판매중 상태로 변경됩니다.' },
+  RESERVED: { title: '예약중으로 변경', description: '현재 대화 상대와 예약이 생성됩니다.' },
+  ENDED: { title: '판매 종료', description: '상품을 판매종료 상태로 변경합니다.' },
+  CONFIRMED: { title: '판매완료', description: '' },
+  confirm: { title: '거래 완료 처리', description: '거래를 완료하시겠습니까?\n상품이 판매완료 상태로 변경됩니다.' },
+  cancel: { title: '예약 취소', description: '예약을 취소하시겠습니까?\n상품이 다시 판매중으로 변경됩니다.' },
+}
 
 export default function ChatRoomPage() {
   const router = useRouter()
@@ -29,12 +41,10 @@ export default function ChatRoomPage() {
   const [productStatus, setProductStatus] = useState<ProductStatus>('SELLING')
   const [statusLoading, setStatusLoading] = useState(false)
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
-  const [confirmLoading, setConfirmLoading] = useState(false)
-  const [cancelLoading, setCancelLoading] = useState(false)
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const productDeleted = chatRoom !== null && chatRoom.product === null
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const chatRoomRef = useRef<ChatRoomWithMessagesDto | null>(null)
-  chatRoomRef.current = chatRoom
 
   // Load user and connect socket
   useEffect(() => {
@@ -61,10 +71,9 @@ export default function ChatRoomPage() {
       if (data) {
         setChatRoom(data)
         setMessages(data.messages)
-        setProductStatus(data.product.status as ProductStatus)
+        if (data.product) setProductStatus(data.product.status as ProductStatus)
 
-        // 활성 예약 조회
-        const { data: resData } = await reservationApi.getByProduct(data.product.id)
+        const { data: resData } = data.product ? await reservationApi.getByProduct(data.product.id) : { data: null }
         if (resData) setReservation(resData)
       }
       setLoading(false)
@@ -72,74 +81,65 @@ export default function ChatRoomPage() {
     loadRoom()
   }, [roomId, router])
 
-  /**
-   * 상태 변경 핸들러
-   * - RESERVED: 예약 생성 API (Product 상태도 자동 변경)
-   * - 나머지: 상품 상태 직접 변경
-   */
-  const handleStatusChange = async (newStatus: ProductStatus) => {
-    if (statusLoading || !chatRoom) return
-    setStatusLoading(true)
+  const emitStatusUpdate = useCallback(
+    (newStatus: ProductStatus) => {
+      socket?.emit('productStatusUpdate', { chatRoomId: roomId, status: newStatus })
+    },
+    [socket, roomId]
+  )
 
-    if (newStatus === 'RESERVED') {
+  /** 상태 변경 실행 (모달 확인 후 호출) */
+  const executeAction = async () => {
+    if (!pendingAction || statusLoading || !chatRoom) return
+    setStatusLoading(true)
+    setPendingAction(null)
+
+    if (pendingAction === 'RESERVED') {
+      if (!chatRoom.product) {
+        setStatusLoading(false)
+        return
+      }
       const { data } = await reservationApi.create(chatRoom.product.id, chatRoom.buyerId)
       if (data) {
         setReservation(data)
         setProductStatus('RESERVED')
+        emitStatusUpdate('RESERVED')
+      }
+    } else if (pendingAction === 'confirm') {
+      if (!reservation) {
+        setStatusLoading(false)
+        return
+      }
+      const { data } = await reservationApi.confirm(reservation.id)
+      if (data) {
+        setReservation(data)
+        setProductStatus('CONFIRMED')
+        emitStatusUpdate('CONFIRMED')
+      }
+    } else if (pendingAction === 'cancel') {
+      if (!reservation) {
+        setStatusLoading(false)
+        return
+      }
+      const { data } = await reservationApi.cancel(reservation.id)
+      if (data) {
+        setReservation(data)
+        setProductStatus('SELLING')
+        emitStatusUpdate('SELLING')
       }
     } else {
-      const { data } = await productApi.updateProductStatus(chatRoom.product.id, newStatus)
-      if (data) setProductStatus(data.status as ProductStatus)
+      if (!chatRoom.product) {
+        setStatusLoading(false)
+        return
+      }
+      const { data } = await productApi.updateProductStatus(chatRoom.product.id, pendingAction)
+      if (data) {
+        setProductStatus(data.status as ProductStatus)
+        emitStatusUpdate(data.status as ProductStatus)
+      }
     }
 
     setStatusLoading(false)
-  }
-
-  /** 판매자 거래 완료 확인 → 구매자에게 확인 요청 메세지 자동 발송 */
-  const handleSellerConfirm = async () => {
-    if (!reservation || confirmLoading || !currentUserId) return
-    setConfirmLoading(true)
-    const { data } = await reservationApi.confirm(reservation.id)
-    if (data) {
-      setReservation(data)
-      // 구매자에게 확인 요청 시스템 메세지 발송
-      socket?.emit('sendMessage', {
-        chatRoomId: roomId,
-        senderId: currentUserId,
-        content: JSON.stringify({ type: 'confirm_request', reservationId: reservation.id }),
-      })
-    }
-    setConfirmLoading(false)
-  }
-
-  /** 구매자 거래 완료 확인 (채팅 메세지 버튼에서 호출) */
-  const handleBuyerConfirm = async () => {
-    if (!reservation || confirmLoading || !currentUserId) return
-    setConfirmLoading(true)
-    const { data } = await reservationApi.confirm(reservation.id)
-    if (data) {
-      setReservation(data)
-      if (data.status === 'COMPLETED') setProductStatus('CONFIRMED')
-      // 판매자에게 구매 확인 완료 알림 발송
-      socket?.emit('sendMessage', {
-        chatRoomId: roomId,
-        senderId: currentUserId,
-        content: JSON.stringify({ type: 'buyer_confirmed', reservationId: reservation.id }),
-      })
-    }
-    setConfirmLoading(false)
-  }
-
-  /** 예약 취소 (판매자 전용) */
-  const handleCancelReservation = async () => {
-    if (!reservation || cancelLoading) return
-    setCancelLoading(true)
-    const { data } = await reservationApi.cancel(reservation.id)
-    if (data) {
-      setReservation(data)
-      setProductStatus('SELLING')
-    }
-    setCancelLoading(false)
   }
 
   // Join room when connected + 입장 시 읽음 처리
@@ -157,42 +157,28 @@ export default function ChatRoomPage() {
   useEffect(() => {
     if (!socket) return
 
-    const handleNewMessage = async (msg: ChatMessageDto) => {
+    const handleNewMessage = (msg: ChatMessageDto) => {
       setMessages((prev) => [...prev, msg])
       if (currentUserId) socket.emit('markAsRead', { chatRoomId: roomId, userId: currentUserId })
-
-      // 거래 관련 시스템 메세지 수신 시 예약 상태 갱신
-      if (chatRoomRef.current) {
-        try {
-          const parsed = JSON.parse(msg.content)
-          const type = parsed?.type
-          // confirm_request: 구매자 reservation null 방지용 재조회
-          // buyer_confirmed: 판매자 화면 실시간 갱신
-          if (type === 'confirm_request' || type === 'buyer_confirmed') {
-            const { data: resData } = await reservationApi.getByProduct(chatRoomRef.current.product.id)
-            if (resData) {
-              setReservation(resData)
-              if (resData.status === 'COMPLETED') setProductStatus('CONFIRMED')
-            }
-          }
-        } catch {
-          /* 일반 메세지는 JSON 파싱 실패 — 무시 */
-        }
-      }
     }
     const handleUserTyping = ({ userId }: { userId: string }) => {
       if (userId !== currentUserId) setTypingUser(userId)
     }
     const handleUserStoppedTyping = () => setTypingUser(null)
+    const handleProductStatusUpdated = ({ status }: { status: ProductStatus }) => {
+      setProductStatus(status)
+    }
 
     socket.on('newMessage', handleNewMessage)
     socket.on('userTyping', handleUserTyping)
     socket.on('userStoppedTyping', handleUserStoppedTyping)
+    socket.on('productStatusUpdated', handleProductStatusUpdated)
 
     return () => {
       socket.off('newMessage', handleNewMessage)
       socket.off('userTyping', handleUserTyping)
       socket.off('userStoppedTyping', handleUserStoppedTyping)
+      socket.off('productStatusUpdated', handleProductStatusUpdated)
     }
   }, [socket, roomId, currentUserId])
 
@@ -233,10 +219,7 @@ export default function ChatRoomPage() {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.nativeEvent.isComposing) {
-      return
-    }
-
+    if (e.nativeEvent.isComposing) return
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
@@ -253,8 +236,6 @@ export default function ChatRoomPage() {
 
   const otherUser = chatRoom.buyerId === currentUserId ? chatRoom.seller : chatRoom.buyer
   const isSeller = currentUserId === chatRoom.sellerId
-  const isBuyer = currentUserId === chatRoom.buyerId
-  const activeReservation = reservation?.status === 'RESERVED'
   const completedReservation = reservation?.status === 'COMPLETED'
 
   return (
@@ -295,9 +276,14 @@ export default function ChatRoomPage() {
 
       {/* Product Card */}
       <div className="border-b border-primary/15 bg-primary/5">
-        <div className="flex items-center gap-3 px-3 py-3">
+        <div
+          className="flex items-center gap-3 px-3 py-3 cursor-pointer active:bg-primary/10 transition-colors"
+          onClick={() =>
+            productDeleted ? toast.error('삭제된 매물입니다') : router.push(`/marketplace/${chatRoom.product!.id}`)
+          }
+        >
           <div className="w-11 h-11 rounded-xl overflow-hidden bg-muted shrink-0">
-            {chatRoom.product.images[0] ? (
+            {chatRoom.product?.images[0] ? (
               <img
                 src={chatRoom.product.images[0]}
                 alt={chatRoom.product.title}
@@ -310,116 +296,79 @@ export default function ChatRoomPage() {
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <span
-              className={cn(
-                'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
-                productStatus === 'SELLING' && 'bg-success-subtle text-success',
-                productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
-                productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
-                productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
-              )}
-            >
-              {STATUS_LABEL[productStatus]}
-            </span>
-            <p className="text-sm font-medium truncate">{chatRoom.product.title}</p>
-            <p className="text-sm font-bold text-primary">${chatRoom.product.price.toLocaleString('en-US')}</p>
+            {productDeleted ? (
+              <p className="text-sm text-fg-tertiary italic">삭제된 매물입니다</p>
+            ) : (
+              <>
+                <span
+                  className={cn(
+                    'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
+                    productStatus === 'SELLING' && 'bg-success-subtle text-success',
+                    productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
+                    productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
+                    productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {STATUS_LABEL[productStatus]}
+                </span>
+                <p className="text-sm font-medium truncate">{chatRoom.product!.title}</p>
+                <p className="text-sm font-bold text-primary">${chatRoom.product!.price.toLocaleString('en-US')}</p>
+              </>
+            )}
           </div>
         </div>
 
-        {/* 판매자 상태 변경 버튼 — 예약 진행 중이 아닐 때만 노출 */}
-        {isSeller && !activeReservation && !completedReservation && productStatus !== 'CONFIRMED' && (
-          <div className="flex gap-1.5 px-3 pb-2.5 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {productStatus !== 'SELLING' && (
-              <button
-                onClick={() => handleStatusChange('SELLING')}
-                disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-success/30 text-success bg-success-subtle/60 hover:bg-success-subtle transition-colors disabled:opacity-50"
-              >
-                판매중
-              </button>
+        {/* 판매자 상태 변경 버튼 — 상품이 존재할 때만 */}
+        {isSeller && !productDeleted && productStatus !== 'CONFIRMED' && (
+          <div className="flex gap-2 px-3 pb-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            {productStatus === 'SELLING' && (
+              <>
+                <button
+                  onClick={() => setPendingAction('RESERVED')}
+                  disabled={statusLoading}
+                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-warning text-white shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                >
+                  예약중으로 변경
+                </button>
+                <button
+                  onClick={() => setPendingAction('ENDED')}
+                  disabled={statusLoading}
+                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-surface-tertiary text-fg-secondary shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                >
+                  판매종료
+                </button>
+              </>
             )}
-            {productStatus !== 'RESERVED' && (
-              <button
-                onClick={() => handleStatusChange('RESERVED')}
-                disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-warning/30 text-warning bg-warning-subtle/60 hover:bg-warning-subtle transition-colors disabled:opacity-50"
-              >
-                예약중
-              </button>
+            {productStatus === 'RESERVED' && (
+              <>
+                <button
+                  onClick={() => setPendingAction('confirm')}
+                  disabled={statusLoading}
+                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-success text-white shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                >
+                  거래완료 처리
+                </button>
+                <button
+                  onClick={() => setPendingAction('cancel')}
+                  disabled={statusLoading}
+                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-surface-tertiary text-fg-secondary shadow-sm active:scale-95 transition-all disabled:opacity-50"
+                >
+                  예약취소
+                </button>
+              </>
             )}
-            {productStatus !== 'ENDED' && (
+            {productStatus === 'ENDED' && (
               <button
-                onClick={() => handleStatusChange('ENDED')}
+                onClick={() => setPendingAction('SELLING')}
                 disabled={statusLoading}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold rounded-full border border-border text-muted-foreground bg-muted/60 hover:bg-muted transition-colors disabled:opacity-50"
+                className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-success text-white shadow-sm active:scale-95 transition-all disabled:opacity-50"
               >
-                판매종료
+                판매중으로 변경
               </button>
             )}
           </div>
         )}
       </div>
-
-      {/* 거래 완료 확인 섹션 — 예약이 RESERVED 상태일 때 */}
-      {activeReservation && reservation && (
-        <div className="border-b border-primary/15 bg-white px-3 py-3">
-          {/* 구매자 — 판매자 확인 대기 안내 */}
-          {isBuyer && (
-            <p className="text-[12px] font-semibold text-center text-muted-foreground py-1">
-              {reservation.sellerConfirmedAt
-                ? '👇 아래 채팅에서 구매 완료를 확인해주세요'
-                : '판매자의 거래 완료 확인을 기다리는 중...'}
-            </p>
-          )}
-
-          {/* 판매자 — 판매 완료 확인 버튼 + 구매자 확인 여부 + 예약 취소 */}
-          {isSeller && (
-            <>
-              {/* 구매자 확인 상태 */}
-              <div
-                className={cn(
-                  'w-full py-2 text-[12px] font-semibold rounded-xl border mb-2 flex items-center justify-center gap-1.5',
-                  reservation.buyerConfirmedAt
-                    ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
-                    : 'bg-muted/30 border-muted text-muted-foreground'
-                )}
-              >
-                {reservation.buyerConfirmedAt ? (
-                  <>
-                    <IconCheck className="w-3.5 h-3.5" />
-                    구매자 확인 완료
-                  </>
-                ) : (
-                  '구매자 확인 대기 중...'
-                )}
-              </div>
-
-              {/* 판매자 확인 버튼 — 클릭 시 구매자에게 메세지 자동 발송 */}
-              <button
-                onClick={handleSellerConfirm}
-                disabled={confirmLoading || !!reservation.sellerConfirmedAt}
-                className={cn(
-                  'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
-                  reservation.sellerConfirmedAt
-                    ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
-                    : 'bg-primary text-white border-primary hover:bg-primary/90 active:scale-95'
-                )}
-              >
-                {reservation.sellerConfirmedAt && <IconCheck className="w-4 h-4" />}
-                {reservation.sellerConfirmedAt ? '판매 완료 확인됨' : '판매 완료 확인'}
-              </button>
-
-              <button
-                onClick={handleCancelReservation}
-                disabled={cancelLoading}
-                className="w-full mt-2 py-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-              >
-                예약 취소
-              </button>
-            </>
-          )}
-        </div>
-      )}
 
       {/* 거래 완료 배너 */}
       {completedReservation && reservation && (
@@ -448,68 +397,11 @@ export default function ChatRoomPage() {
           </div>
         ) : (
           messages.map((msg) => {
-            // 시스템 메세지 타입 감지
-            let msgType: string | null = null
+            // 구 시스템 메세지 스킵 (confirm_request, buyer_confirmed)
             try {
               const parsed = JSON.parse(msg.content)
-              if (parsed?.type) msgType = parsed.type
+              if (parsed?.type === 'confirm_request' || parsed?.type === 'buyer_confirmed') return null
             } catch {}
-
-            // 구매자 확인 완료 알림
-            if (msgType === 'buyer_confirmed') {
-              return (
-                <div key={msg.id} className="flex justify-center my-2">
-                  <span className="text-[11px] text-muted-foreground bg-muted/40 px-3 py-1.5 rounded-full flex items-center gap-1">
-                    <IconCheck className="w-3 h-3 text-[#166534]" />
-                    구매자가 거래 완료를 확인했습니다
-                  </span>
-                </div>
-              )
-            }
-
-            if (msgType === 'confirm_request') {
-              return (
-                <div key={msg.id} className="flex justify-center my-2">
-                  <div className="w-full max-w-[85%] bg-white border border-primary/15 rounded-2xl px-4 py-3.5 shadow-sm">
-                    <p className="text-[12px] text-center text-muted-foreground mb-1">거래 완료 확인 요청</p>
-                    <p className="text-[15px] font-semibold text-center text-foreground mb-3">
-                      판매자가 거래 완료를 요청했어요. 실제로 거래가 완료되었는지 확인해주세요.
-                    </p>
-
-                    {isBuyer && (
-                      <button
-                        onClick={handleBuyerConfirm}
-                        disabled={confirmLoading || !!reservation?.buyerConfirmedAt}
-                        className={cn(
-                          'w-full py-2.5 text-[13px] font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5',
-                          reservation?.buyerConfirmedAt
-                            ? 'bg-[#DCFCE7] border-[#166534]/20 text-[#166534]'
-                            : 'bg-primary text-white border-primary hover:bg-primary/90 active:scale-95'
-                        )}
-                      >
-                        {reservation?.buyerConfirmedAt && <IconCheck className="w-4 h-4" />}
-                        {reservation?.buyerConfirmedAt ? '구매 완료 확인됨' : '구매 완료 확인'}
-                      </button>
-                    )}
-
-                    {isSeller && (
-                      <p
-                        className={cn(
-                          'text-[12px] text-center font-semibold',
-                          reservation?.buyerConfirmedAt ? 'text-[#166534]' : 'text-muted-foreground'
-                        )}
-                      >
-                        {reservation?.buyerConfirmedAt ? '✓ 구매자 확인 완료' : '구매자 확인 대기 중...'}
-                      </p>
-                    )}
-
-                    <p className="text-[10px] text-muted-foreground/50 text-right mt-2">
-                      {new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              )
-            }
 
             return (
               <div
@@ -577,10 +469,47 @@ export default function ChatRoomPage() {
                 : 'bg-muted text-muted-foreground scale-95'
             )}
           >
-            <IconSend className="w-[18px] h-[18px]" />
+            <IconSend className="w-4.5 h-4.5" />
           </button>
         </div>
       </div>
+
+      {/* 상태 변경 확인 모달 */}
+      {pendingAction && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-0 pb-0 sm:items-center sm:px-6"
+          onClick={() => setPendingAction(null)}
+        >
+          <div
+            className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-foreground mb-1.5">{MODAL_CONFIG[pendingAction].title}</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+              {MODAL_CONFIG[pendingAction].description}
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setPendingAction(null)}
+                className="flex-1 py-3 text-sm font-semibold rounded-xl border border-border text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={executeAction}
+                className={cn(
+                  'flex-1 py-3 text-sm font-bold rounded-xl transition-colors',
+                  pendingAction === 'cancel'
+                    ? 'bg-destructive text-white hover:bg-destructive/90'
+                    : 'bg-primary text-white hover:bg-primary/90'
+                )}
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -124,7 +124,7 @@ export default function ChatListPage() {
                   </div>
                   <div className="flex items-center justify-between mt-1">
                     <p className="text-sm text-muted-foreground truncate">
-                      {formatLastMessage(room.lastMessage, room.product.title)}
+                      {formatLastMessage(room.lastMessage, room.product?.title ?? '삭제된 매물')}
                     </p>
                     {room.unreadCount > 0 && (
                       <span className="ml-2 px-2 py-0.5 text-xs font-medium bg-primary text-primary-foreground rounded-full flex-shrink-0">
