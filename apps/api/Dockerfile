@@ -82,13 +82,17 @@ COPY --from=prod-deps --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=build --chown=nestjs:nodejs /app/package.json ./package.json
 
+# prisma CLI is devDependency (removed by pnpm prune --prod), copy from deps stage for migrate deploy
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+
 USER nestjs
 
 # Railway injects PORT env variable
 EXPOSE 3003
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health || exit 1
+# Health check (start-period accounts for prisma migrate + NestJS bootstrap time)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health/live || exit 1
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/src/main.js"]
