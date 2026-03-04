@@ -12,6 +12,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy package.json for each workspace package (needed for pnpm workspace resolution)
 COPY apps/web/package.json ./apps/web/
+COPY apps/api/package.json ./apps/api/
+COPY apps/mobile/package.json ./apps/mobile/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
@@ -24,6 +26,14 @@ RUN pnpm install --frozen-lockfile
 FROM deps AS build
 
 WORKDIR /app
+
+# Build args for NEXT_PUBLIC vars (baked in at build time)
+ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_GA_ID
+ARG NEXT_PUBLIC_MIXPANEL_TOKEN
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GA_ID=$NEXT_PUBLIC_GA_ID
+ENV NEXT_PUBLIC_MIXPANEL_TOKEN=$NEXT_PUBLIC_MIXPANEL_TOKEN
 
 # Copy source code
 COPY apps/web ./apps/web
