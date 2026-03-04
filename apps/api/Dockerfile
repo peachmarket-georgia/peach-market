@@ -5,8 +5,8 @@ FROM node:22.14-alpine AS deps
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@9.0.0
+# Install pnpm and node-gyp globally (node-gyp needed for bcrypt/sharp native builds)
+RUN npm install -g pnpm@9.0.0 node-gyp
 
 # Install dependencies needed for native modules (bcrypt, sharp)
 RUN apk add --no-cache python3 make g++ vips-dev
@@ -15,8 +15,7 @@ RUN apk add --no-cache python3 make g++ vips-dev
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Add node-gyp for sharp build, then install all dependencies
-RUN pnpm add -D node-gyp && pnpm install
+RUN pnpm install
 
 # Generate Prisma client
 RUN pnpm exec prisma generate
@@ -44,8 +43,8 @@ FROM node:22.14-alpine AS prod-deps
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@9.0.0
+# Install pnpm and node-gyp globally (node-gyp needed for bcrypt/sharp native builds)
+RUN npm install -g pnpm@9.0.0 node-gyp
 
 # Install dependencies needed for native modules
 RUN apk add --no-cache python3 make g++ vips-dev
@@ -53,12 +52,9 @@ RUN apk add --no-cache python3 make g++ vips-dev
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Add node-gyp first, install all deps (so sharp builds),
-# generate prisma client, then prune to prod only
-RUN pnpm add -D node-gyp && \
-    pnpm install && \
-    pnpm exec prisma generate && \
-    pnpm prune --prod
+RUN pnpm install
+RUN pnpm exec prisma generate
+RUN pnpm prune --prod
 
 # ============================================
 # Stage 4: Production Runner
