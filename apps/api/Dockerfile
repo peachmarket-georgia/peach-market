@@ -6,7 +6,7 @@ FROM node:22.14-alpine AS deps
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+RUN npm install -g pnpm@9.0.0
 
 # Install dependencies needed for native modules (bcrypt, sharp)
 RUN apk add --no-cache python3 make g++ vips-dev
@@ -45,7 +45,7 @@ FROM node:22.14-alpine AS prod-deps
 WORKDIR /app
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+RUN npm install -g pnpm@9.0.0
 
 # Install dependencies needed for native modules
 RUN apk add --no-cache python3 make g++ vips-dev

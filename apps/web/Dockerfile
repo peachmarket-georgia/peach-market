@@ -5,7 +5,7 @@ FROM node:22.14-alpine AS deps
 
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+RUN npm install -g pnpm@9.0.0
 
 # Copy workspace config files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
