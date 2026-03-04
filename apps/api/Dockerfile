@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Install Dependencies
 # ============================================
-FROM node:22.14-alpine AS deps
+FROM node:22-alpine AS deps
 
 WORKDIR /app
 
@@ -40,7 +40,7 @@ RUN if [ ! -f dist/src/main.js ]; then echo "ERROR: dist/src/main.js not found!"
 # ============================================
 # Stage 3: Production Dependencies
 # ============================================
-FROM node:22.14-alpine AS prod-deps
+FROM node:22-alpine AS prod-deps
 
 WORKDIR /app
 
@@ -63,7 +63,7 @@ RUN pnpm add -D node-gyp && \
 # ============================================
 # Stage 4: Production Runner
 # ============================================
-FROM node:22.14-alpine AS runner
+FROM node:22-alpine AS runner
 
 WORKDIR /app
 
@@ -91,4 +91,4 @@ EXPOSE 3003
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health || exit 1
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main.js"]
+CMD ["node", "dist/src/main.js"]
