@@ -4,6 +4,7 @@ dockerfilePath = "Dockerfile"
 watchPatterns = ["apps/api/**", "packages/shared/**", "pnpm-lock.yaml"]
 
 [deploy]
+startCommand = "sh -c 'npx prisma migrate deploy && node dist/src/main.js'"
 healthcheckPath = "/api/health/live"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
