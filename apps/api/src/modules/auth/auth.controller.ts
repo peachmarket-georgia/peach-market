@@ -13,6 +13,7 @@ import { LoginResponseDto } from './dto/login-response.dto'
 import { MessageResponseDto } from './dto/message-response.dto'
 import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard'
 import { AppConfigService } from '../../core/config/config.service'
+import { SkipApiKey } from '../../core/guards/api-key.guard'
 import { CurrentUser, type JwtRefreshUser } from './current-user.decorator'
 
 @ApiTags('auth')
@@ -183,6 +184,7 @@ export class AuthController {
   }
 
   @Get('google')
+  @SkipApiKey()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google 로그인', description: 'Google OAuth 로그인 시작' })
   @ApiResponse({ status: 302, description: 'Google 로그인 페이지로 리다이렉트' })
@@ -191,6 +193,7 @@ export class AuthController {
   }
 
   @Get('google/callback')
+  @SkipApiKey()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google 로그인 콜백', description: 'Google OAuth 콜백 처리' })
   @ApiResponse({ status: 200, description: 'Google 로그인 성공. 쿠키 설정 및 프론트엔드로 리다이렉트.' })
