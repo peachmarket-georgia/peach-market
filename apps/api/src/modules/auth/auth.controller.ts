@@ -80,7 +80,7 @@ export class AuthController {
     const result = await this.authService.login(loginDto, deviceInfo)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
+    const cookieDomain = this.configService.cookieDomain
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -122,7 +122,7 @@ export class AuthController {
     const result = await this.authService.refresh(userId, refreshToken, deviceInfo)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
+    const cookieDomain = this.configService.cookieDomain
 
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
@@ -152,8 +152,7 @@ export class AuthController {
   async logout(@CurrentUser() { userId, refreshToken }: JwtRefreshUser, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(userId, refreshToken)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
+    const cookieDomain = this.configService.cookieDomain
 
     res.clearCookie('access_token', { domain: cookieDomain })
     res.clearCookie('refresh_token', { domain: cookieDomain })
@@ -202,12 +201,13 @@ export class AuthController {
     const result = await this.authService.googleLogin(googleUser)
 
     const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
+    const cookieDomain = this.configService.cookieDomain
 
+    // OAuth 리다이렉트 플로우는 cross-site(google.com 경유)이므로 sameSite: 'lax' 사용
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 15 * 60 * 1000,
       domain: cookieDomain,
     })
@@ -215,7 +215,7 @@ export class AuthController {
     res.cookie('refresh_token', result.refreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
       domain: cookieDomain,
     })
