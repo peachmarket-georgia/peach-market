@@ -1,7 +1,7 @@
 import { Controller, Get } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
 import { PrismaService } from '../database/prisma.service'
-import { SkipApiKey } from '../guards/api-key.guard'
+import { Public } from '../decorators/public.decorator'
 
 type HealthStatus = {
   status: 'ok' | 'error'
@@ -20,7 +20,7 @@ type HealthStatus = {
 
 @ApiTags('health')
 @Controller('health')
-@SkipApiKey()
+@Public()
 export class HealthController {
   constructor(private readonly prisma: PrismaService) {}
 

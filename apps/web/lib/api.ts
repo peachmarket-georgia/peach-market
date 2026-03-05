@@ -16,14 +16,7 @@ import {
   UploadResponseDto,
 } from '@/types/api'
 
-const getApiUrl = () => {
-  if (typeof window === 'undefined') {
-    return process.env.API_URL || 'http://localhost:3003'
-  }
-  return ''
-}
-
-const API_SECRET_KEY = process.env.API_SECRET_KEY
+const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
 
 export type ApiResponse<T> = {
   data?: T
@@ -51,14 +44,12 @@ export async function apiRequest<T>(
   _isRetry = false
 ): Promise<ApiResponse<T>> {
   try {
-    const isServer = typeof window === 'undefined'
     const apiUrl = getApiUrl()
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options?.headers,
       ...(cookies ? { Cookie: cookies } : {}),
-      ...(isServer && API_SECRET_KEY ? { 'X-API-Key': API_SECRET_KEY } : {}),
     }
 
     const response = await fetch(`${apiUrl}${endpoint}`, {
@@ -80,7 +71,6 @@ export async function apiRequest<T>(
       const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
-        headers: isServer && API_SECRET_KEY ? { 'X-API-Key': API_SECRET_KEY } : {},
       })
 
       if (refreshRes.ok) {

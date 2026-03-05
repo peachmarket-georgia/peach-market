@@ -1,7 +1,7 @@
-import { Controller, Post, Body, Get, Patch, UseGuards } from '@nestjs/common'
+import { Controller, Post, Body, Get, Patch } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiCookieAuth } from '@nestjs/swagger'
 import { UsersService } from './users.service'
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { Public } from '../../core/decorators/public.decorator'
 import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
 import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto'
 import { UserProfileResponseDto } from './dto/user-response.dto'
@@ -13,6 +13,7 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post('check-email')
+  @Public()
   @ApiOperation({ summary: '이메일 중복 체크', description: '회원가입 시 이메일 사용 가능 여부 확인' })
   @ApiBody({
     schema: {
@@ -32,6 +33,7 @@ export class UsersController {
   }
 
   @Post('check-nickname')
+  @Public()
   @ApiOperation({ summary: '닉네임 중복 체크', description: '회원가입 시 닉네임 사용 가능 여부 확인' })
   @ApiBody({
     schema: {
@@ -51,7 +53,6 @@ export class UsersController {
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '내 프로필 조회', description: '로그인한 사용자의 프로필 정보 조회 (비밀번호 제외)' })
   @ApiCookieAuth('access_token')
   @ApiResponse({
@@ -72,7 +73,6 @@ export class UsersController {
   }
 
   @Patch('me')
-  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '내 프로필 수정', description: '로그인한 사용자의 프로필 정보 수정' })
   @ApiCookieAuth('access_token')
   @ApiResponse({

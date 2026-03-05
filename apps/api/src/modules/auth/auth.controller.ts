@@ -13,7 +13,7 @@ import { LoginResponseDto } from './dto/login-response.dto'
 import { MessageResponseDto } from './dto/message-response.dto'
 import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard'
 import { AppConfigService } from '../../core/config/config.service'
-import { SkipApiKey } from '../../core/guards/api-key.guard'
+import { Public } from '../../core/decorators/public.decorator'
 import { CurrentUser, type JwtRefreshUser } from './current-user.decorator'
 
 @ApiTags('auth')
@@ -25,6 +25,7 @@ export class AuthController {
   ) {}
 
   @Post('signup')
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @ApiOperation({ summary: '회원가입', description: '이메일/비밀번호 기반 회원가입. 가입 후 이메일 인증 필요.' })
   @ApiBody({ type: SignupDto })
@@ -37,6 +38,7 @@ export class AuthController {
   }
 
   @Get('verify-email/:token')
+  @Public()
   @ApiOperation({ summary: '이메일 인증', description: '이메일로 받은 인증 토큰을 통해 이메일 인증 처리' })
   @ApiParam({ name: 'token', description: '이메일 인증 토큰' })
   @ApiResponse({ status: 200, description: '이메일 인증 성공', type: MessageResponseDto })
@@ -46,6 +48,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -61,6 +64,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 1분당 5회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -104,6 +108,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @ApiOperation({
     summary: '토큰 갱신',
@@ -144,6 +149,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @ApiOperation({ summary: '로그아웃', description: 'Refresh Token을 무효화하고 쿠키를 삭제.' })
   @ApiCookieAuth('refresh_token')
@@ -161,6 +167,7 @@ export class AuthController {
   }
 
   @Post('forgot-password')
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '비밀번호 재설정 요청', description: '비밀번호 재설정 이메일 발송' })
@@ -172,6 +179,7 @@ export class AuthController {
   }
 
   @Post('reset-password/:token')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '비밀번호 재설정', description: '토큰을 사용하여 비밀번호 재설정' })
   @ApiParam({ name: 'token', description: '비밀번호 재설정 토큰' })
@@ -183,7 +191,7 @@ export class AuthController {
   }
 
   @Get('google')
-  @SkipApiKey()
+  @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google 로그인', description: 'Google OAuth 로그인 시작' })
   @ApiResponse({ status: 302, description: 'Google 로그인 페이지로 리다이렉트' })
@@ -192,7 +200,7 @@ export class AuthController {
   }
 
   @Get('google/callback')
-  @SkipApiKey()
+  @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google 로그인 콜백', description: 'Google OAuth 콜백 처리' })
   @ApiResponse({ status: 200, description: 'Google 로그인 성공. 쿠키 설정 및 프론트엔드로 리다이렉트.' })
@@ -202,8 +210,8 @@ export class AuthController {
 
     const isProduction = this.configService.nodeEnv === 'production'
     const cookieDomain = this.configService.cookieDomain
+    const frontendUrl = this.configService.frontendUrl
 
-    // OAuth 리다이렉트 플로우는 cross-site(google.com 경유)이므로 sameSite: 'lax' 사용
     res.cookie('access_token', result.accessToken, {
       httpOnly: true,
       secure: isProduction,
@@ -220,7 +228,6 @@ export class AuthController {
       domain: cookieDomain,
     })
 
-    const frontendUrl = this.configService.frontendUrl
     res.redirect(`${frontendUrl}/marketplace`)
   }
 }
