@@ -6,6 +6,7 @@ import { Inter } from 'next/font/google'
 import { MixpanelProvider } from '@/components/mixpanel-provider'
 import { SocketProvider } from '@/context/socket-provider'
 import { Toaster } from '@/components/ui/sonner'
+import { FeedbackButton } from '@/components/feedback-button'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
@@ -23,7 +24,10 @@ const RootLayout = ({
     <html lang="ko" className={inter.variable}>
       <body className="antialiased">
         <SocketProvider>
-          <MixpanelProvider>{children}</MixpanelProvider>
+          <MixpanelProvider>
+            {children}
+            <FeedbackButton />
+          </MixpanelProvider>
         </SocketProvider>
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ''} />
         <Analytics />

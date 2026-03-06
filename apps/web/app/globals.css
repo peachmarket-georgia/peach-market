@@ -196,6 +196,23 @@
   }
 }
 
+@keyframes wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-5deg);
+  }
+  75% {
+    transform: rotate(5deg);
+  }
+}
+
+.peach-wiggle:hover {
+  animation: wiggle 0.7s ease-in-out infinite;
+}
+
 @layer utilities {
   .scrollbar-hide {
     -ms-overflow-style: none;
