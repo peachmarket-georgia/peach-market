@@ -253,10 +253,6 @@ export class ProductsService {
       throw new ForbiddenException('본인의 상품은 찜할 수 없습니다')
     }
 
-    if (product.sellerId === userId) {
-      throw new ForbiddenException('본인의 상품은 찜할 수 없습니다')
-    }
-
     const existingFavorite = await this.prisma.favorite.findUnique({
       where: {
         userId_productId: {
