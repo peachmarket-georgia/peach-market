@@ -17,7 +17,7 @@ export class ResendService {
     }
 
     if (configService.nodeEnv === 'production') {
-      this.fromEmail = 'peachmarket215@gmail.com'
+      this.fromEmail = 'noreply@peachmarket.app'
     }
   }
 
