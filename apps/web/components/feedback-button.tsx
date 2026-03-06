@@ -1,11 +1,15 @@
 'use client'
 
 import { useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { FeedbackButton as FeedbacklandButton } from 'feedbackland-react'
 
 export function FeedbackButton() {
   const wrapperRef = useRef<HTMLDivElement>(null)
+  const pathname = usePathname()
+
+  if (pathname.startsWith('/chat')) return null
 
   const handleClick = () => {
     const btn = wrapperRef.current?.querySelector('button')

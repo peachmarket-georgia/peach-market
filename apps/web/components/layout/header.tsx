@@ -79,7 +79,7 @@ export function Header({ initialUser }: HeaderProps) {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border mb-4 md:mb-0">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* 로고 */}
         <Link href={user ? '/marketplace' : '/'} className="flex items-center gap-2">

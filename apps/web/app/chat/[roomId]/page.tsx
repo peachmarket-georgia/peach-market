@@ -43,6 +43,7 @@ export default function ChatRoomPage() {
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const isInitialLoad = useRef(true)
   const productDeleted = chatRoom !== null && chatRoom.product === null
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -184,7 +185,12 @@ export default function ChatRoomPage() {
 
   // Auto scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (isInitialLoad.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
+      isInitialLoad.current = false
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   const handleTyping = useCallback(() => {
@@ -413,7 +419,7 @@ export default function ChatRoomPage() {
               >
                 <div
                   className={cn(
-                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl',
+                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl wrap-break-word whitespace-pre-wrap min-w-0',
                     msg.senderId === currentUserId
                       ? 'bg-primary text-white rounded-br-md'
                       : 'bg-primary/10 text-foreground rounded-bl-md'
@@ -457,7 +463,7 @@ export default function ChatRoomPage() {
             onKeyDown={handleKeyDown}
             disabled={!isConnected}
             placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
-            className="flex-1 px-4 py-2.5 bg-white border border-primary/25 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
+            className="flex-1 px-4 py-2.5 bg-white border border-primary/25 rounded-full text-base outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}

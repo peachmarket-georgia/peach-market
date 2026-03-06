@@ -50,7 +50,7 @@ export class AppConfigService {
   }
 
   get cookieDomain(): string | undefined {
-    const domain = this.configService.get<string>('COOKIE_DOMAIN', '')
+    const domain = this.configService.get<string>('COOKIE_DOMAIN', '').trim()
     return domain || undefined
   }
 }

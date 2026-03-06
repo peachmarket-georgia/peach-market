@@ -24,6 +24,18 @@ export class AuthController {
     private configService: AppConfigService
   ) {}
 
+  private cookieOptions(maxAge: number) {
+    const isProduction = this.configService.nodeEnv === 'production'
+    const cookieDomain = this.configService.cookieDomain
+    return {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict' as const,
+      maxAge,
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
+    }
+  }
+
   @Post('signup')
   @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
@@ -83,24 +95,8 @@ export class AuthController {
     const deviceInfo = req.headers['user-agent']
     const result = await this.authService.login(loginDto, deviceInfo)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = this.configService.cookieDomain
-
-    res.cookie('access_token', result.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-      domain: cookieDomain,
-    })
-
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: cookieDomain,
-    })
+    res.cookie('access_token', result.accessToken, this.cookieOptions(15 * 60 * 1000))
+    res.cookie('refresh_token', result.refreshToken, this.cookieOptions(7 * 24 * 60 * 60 * 1000))
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { accessToken: _accessToken, refreshToken: _refreshToken, ...response } = result
@@ -126,24 +122,8 @@ export class AuthController {
 
     const result = await this.authService.refresh(userId, refreshToken, deviceInfo)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = this.configService.cookieDomain
-
-    res.cookie('access_token', result.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-      domain: cookieDomain,
-    })
-
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: cookieDomain,
-    })
+    res.cookie('access_token', result.accessToken, this.cookieOptions(15 * 60 * 1000))
+    res.cookie('refresh_token', result.refreshToken, this.cookieOptions(7 * 24 * 60 * 60 * 1000))
 
     return { message: '토큰이 갱신되었습니다' }
   }
@@ -159,9 +139,10 @@ export class AuthController {
     await this.authService.logout(userId, refreshToken)
 
     const cookieDomain = this.configService.cookieDomain
+    const clearOptions = cookieDomain ? { domain: cookieDomain } : {}
 
-    res.clearCookie('access_token', { domain: cookieDomain })
-    res.clearCookie('refresh_token', { domain: cookieDomain })
+    res.clearCookie('access_token', clearOptions)
+    res.clearCookie('refresh_token', clearOptions)
 
     return { message: '로그아웃되었습니다' }
   }
@@ -208,25 +189,19 @@ export class AuthController {
     const googleUser = req.user as { googleId: string; email: string; name: string; avatarUrl?: string }
     const result = await this.authService.googleLogin(googleUser)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = this.configService.cookieDomain
     const frontendUrl = this.configService.frontendUrl
-
-    res.cookie('access_token', result.accessToken, {
+    const cookieDomain = this.configService.cookieDomain
+    const isProduction = this.configService.nodeEnv === 'production'
+    const googleCookieOptions = (maxAge: number) => ({
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
-      domain: cookieDomain,
+      sameSite: 'lax' as const,
+      maxAge,
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
     })
 
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: cookieDomain,
-    })
+    res.cookie('access_token', result.accessToken, googleCookieOptions(15 * 60 * 1000))
+    res.cookie('refresh_token', result.refreshToken, googleCookieOptions(7 * 24 * 60 * 60 * 1000))
 
     res.redirect(`${frontendUrl}/marketplace`)
   }
