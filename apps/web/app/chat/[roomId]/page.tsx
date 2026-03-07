@@ -43,6 +43,7 @@ export default function ChatRoomPage() {
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
   const isInitialLoad = useRef(true)
   const productDeleted = chatRoom !== null && chatRoom.product === null
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -73,11 +74,13 @@ export default function ChatRoomPage() {
         setChatRoom(data)
         setMessages(data.messages)
         if (data.product) setProductStatus(data.product.status as ProductStatus)
-
-        const { data: resData } = data.product ? await reservationApi.getByProduct(data.product.id) : { data: null }
-        if (resData) setReservation(resData)
       }
       setLoading(false)
+
+      if (data?.product) {
+        const { data: resData } = await reservationApi.getByProduct(data.product.id)
+        if (resData) setReservation(resData)
+      }
     }
     loadRoom()
   }, [roomId, router])
@@ -185,9 +188,11 @@ export default function ChatRoomPage() {
 
   // Auto scroll
   useEffect(() => {
+    if (messages.length === 0) return
     if (isInitialLoad.current) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' })
       isInitialLoad.current = false
+      const container = scrollContainerRef.current
+      if (container) container.scrollTop = container.scrollHeight
     } else {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
@@ -393,7 +398,7 @@ export default function ChatRoomPage() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
