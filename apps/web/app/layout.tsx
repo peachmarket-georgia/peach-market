@@ -13,6 +13,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 export const metadata: Metadata = {
   title: '피치마켓 | 조지아 한인 중고거래',
   description: '조지아주 한인 커뮤니티를 위한 안전한 중고거래 플랫폼',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: '피치마켓' },
   icons: {
     icon: [
       { url: '/logo/favicon-16x16.png', sizes: '16x16', type: 'image/png' },

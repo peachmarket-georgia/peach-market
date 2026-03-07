@@ -53,4 +53,12 @@ export class AppConfigService {
     const domain = this.configService.get<string>('COOKIE_DOMAIN', '').trim()
     return domain || undefined
   }
+
+  get vapidPublicKey(): string | undefined {
+    return this.configService.get<string>('VAPID_PUBLIC_KEY') || undefined
+  }
+
+  get vapidPrivateKey(): string | undefined {
+    return this.configService.get<string>('VAPID_PRIVATE_KEY') || undefined
+  }
 }

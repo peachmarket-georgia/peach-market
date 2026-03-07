@@ -32,6 +32,7 @@ model User {
   accounts              Account[] // OAuth 계정 연결 (Google, Facebook 등)
   emailVerifications    EmailVerification[] // 이메일 인증 토큰
   passwordResetRequests PasswordReset[] // 비밀번호 재설정 요청
+  pushSubscriptions     PushSubscription[]
 
   @@map("users")
 }
@@ -246,6 +247,21 @@ model Message {
   @@index([chatRoomId])
   @@index([createdAt])
   @@map("messages")
+}
+
+// Web Push 구독 (PWA 알림)
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }
 
 // 관심 상품

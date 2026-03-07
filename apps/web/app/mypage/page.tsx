@@ -15,7 +15,10 @@ import {
   IconPackage,
   IconCheck,
   IconShoppingBag,
+  IconBell,
+  IconBellOff,
 } from '@tabler/icons-react'
+import { usePushNotification } from '@/hooks/use-push-notification'
 import { Header } from '@/components/layout/header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +48,13 @@ export default function MyPage() {
   const [activeTab, setActiveTab] = useState<TabType>('selling')
   const [loading, setLoading] = useState(true)
   const [productsLoading, setProductsLoading] = useState(false)
+
+  const { permission, isSubscribed, isSupported, subscribe, unsubscribe } = usePushNotification()
+  const [optimisticSubscribed, setOptimisticSubscribed] = useState<boolean | null>(null)
+  const [pushLoading, setPushLoading] = useState(false)
+  const [showPushBlockedDialog, setShowPushBlockedDialog] = useState(false)
+
+  const displaySubscribed = optimisticSubscribed ?? isSubscribed
 
   // 프로필 수정 상태
   const [showEditDialog, setShowEditDialog] = useState(false)
@@ -223,6 +233,63 @@ export default function MyPage() {
           </div>
         </section>
 
+        {/* 알림 설정 */}
+        {isSupported && (
+          <section
+            className={`bg-card rounded-2xl px-6 py-4 mb-6 shadow-sm flex items-center justify-between gap-4 ${
+              permission !== 'denied' ? 'cursor-pointer active:opacity-70' : ''
+            }`}
+            onClick={async () => {
+              if (permission === 'denied') {
+                setShowPushBlockedDialog(true)
+                return
+              }
+              if (pushLoading) return
+              const next = !displaySubscribed
+              setOptimisticSubscribed(next)
+              setPushLoading(true)
+              const ok = next ? await subscribe() : (await unsubscribe(), true)
+              if (!ok) setOptimisticSubscribed(!next)
+              setOptimisticSubscribed(null)
+              setPushLoading(false)
+            }}
+          >
+            <div className="flex items-center gap-3">
+              {displaySubscribed ? (
+                <IconBell className="w-5 h-5 text-primary shrink-0" />
+              ) : (
+                <IconBellOff className="w-5 h-5 text-muted-foreground shrink-0" />
+              )}
+              <div>
+                <p className="text-sm font-medium">채팅 알림</p>
+                <p className="text-xs text-muted-foreground">
+                  {permission === 'denied'
+                    ? '브라우저 설정에서 알림을 허용해주세요'
+                    : displaySubscribed
+                      ? '새 메시지 알림이 활성화되어 있습니다'
+                      : '새 메시지를 받으면 알림을 보내드립니다'}
+                </p>
+              </div>
+            </div>
+
+            {permission === 'denied' ? (
+              <span className="shrink-0 text-xs text-primary underline underline-offset-2">허용하기</span>
+            ) : (
+              <div
+                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${
+                  displaySubscribed ? 'bg-primary' : 'bg-muted'
+                } ${pushLoading ? 'opacity-50' : ''}`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                    displaySubscribed ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </div>
+            )}
+          </section>
+        )}
+
         {/* 탭 */}
         <div className="flex border-b mb-6">
           {TAB_CONFIG.map((tab) => {
@@ -317,6 +384,48 @@ export default function MyPage() {
           </div>
         )}
       </main>
+
+      {/* 알림 차단 해제 안내 다이얼로그 */}
+      <Dialog open={showPushBlockedDialog} onOpenChange={setShowPushBlockedDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>알림 허용 방법</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-4 text-sm text-muted-foreground">
+            <p>브라우저에서 알림을 차단했습니다. 아래 방법으로 다시 허용할 수 있습니다.</p>
+            <div className="space-y-3">
+              <div className="flex gap-3">
+                <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                  1
+                </span>
+                <p>
+                  주소창 왼쪽 <strong className="text-foreground">자물쇠 🔒 아이콘</strong>을 클릭하세요
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                  2
+                </span>
+                <p>
+                  <strong className="text-foreground">알림</strong> 항목을{' '}
+                  <strong className="text-foreground">허용</strong>으로 변경하세요
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <span className="shrink-0 w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">
+                  3
+                </span>
+                <p>
+                  페이지를 <strong className="text-foreground">새로고침</strong>하면 적용됩니다
+                </p>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setShowPushBlockedDialog(false)}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 프로필 수정 다이얼로그 */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>

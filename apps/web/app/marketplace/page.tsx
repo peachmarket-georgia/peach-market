@@ -10,7 +10,9 @@ import {
   IconPlus,
   IconPackage,
   IconX,
+  IconBell,
 } from '@tabler/icons-react'
+import { usePushNotification } from '@/hooks/use-push-notification'
 import { ProductCard } from './components/product-card'
 import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
 import { Input } from '@/components/ui/input'
@@ -37,6 +39,8 @@ const MarketplacePage = () => {
   const [products, setProducts] = useState<ProductResponseDto[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [showPushBanner, setShowPushBanner] = useState(false)
+  const { permission, isSupported, subscribe } = usePushNotification()
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -66,6 +70,22 @@ const MarketplacePage = () => {
       if (data) setCurrentUserId(data.id)
     })
   }, [])
+
+  useEffect(() => {
+    if (!isSupported || permission === 'granted' || permission === 'denied') return
+    const dismissed = localStorage.getItem('push-banner-dismissed')
+    if (!dismissed) setShowPushBanner(true)
+  }, [isSupported, permission])
+
+  const handlePushAllow = async () => {
+    setShowPushBanner(false)
+    await subscribe()
+  }
+
+  const handlePushDismiss = () => {
+    setShowPushBanner(false)
+    localStorage.setItem('push-banner-dismissed', '1')
+  }
 
   const isFiltered = searchQuery !== '' || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' || sortBy !== 'latest'
 
@@ -97,6 +117,23 @@ const MarketplacePage = () => {
           <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓 🍑</p>
         </div>
 
+        {/* 푸시 알림 배너 */}
+        {showPushBanner && (
+          <div className="mb-4 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+            <IconBell className="size-5 shrink-0 text-primary" />
+            <p className="flex-1 text-sm text-foreground">채팅 알림을 받으시겠어요?</p>
+            <button
+              onClick={handlePushAllow}
+              className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white"
+            >
+              허용
+            </button>
+            <button onClick={handlePushDismiss} className="shrink-0 text-fg-tertiary">
+              <IconX className="size-4" />
+            </button>
+          </div>
+        )}
+
         {/* 검색 + 등록 */}
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -119,7 +156,7 @@ const MarketplacePage = () => {
       </div>
 
       {/* 카테고리 필터 - full width scrollable */}
-      <div className="overflow-x-auto scrollbar-hide">
+      <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide">
         <div className="inline-flex items-center gap-2 px-4 md:px-6 pb-1">
           <button
             onClick={() => setSelectedCategory('ALL')}
