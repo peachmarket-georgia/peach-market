@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
 import { ChatService } from './chat.service'
+import { PushService } from '../modules/push/push.service'
 import { Logger } from '@nestjs/common'
 
 /**
@@ -48,7 +49,10 @@ export class ChatGateway implements OnGatewayInit {
 
   private readonly logger = new Logger(ChatGateway.name)
 
-  constructor(private readonly chatService: ChatService) {}
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly pushService: PushService
+  ) {}
 
   afterInit() {
     this.logger.log('WebSocket Gateway initialized')
@@ -87,11 +91,23 @@ export class ChatGateway implements OnGatewayInit {
     const savedMessage = await this.chatService.saveMessage(data.chatRoomId, data.senderId, data.content)
     this.server.to(data.chatRoomId).emit('newMessage', savedMessage)
 
-    // 3. 수신자의 개인 채널에 안읽은 메시지 알림
+    // 3. 수신자의 개인 채널에 안읽은 메시지 알림 + PWA push
     const room = await this.chatService.findChatRoomById(data.chatRoomId)
     if (room) {
       const recipientId = room.buyerId === data.senderId ? room.sellerId : room.buyerId
       this.server.to(`user:${recipientId}`).emit('newUnreadMessage', { chatRoomId: data.chatRoomId })
+
+      // 수신자가 채팅방에 없을 때 push 알림 전송
+      const recipientSockets = await this.server.in(data.chatRoomId).fetchSockets()
+      const recipientInRoom = recipientSockets.some((s) => s.rooms.has(`user:${recipientId}`))
+      if (!recipientInRoom) {
+        const sender = await this.chatService.findUserById(data.senderId)
+        await this.pushService.sendToUser(recipientId, {
+          title: sender?.nickname ?? '피치마켓',
+          body: data.content.length > 50 ? data.content.slice(0, 50) + '...' : data.content,
+          url: `/chat/${data.chatRoomId}`,
+        })
+      }
     }
 
     return savedMessage

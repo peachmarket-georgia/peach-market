@@ -6,6 +6,10 @@ import { PrismaService } from '../core/database/prisma.service'
 export class ChatService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async findUserById(id: string) {
+    return this.prisma.user.findUnique({ where: { id }, select: { id: true, nickname: true } })
+  }
+
   // ChatRoom 관련 메서드
   async findChatRoomById(id: string): Promise<ChatRoom | null> {
     return this.prisma.chatRoom.findUnique({ where: { id } })
