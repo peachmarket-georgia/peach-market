@@ -119,7 +119,7 @@ const MarketplacePage = () => {
       </div>
 
       {/* 카테고리 필터 - full width scrollable */}
-      <div className="overflow-x-auto scrollbar-hide">
+      <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide">
         <div className="inline-flex items-center gap-2 px-4 md:px-6 pb-1">
           <button
             onClick={() => setSelectedCategory('ALL')}
