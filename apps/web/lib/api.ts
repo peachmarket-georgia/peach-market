@@ -14,6 +14,10 @@ import {
   ChatRoomWithMessagesDto,
   UnreadCountDto,
   UploadResponseDto,
+  CreateReportDto,
+  ReportResponseDto,
+  AdminReportDto,
+  AdminUserDto,
 } from '@/types/api'
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
@@ -332,6 +336,55 @@ export const uploadApi = {
       }
     }
   },
+}
+
+// ==================== Report API ====================
+
+export const reportApi = {
+  create: (data: CreateReportDto) =>
+    apiRequest<ReportResponseDto>('/api/reports', {
+      method: 'POST',
+      body: data,
+    }),
+
+  getMyReports: () => apiRequest<ReportResponseDto[]>('/api/reports/my'),
+}
+
+// ==================== Admin API ====================
+
+export const adminApi = {
+  getReports: (params?: { type?: string; status?: string }) => {
+    const query = new URLSearchParams()
+    if (params?.type) query.set('type', params.type)
+    if (params?.status) query.set('status', params.status)
+    const qs = query.toString()
+    return apiRequest<AdminReportDto[]>(`/api/admin/reports${qs ? `?${qs}` : ''}`)
+  },
+
+  getReport: (id: string) => apiRequest<AdminReportDto>(`/api/admin/reports/${id}`),
+
+  updateReport: (id: string, data: { status?: string; adminNote?: string }) =>
+    apiRequest<AdminReportDto>(`/api/admin/reports/${id}`, { method: 'PATCH', body: data }),
+
+  getUsers: (params?: { search?: string; blocked?: string }) => {
+    const query = new URLSearchParams()
+    if (params?.search) query.set('search', params.search)
+    if (params?.blocked) query.set('blocked', params.blocked)
+    const qs = query.toString()
+    return apiRequest<AdminUserDto[]>(`/api/admin/users${qs ? `?${qs}` : ''}`)
+  },
+
+  blockUser: (userId: string) =>
+    apiRequest<MessageResponseDto>(`/api/admin/users/${userId}/block`, { method: 'PATCH' }),
+
+  unblockUser: (userId: string) =>
+    apiRequest<MessageResponseDto>(`/api/admin/users/${userId}/unblock`, { method: 'PATCH' }),
+
+  promoteUser: (userId: string) =>
+    apiRequest<MessageResponseDto>(`/api/admin/users/${userId}/promote`, { method: 'PATCH' }),
+
+  demoteUser: (userId: string) =>
+    apiRequest<MessageResponseDto>(`/api/admin/users/${userId}/demote`, { method: 'PATCH' }),
 }
 
 // ==================== Helper Functions ====================

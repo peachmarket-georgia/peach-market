@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common'
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
 import * as crypto from 'crypto'
@@ -147,6 +153,10 @@ export class AuthService {
       throw new UnauthorizedException('이메일 인증이 필요합니다. 메일함을 확인해주세요.')
     }
 
+    if (user.isBlocked) {
+      throw new ForbiddenException('계정이 정지되었습니다. 고객센터에 문의해주세요.')
+    }
+
     if (!user.password) {
       throw new UnauthorizedException('이메일 또는 비밀번호가 올바르지 않습니다')
     }
@@ -206,6 +216,12 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('사용자를 찾을 수 없습니다')
     }
+
+    if (user.isBlocked) {
+      await this.prisma.session.deleteMany({ where: { userId } })
+      throw new ForbiddenException('계정이 정지되었습니다. 고객센터에 문의해주세요.')
+    }
+
     const tokens = this.generateTokens(user.id, user.email)
 
     await this.prisma.session.delete({ where: { id: validSession.id } })
@@ -306,6 +322,10 @@ export class AuthService {
     })
 
     if (user) {
+      if (user.isBlocked) {
+        throw new ForbiddenException('계정이 정지되었습니다. 고객센터에 문의해주세요.')
+      }
+
       const account = await this.prisma.account.findFirst({
         where: { userId: user.id, provider: 'google' },
       })

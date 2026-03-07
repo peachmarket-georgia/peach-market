@@ -65,7 +65,7 @@ export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findAll(query: { search?: string; category?: string; status?: string; sort?: string }, userId?: string) {
-    const conditions: object[] = []
+    const conditions: object[] = [{ seller: { isBlocked: false } }]
 
     if (query.search) {
       conditions.push({

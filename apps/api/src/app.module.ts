@@ -15,6 +15,8 @@ import { ReservationsModule } from './modules/reservations/reservations.module'
 import { ChatModule } from './chat/chat.module'
 import { UploadModule } from './modules/upload/upload.module'
 import { PushModule } from './modules/push/push.module'
+import { ReportsModule } from './modules/reports/reports.module'
+import { AdminModule } from './modules/admin/admin.module'
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { PushModule } from './modules/push/push.module'
     ChatModule,
     UploadModule,
     PushModule,
+    ReportsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

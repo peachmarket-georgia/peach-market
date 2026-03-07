@@ -11,8 +11,10 @@ import type { ReservationDto } from '@/types/reservation'
 import { STATUS_LABEL } from '@/lib/product-types'
 import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { IconChevronLeft, IconSend, IconDotsVertical } from '@tabler/icons-react'
+import { IconChevronLeft, IconSend, IconDotsVertical, IconFlag } from '@tabler/icons-react'
 import { toast } from 'sonner'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { ReportDialog } from '@/components/report-dialog'
 
 type PendingAction = ProductStatus | 'confirm' | 'cancel'
 
@@ -42,6 +44,7 @@ export default function ChatRoomPage() {
   const [statusLoading, setStatusLoading] = useState(false)
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
+  const [reportOpen, setReportOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const isInitialLoad = useRef(true)
@@ -273,10 +276,28 @@ export default function ChatRoomPage() {
           </div>
         </div>
 
-        <button className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
-          <IconDotsVertical className="w-5 h-5 text-white" />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
+              <IconDotsVertical className="w-5 h-5 text-white" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setReportOpen(true)} className="text-destructive focus:text-destructive">
+              <IconFlag className="w-4 h-4 mr-2" />
+              사용자 신고
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </header>
+
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetUserId={otherUser.id}
+        targetUserNickname={otherUser.nickname}
+        reportType="user"
+      />
 
       {/* Connection Status Banner */}
       {!isConnected && (

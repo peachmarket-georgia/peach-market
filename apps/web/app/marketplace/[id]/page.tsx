@@ -16,6 +16,7 @@ import {
   IconMapPin,
   IconClock,
   IconPencil,
+  IconFlag,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -26,6 +27,7 @@ import { getProduct, toProduct, productApi } from '@/lib/products-api'
 import { userApi } from '@/lib/api'
 import type { Product, ProductStatus } from '@/lib/product-types'
 import { ImageCarousel } from './components/image-carousel'
+import { ReportDialog } from '@/components/report-dialog'
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>
@@ -67,6 +69,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
 
   useEffect(() => {
     getProduct(id)
@@ -314,6 +317,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                   <span className="font-semibold">공유</span>
                 </Button>
                 <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                  onClick={() => setReportOpen(true)}
+                >
+                  <IconFlag className="h-5 w-5" />
+                  <span className="font-semibold">신고</span>
+                </Button>
+                <Button
                   size="lg"
                   className="flex-1 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
                   disabled={isSold || chatLoading}
@@ -327,6 +339,16 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           </div>
         </div>
       </div>
+
+      {/* 신고 다이얼로그 */}
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetUserId={product.seller.id}
+        targetUserNickname={product.seller.nickname}
+        productId={id}
+        reportType="user"
+      />
 
       {/* 모바일 하단 고정 액션바 */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">

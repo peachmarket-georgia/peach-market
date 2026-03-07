@@ -4,7 +4,16 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
-import { IconSearch, IconBell, IconPlus, IconUser, IconLogout, IconMessage } from '@tabler/icons-react'
+import {
+  IconSearch,
+  IconBell,
+  IconPlus,
+  IconUser,
+  IconLogout,
+  IconMessage,
+  IconBug,
+  IconShield,
+} from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -16,6 +25,7 @@ import {
 import { checkAuth, authApi, chatApi } from '@/lib/api'
 import { UserProfileResponseDto } from '@/types/api'
 import { useSocket } from '@/context/socket-provider'
+import { ReportDialog } from '@/components/report-dialog'
 
 type HeaderProps = {
   initialUser?: UserProfileResponseDto | null
@@ -25,6 +35,7 @@ export function Header({ initialUser }: HeaderProps) {
   const [user, setUser] = useState<UserProfileResponseDto | null>(initialUser ?? null)
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(!initialUser)
+  const [bugReportOpen, setBugReportOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { socket } = useSocket()
@@ -168,6 +179,16 @@ export function Header({ initialUser }: HeaderProps) {
                       </span>
                     )}
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setBugReportOpen(true)}>
+                    <IconBug className="w-4 h-4 mr-2" />
+                    버그 신고
+                  </DropdownMenuItem>
+                  {user.role === 'ADMIN' && (
+                    <DropdownMenuItem onClick={() => router.push('/admin')}>
+                      <IconShield className="w-4 h-4 mr-2" />
+                      관리자
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                     <IconLogout className="w-4 h-4 mr-2" />
@@ -190,6 +211,7 @@ export function Header({ initialUser }: HeaderProps) {
           )}
         </nav>
       </div>
+      <ReportDialog open={bugReportOpen} onOpenChange={setBugReportOpen} reportType="bug" />
     </header>
   )
 }

@@ -86,6 +86,8 @@ export interface CheckAvailabilityResponseDto {
   available: boolean
 }
 
+export type UserRole = 'USER' | 'ADMIN'
+
 export interface UserProfileResponseDto {
   /** @example "user-id" */
   id: string
@@ -99,6 +101,7 @@ export interface UserProfileResponseDto {
   isEmailVerified: boolean
   /** @example "https://example.com/avatar.jpg" */
   avatarUrl?: string | null
+  role: UserRole
   /**
    * @format date-time
    * @example "2024-01-01T00:00:00.000Z"
@@ -247,4 +250,50 @@ export interface ProductQueryParams {
   category?: string
   status?: ProductStatus
   sort?: 'latest' | 'price_asc' | 'price_desc'
+}
+
+// ==================== Report Types ====================
+
+export type ReportType = 'SCAM' | 'INAPPROPRIATE' | 'SPAM' | 'BUG' | 'OTHER'
+export type ReportStatus = 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'DISMISSED'
+
+export interface CreateReportDto {
+  type: ReportType
+  description: string
+  targetUserId?: string
+  productId?: string
+  imageUrls?: string[]
+}
+
+export interface ReportResponseDto {
+  id: string
+  type: ReportType
+  status: ReportStatus
+  description: string
+  imageUrls: string[]
+  productId: string | null
+  createdAt: string
+  updatedAt: string
+  reporter: { id: string; nickname: string; avatarUrl: string | null }
+  targetUser: { id: string; nickname: string; avatarUrl: string | null } | null
+}
+
+// ==================== Admin Types ====================
+
+export interface AdminReportDto extends ReportResponseDto {
+  adminNote: string | null
+  resolvedAt: string | null
+  reporter: { id: string; nickname: string; email: string; avatarUrl: string | null }
+  targetUser: { id: string; nickname: string; email: string; avatarUrl: string | null; isBlocked: boolean } | null
+}
+
+export interface AdminUserDto {
+  id: string
+  email: string
+  nickname: string
+  avatarUrl: string | null
+  location: string
+  role: UserRole
+  isBlocked: boolean
+  createdAt: string
 }

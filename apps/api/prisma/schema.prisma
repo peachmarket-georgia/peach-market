@@ -14,6 +14,8 @@ model User {
   avatarUrl       String?
   location        String // 활동 지역 (둘루스, 애틀랜타 등)
   mannerScore     Float    @default(0.0) // 매너 점수 (0.0 ~ 5.0)
+  role            UserRole @default(USER) // 사용자 역할
+  isBlocked       Boolean  @default(false) // 차단 여부
   isEmailVerified Boolean  @default(false) // 이메일 인증 여부
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
@@ -33,6 +35,8 @@ model User {
   emailVerifications    EmailVerification[] // 이메일 인증 토큰
   passwordResetRequests PasswordReset[] // 비밀번호 재설정 요청
   pushSubscriptions     PushSubscription[]
+  reportsSubmitted      Report[]             @relation("ReportSubmitter")
+  reportsReceived       Report[]             @relation("ReportTarget")
 
   @@map("users")
 }
@@ -107,6 +111,29 @@ model PasswordReset {
   @@index([userId])
   @@index([expiresAt]) // 만료된 토큰 정리용
   @@map("password_resets")
+}
+
+// 사용자 역할
+enum UserRole {
+  USER  // 일반 사용자
+  ADMIN // 관리자
+}
+
+// 신고 유형
+enum ReportType {
+  SCAM          // 사기
+  INAPPROPRIATE // 부적절한 행동
+  SPAM          // 스팸
+  BUG           // 버그 신고
+  OTHER         // 기타
+}
+
+// 신고 처리 상태
+enum ReportStatus {
+  PENDING   // 대기중
+  REVIEWING // 검토중
+  RESOLVED  // 처리완료
+  DISMISSED // 기각
 }
 
 // 상품 상태
@@ -262,6 +289,32 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// 신고
+model Report {
+  id           String       @id @default(uuid())
+  type         ReportType
+  status       ReportStatus @default(PENDING)
+  description  String
+  imageUrls    String[] // 증거 이미지 URL
+  reporterId   String
+  targetUserId String? // BUG 타입은 null
+  productId    String? // 관련 상품 ID (relation 없음)
+  adminNote    String?
+  resolvedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  // 관계
+  reporter   User  @relation("ReportSubmitter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser User? @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([reporterId])
+  @@index([targetUserId])
+  @@index([status])
+  @@index([type])
+  @@map("reports")
 }
 
 // 관심 상품
