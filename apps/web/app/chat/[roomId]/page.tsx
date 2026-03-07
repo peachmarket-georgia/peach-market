@@ -43,6 +43,8 @@ export default function ChatRoomPage() {
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const isInitialLoad = useRef(true)
   const productDeleted = chatRoom !== null && chatRoom.product === null
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -72,11 +74,13 @@ export default function ChatRoomPage() {
         setChatRoom(data)
         setMessages(data.messages)
         if (data.product) setProductStatus(data.product.status as ProductStatus)
-
-        const { data: resData } = data.product ? await reservationApi.getByProduct(data.product.id) : { data: null }
-        if (resData) setReservation(resData)
       }
       setLoading(false)
+
+      if (data?.product) {
+        const { data: resData } = await reservationApi.getByProduct(data.product.id)
+        if (resData) setReservation(resData)
+      }
     }
     loadRoom()
   }, [roomId, router])
@@ -184,7 +188,14 @@ export default function ChatRoomPage() {
 
   // Auto scroll
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length === 0) return
+    if (isInitialLoad.current) {
+      isInitialLoad.current = false
+      const container = scrollContainerRef.current
+      if (container) container.scrollTop = container.scrollHeight
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages])
 
   const handleTyping = useCallback(() => {
@@ -387,7 +398,7 @@ export default function ChatRoomPage() {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
@@ -413,7 +424,7 @@ export default function ChatRoomPage() {
               >
                 <div
                   className={cn(
-                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl',
+                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl wrap-break-word whitespace-pre-wrap min-w-0',
                     msg.senderId === currentUserId
                       ? 'bg-primary text-white rounded-br-md'
                       : 'bg-primary/10 text-foreground rounded-bl-md'
@@ -457,7 +468,7 @@ export default function ChatRoomPage() {
             onKeyDown={handleKeyDown}
             disabled={!isConnected}
             placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
-            className="flex-1 px-4 py-2.5 bg-white border border-primary/25 rounded-full text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
+            className="flex-1 px-4 py-2.5 bg-white border border-primary/25 rounded-full text-base outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}

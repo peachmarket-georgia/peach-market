@@ -13,6 +13,7 @@ import { LoginResponseDto } from './dto/login-response.dto'
 import { MessageResponseDto } from './dto/message-response.dto'
 import { JwtRefreshAuthGuard } from './jwt-refresh-auth.guard'
 import { AppConfigService } from '../../core/config/config.service'
+import { Public } from '../../core/decorators/public.decorator'
 import { CurrentUser, type JwtRefreshUser } from './current-user.decorator'
 
 @ApiTags('auth')
@@ -23,7 +24,20 @@ export class AuthController {
     private configService: AppConfigService
   ) {}
 
+  private cookieOptions(maxAge: number) {
+    const isProduction = this.configService.nodeEnv === 'production'
+    const cookieDomain = this.configService.cookieDomain
+    return {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'strict' as const,
+      maxAge,
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
+    }
+  }
+
   @Post('signup')
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @ApiOperation({ summary: '회원가입', description: '이메일/비밀번호 기반 회원가입. 가입 후 이메일 인증 필요.' })
   @ApiBody({ type: SignupDto })
@@ -36,6 +50,7 @@ export class AuthController {
   }
 
   @Get('verify-email/:token')
+  @Public()
   @ApiOperation({ summary: '이메일 인증', description: '이메일로 받은 인증 토큰을 통해 이메일 인증 처리' })
   @ApiParam({ name: 'token', description: '이메일 인증 토큰' })
   @ApiResponse({ status: 200, description: '이메일 인증 성공', type: MessageResponseDto })
@@ -45,6 +60,7 @@ export class AuthController {
   }
 
   @Post('resend-verification')
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -60,6 +76,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Public()
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 1분당 5회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -78,24 +95,8 @@ export class AuthController {
     const deviceInfo = req.headers['user-agent']
     const result = await this.authService.login(loginDto, deviceInfo)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
-
-    res.cookie('access_token', result.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-      domain: cookieDomain,
-    })
-
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: cookieDomain,
-    })
+    res.cookie('access_token', result.accessToken, this.cookieOptions(15 * 60 * 1000))
+    res.cookie('refresh_token', result.refreshToken, this.cookieOptions(7 * 24 * 60 * 60 * 1000))
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { accessToken: _accessToken, refreshToken: _refreshToken, ...response } = result
@@ -103,6 +104,7 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @ApiOperation({
     summary: '토큰 갱신',
@@ -120,29 +122,14 @@ export class AuthController {
 
     const result = await this.authService.refresh(userId, refreshToken, deviceInfo)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
-
-    res.cookie('access_token', result.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-      domain: cookieDomain,
-    })
-
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: cookieDomain,
-    })
+    res.cookie('access_token', result.accessToken, this.cookieOptions(15 * 60 * 1000))
+    res.cookie('refresh_token', result.refreshToken, this.cookieOptions(7 * 24 * 60 * 60 * 1000))
 
     return { message: '토큰이 갱신되었습니다' }
   }
 
   @Post('logout')
+  @Public()
   @UseGuards(JwtRefreshAuthGuard)
   @ApiOperation({ summary: '로그아웃', description: 'Refresh Token을 무효화하고 쿠키를 삭제.' })
   @ApiCookieAuth('refresh_token')
@@ -151,16 +138,17 @@ export class AuthController {
   async logout(@CurrentUser() { userId, refreshToken }: JwtRefreshUser, @Res({ passthrough: true }) res: Response) {
     await this.authService.logout(userId, refreshToken)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
+    const cookieDomain = this.configService.cookieDomain
+    const clearOptions = cookieDomain ? { domain: cookieDomain } : {}
 
-    res.clearCookie('access_token', { domain: cookieDomain })
-    res.clearCookie('refresh_token', { domain: cookieDomain })
+    res.clearCookie('access_token', clearOptions)
+    res.clearCookie('refresh_token', clearOptions)
 
     return { message: '로그아웃되었습니다' }
   }
 
   @Post('forgot-password')
+  @Public()
   @Throttle({ default: { limit: 3, ttl: 3600000 } }) // 1시간당 3회
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '비밀번호 재설정 요청', description: '비밀번호 재설정 이메일 발송' })
@@ -172,6 +160,7 @@ export class AuthController {
   }
 
   @Post('reset-password/:token')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: '비밀번호 재설정', description: '토큰을 사용하여 비밀번호 재설정' })
   @ApiParam({ name: 'token', description: '비밀번호 재설정 토큰' })
@@ -183,6 +172,7 @@ export class AuthController {
   }
 
   @Get('google')
+  @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google 로그인', description: 'Google OAuth 로그인 시작' })
   @ApiResponse({ status: 302, description: 'Google 로그인 페이지로 리다이렉트' })
@@ -191,6 +181,7 @@ export class AuthController {
   }
 
   @Get('google/callback')
+  @Public()
   @UseGuards(AuthGuard('google'))
   @ApiOperation({ summary: 'Google 로그인 콜백', description: 'Google OAuth 콜백 처리' })
   @ApiResponse({ status: 200, description: 'Google 로그인 성공. 쿠키 설정 및 프론트엔드로 리다이렉트.' })
@@ -198,26 +189,20 @@ export class AuthController {
     const googleUser = req.user as { googleId: string; email: string; name: string; avatarUrl?: string }
     const result = await this.authService.googleLogin(googleUser)
 
-    const isProduction = this.configService.nodeEnv === 'production'
-    const cookieDomain = isProduction ? '.peachmarket.com' : undefined
-
-    res.cookie('access_token', result.accessToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000,
-      domain: cookieDomain,
-    })
-
-    res.cookie('refresh_token', result.refreshToken, {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      domain: cookieDomain,
-    })
-
     const frontendUrl = this.configService.frontendUrl
+    const cookieDomain = this.configService.cookieDomain
+    const isProduction = this.configService.nodeEnv === 'production'
+    const googleCookieOptions = (maxAge: number) => ({
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: 'lax' as const,
+      maxAge,
+      ...(cookieDomain ? { domain: cookieDomain } : {}),
+    })
+
+    res.cookie('access_token', result.accessToken, googleCookieOptions(15 * 60 * 1000))
+    res.cookie('refresh_token', result.refreshToken, googleCookieOptions(7 * 24 * 60 * 60 * 1000))
+
     res.redirect(`${frontendUrl}/marketplace`)
   }
 }

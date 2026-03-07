@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
-import { IconSearch, IconBell, IconPlus, IconUser, IconLogout, IconMessage, IconMenu2 } from '@tabler/icons-react'
+import { IconSearch, IconBell, IconPlus, IconUser, IconLogout, IconMessage } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -79,7 +79,7 @@ export function Header({ initialUser }: HeaderProps) {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border mb-4 md:mb-0">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* 로고 */}
         <Link href={user ? '/marketplace' : '/'} className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export function Header({ initialUser }: HeaderProps) {
           ) : user ? (
             <>
               {/* 검색 */}
-              <Link href="/search">
+              <Link href="/marketplace">
                 <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                   <IconSearch className="w-5 h-5" />
                 </Button>

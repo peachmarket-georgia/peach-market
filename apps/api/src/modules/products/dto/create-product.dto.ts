@@ -31,6 +31,12 @@ export class CreateProductDto {
   @IsNotEmpty()
   location!: string
 
+  @ApiPropertyOptional({ example: ['https://...'], description: '상품 이미지 URL 목록', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[]
+
   @ApiPropertyOptional({
     description: '선호 결제 수단',
     enum: PaymentMethod,

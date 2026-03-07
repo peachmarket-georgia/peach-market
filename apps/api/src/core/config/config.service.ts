@@ -48,4 +48,9 @@ export class AppConfigService {
   get apiSecretKey(): string {
     return this.configService.get<string>('API_SECRET_KEY', '')
   }
+
+  get cookieDomain(): string | undefined {
+    const domain = this.configService.get<string>('COOKIE_DOMAIN', '').trim()
+    return domain || undefined
+  }
 }

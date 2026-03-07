@@ -1,12 +1,12 @@
 # ============================================
 # Stage 1: Install Dependencies
 # ============================================
-FROM node:22-alpine AS deps
+FROM node:22.14-alpine AS deps
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+# Install pnpm and node-gyp globally (node-gyp needed for bcrypt/sharp native builds)
+RUN npm install -g pnpm@9.0.0 node-gyp
 
 # Install dependencies needed for native modules (bcrypt, sharp)
 RUN apk add --no-cache python3 make g++ vips-dev
@@ -15,8 +15,7 @@ RUN apk add --no-cache python3 make g++ vips-dev
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Add node-gyp for sharp build, then install all dependencies
-RUN pnpm add -D node-gyp && pnpm install
+RUN pnpm install
 
 # Generate Prisma client
 RUN pnpm exec prisma generate
@@ -40,12 +39,12 @@ RUN if [ ! -f dist/src/main.js ]; then echo "ERROR: dist/src/main.js not found!"
 # ============================================
 # Stage 3: Production Dependencies
 # ============================================
-FROM node:22-alpine AS prod-deps
+FROM node:22.14-alpine AS prod-deps
 
 WORKDIR /app
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+# Install pnpm and node-gyp globally (node-gyp needed for bcrypt/sharp native builds)
+RUN npm install -g pnpm@9.0.0 node-gyp
 
 # Install dependencies needed for native modules
 RUN apk add --no-cache python3 make g++ vips-dev
@@ -53,17 +52,14 @@ RUN apk add --no-cache python3 make g++ vips-dev
 COPY package.json ./
 COPY prisma ./prisma/
 
-# Add node-gyp first, install all deps (so sharp builds),
-# generate prisma client, then prune to prod only
-RUN pnpm add -D node-gyp && \
-    pnpm install && \
-    pnpm exec prisma generate && \
-    pnpm prune --prod
+RUN pnpm install
+RUN pnpm exec prisma generate
+RUN pnpm prune --prod
 
 # ============================================
 # Stage 4: Production Runner
 # ============================================
-FROM node:22-alpine AS runner
+FROM node:22.14-alpine AS runner
 
 WORKDIR /app
 
@@ -81,14 +77,19 @@ COPY --from=prod-deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 COPY --from=prod-deps --chown=nestjs:nodejs /app/prisma ./prisma
 COPY --from=build --chown=nestjs:nodejs /app/dist ./dist
 COPY --from=build --chown=nestjs:nodejs /app/package.json ./package.json
+COPY --from=build --chown=nestjs:nodejs /app/prisma.config.ts ./prisma.config.ts
+
+# prisma CLI is devDependency (removed by pnpm prune --prod), copy from deps stage for migrate deploy
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=deps --chown=nestjs:nodejs /app/node_modules/prisma ./node_modules/prisma
 
 USER nestjs
 
 # Railway injects PORT env variable
 EXPOSE 3003
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health || exit 1
+# Health check (start-period accounts for prisma migrate + NestJS bootstrap time)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:${PORT:-3003}/api/health/live || exit 1
 
-CMD ["node", "dist/src/main.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node dist/src/main.js"]

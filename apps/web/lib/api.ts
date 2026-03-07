@@ -16,14 +16,25 @@ import {
   UploadResponseDto,
 } from '@/types/api'
 
-const getApiUrl = () => {
-  if (typeof window === 'undefined') {
-    return process.env.API_URL || 'http://localhost:3003'
-  }
-  return ''
-}
+const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
 
-const API_SECRET_KEY = process.env.API_SECRET_KEY
+// 동시 refresh 방지 mutex
+let refreshingPromise: Promise<boolean> | null = null
+
+async function tryRefresh(apiUrl: string): Promise<boolean> {
+  if (refreshingPromise) return refreshingPromise
+
+  refreshingPromise = fetch(`${apiUrl}/api/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include',
+  })
+    .then((res) => res.ok)
+    .finally(() => {
+      refreshingPromise = null
+    })
+
+  return refreshingPromise
+}
 
 export type ApiResponse<T> = {
   data?: T
@@ -51,14 +62,12 @@ export async function apiRequest<T>(
   _isRetry = false
 ): Promise<ApiResponse<T>> {
   try {
-    const isServer = typeof window === 'undefined'
     const apiUrl = getApiUrl()
 
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options?.headers,
       ...(cookies ? { Cookie: cookies } : {}),
-      ...(isServer && API_SECRET_KEY ? { 'X-API-Key': API_SECRET_KEY } : {}),
     }
 
     const response = await fetch(`${apiUrl}${endpoint}`, {
@@ -77,13 +86,9 @@ export async function apiRequest<T>(
 
     // 401 → refresh token 시도 후 재요청 (auth 엔드포인트 제외, 재시도 1회만)
     if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/')) {
-      const refreshRes = await fetch(`${apiUrl}/api/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: isServer && API_SECRET_KEY ? { 'X-API-Key': API_SECRET_KEY } : {},
-      })
+      const refreshed = await tryRefresh(apiUrl)
 
-      if (refreshRes.ok) {
+      if (refreshed) {
         return apiRequest<T>(endpoint, options, cookies, true)
       }
 

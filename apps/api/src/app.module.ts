@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
 import { APP_GUARD } from '@nestjs/core'
-import { ApiKeyGuard } from './core/guards/api-key.guard'
+import { JwtAuthGuard } from './modules/auth/jwt-auth.guard'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { AppConfigModule } from './core/config/config.module'
@@ -51,7 +51,7 @@ import { UploadModule } from './modules/upload/upload.module'
           },
           {
             provide: APP_GUARD,
-            useClass: ApiKeyGuard,
+            useClass: JwtAuthGuard,
           },
         ]),
   ],

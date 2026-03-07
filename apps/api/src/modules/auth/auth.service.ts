@@ -35,30 +35,39 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10)
-
-    const user = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        nickname,
-        location,
-        isEmailVerified: false,
-      },
-    })
-
     const verificationToken = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 24)
 
-    await this.prisma.emailVerification.create({
-      data: {
-        userId: user.id,
-        token: verificationToken,
-        expiresAt,
-      },
+    const user = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          nickname,
+          location,
+          isEmailVerified: false,
+        },
+      })
+
+      await tx.emailVerification.create({
+        data: {
+          userId: user.id,
+          token: verificationToken,
+          expiresAt,
+        },
+      })
+
+      return user
     })
 
-    await this.resendService.sendVerificationEmail(email, verificationToken)
+    try {
+      await this.resendService.sendVerificationEmail(email, verificationToken)
+    } catch {
+      await this.prisma.emailVerification.deleteMany({ where: { userId: user.id } })
+      await this.prisma.user.delete({ where: { id: user.id } })
+      throw new BadRequestException('이메일 발송에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
 
     return {
       message: '회원가입이 완료되었습니다. 이메일을 확인하여 계정을 활성화해주세요.',

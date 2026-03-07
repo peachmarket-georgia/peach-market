@@ -89,40 +89,42 @@ const MarketplacePage = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 container mx-auto px-4 max-w-5xl md:px-6 md:mt-10">
-      {/* 헤딩 */}
-      <div className="mb-1">
-        <h1 className="text-2xl font-extrabold text-foreground">중고거래</h1>
-        <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓 🍑</p>
-      </div>
-
-      {/* 검색 + 등록 */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
-          <Input
-            placeholder="상품명, 설명으로 검색"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-11 rounded-full bg-white border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary shadow-sm placeholder:text-fg-tertiary text-foreground transition-colors"
-          />
+    <div className="flex flex-col gap-4 md:mt-10">
+      <div className="container mx-auto px-4 max-w-5xl md:px-6">
+        {/* 헤딩 */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-extrabold text-foreground">중고거래</h1>
+          <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓 🍑</p>
         </div>
-        <Link
-          href="/marketplace/new"
-          className="flex items-center gap-1.5 shrink-0 h-11 px-5 rounded-full bg-primary text-white text-sm font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-md hover:shadow-lg"
-        >
-          <IconPlus className="h-4 w-4" />
-          <span className="hidden sm:inline">등록</span>
-        </Link>
+
+        {/* 검색 + 등록 */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
+            <Input
+              placeholder="상품명, 설명으로 검색"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-11 rounded-full bg-white border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary shadow-sm placeholder:text-fg-tertiary text-foreground transition-colors"
+            />
+          </div>
+          <Link
+            href="/marketplace/new"
+            className="flex items-center gap-1.5 shrink-0 h-11 px-5 rounded-full bg-primary text-white text-sm font-bold hover:bg-primary/90 active:scale-95 transition-all shadow-md hover:shadow-lg"
+          >
+            <IconPlus className="h-4 w-4" />
+            <span className="hidden sm:inline">등록</span>
+          </Link>
+        </div>
       </div>
 
-      {/* 카테고리 필터 */}
-      <div className="-mx-4 md:-mx-6 overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 px-4 md:px-6 pb-1 w-max">
+      {/* 카테고리 필터 - full width scrollable */}
+      <div className="overflow-x-auto scrollbar-hide">
+        <div className="inline-flex items-center gap-2 px-4 md:px-6 pb-1">
           <button
             onClick={() => setSelectedCategory('ALL')}
             className={cn(
-              'shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+              'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
               selectedCategory === 'ALL'
                 ? 'bg-primary text-white shadow-md shadow-primary/30'
                 : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -135,7 +137,7 @@ const MarketplacePage = () => {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                'shrink-0 px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+                'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
                 selectedCategory === cat
                   ? 'bg-primary text-white shadow-md shadow-primary/30'
                   : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -147,102 +149,108 @@ const MarketplacePage = () => {
         </div>
       </div>
 
-      {/* 상태 필터 + 정렬 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          {STATUS_FILTERS.map((filter) => (
-            <button
-              key={filter.value}
-              onClick={() => setSelectedStatus(filter.value)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-sm font-semibold transition-all',
-                selectedStatus === filter.value
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-fg-secondary hover:text-foreground hover:bg-peach-subtle'
+      <div className="container mx-auto px-4 max-w-5xl md:px-6 flex flex-col gap-4">
+        {/* 상태 필터 + 정렬 */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="relative flex-1 min-w-0">
+            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+              {STATUS_FILTERS.map((filter) => (
+                <button
+                  key={filter.value}
+                  onClick={() => setSelectedStatus(filter.value)}
+                  className={cn(
+                    'shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                    selectedStatus === filter.value
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-fg-secondary hover:text-foreground hover:bg-peach-subtle'
+                  )}
+                >
+                  {filter.label}
+                </button>
+              ))}
+              {isFiltered && (
+                <button
+                  onClick={resetFilters}
+                  className="flex items-center gap-1 ml-1 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-fg-secondary hover:text-foreground hover:bg-peach-subtle transition-all"
+                >
+                  <IconX className="h-3.5 w-3.5" />
+                  초기화
+                </button>
               )}
-            >
-              {filter.label}
-            </button>
-          ))}
-          {isFiltered && (
-            <button
-              onClick={resetFilters}
-              className="flex items-center gap-1 ml-1 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-fg-secondary hover:text-foreground hover:bg-peach-subtle transition-all"
-            >
-              <IconX className="h-3.5 w-3.5" />
-              초기화
-            </button>
-          )}
-        </div>
-
-        <div className="relative">
-          <button
-            onClick={() => setShowSortDropdown(!showSortDropdown)}
-            className="flex items-center gap-1 text-sm font-medium text-fg-secondary hover:text-primary transition-colors"
-          >
-            <IconAdjustmentsHorizontal className="h-3.5 w-3.5" />
-            <span>{SORT_LABELS[sortBy]}</span>
-            <IconChevronDown className={cn('h-3.5 w-3.5 transition-transform', showSortDropdown && 'rotate-180')} />
-          </button>
-          {showSortDropdown && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
-              <div className="absolute right-0 top-full mt-2 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 min-w-32 overflow-hidden">
-                {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setSortBy(key)
-                      setShowSortDropdown(false)
-                    }}
-                    className={cn(
-                      'w-full px-4 py-2 text-left text-sm transition-colors',
-                      sortBy === key
-                        ? 'bg-primary/10 text-primary font-semibold'
-                        : 'text-fg-secondary hover:bg-peach-subtle hover:text-foreground'
-                    )}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* 결과 수 */}
-      {!loading && products && (
-        <p className="text-sm font-medium text-fg-secondary">
-          <span className="text-primary font-bold">{products.length}</span>개의 매물
-        </p>
-      )}
-
-      {/* 상품 그리드 */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-fg-secondary">상품을 불러오는 중...</p>
-        </div>
-      ) : products.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xl:grid-cols-5 md:gap-5 pb-10">
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onFavoriteToggle={product.seller.id !== currentUserId ? handleFavoriteToggle : undefined}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-24 gap-3">
-          <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
-            <IconPackage className="h-10 w-10 text-primary/50" />
+            </div>
+            {/* 오른쪽 그라데이션 */}
+            <div className="pointer-events-none absolute right-0 top-0 h-full w-8 bg-linear-to-l from-background to-transparent" />
           </div>
-          <p className="text-base font-semibold text-foreground">검색 결과가 없어요</p>
-          <p className="text-sm text-fg-secondary">다른 키워드로 검색해 보세요</p>
+
+          <div className="relative shrink-0">
+            <button
+              onClick={() => setShowSortDropdown(!showSortDropdown)}
+              className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-fg-secondary hover:text-primary transition-colors"
+            >
+              <IconAdjustmentsHorizontal className="h-3.5 w-3.5" />
+              <span>{SORT_LABELS[sortBy]}</span>
+              <IconChevronDown className={cn('h-3.5 w-3.5 transition-transform', showSortDropdown && 'rotate-180')} />
+            </button>
+            {showSortDropdown && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
+                <div className="absolute right-0 top-full mt-2 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 min-w-32 overflow-hidden">
+                  {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setSortBy(key)
+                        setShowSortDropdown(false)
+                      }}
+                      className={cn(
+                        'w-full px-4 py-2 text-left text-sm transition-colors',
+                        sortBy === key
+                          ? 'bg-primary/10 text-primary font-semibold'
+                          : 'text-fg-secondary hover:bg-peach-subtle hover:text-foreground'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
-      )}
+
+        {/* 결과 수 */}
+        {!loading && products && (
+          <p className="text-sm font-medium text-fg-secondary">
+            <span className="text-primary font-bold">{products.length}</span>개의 매물
+          </p>
+        )}
+
+        {/* 상품 그리드 */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-fg-secondary">상품을 불러오는 중...</p>
+          </div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 xl:grid-cols-5 md:gap-5 pb-10">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                onFavoriteToggle={product.seller.id !== currentUserId ? handleFavoriteToggle : undefined}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center">
+              <IconPackage className="h-10 w-10 text-primary/50" />
+            </div>
+            <p className="text-base font-semibold text-foreground">검색 결과가 없어요</p>
+            <p className="text-sm text-fg-secondary">다른 키워드로 검색해 보세요</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
