@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   IconSearch,
   IconAdjustmentsHorizontal,
@@ -11,11 +12,14 @@ import {
   IconPackage,
   IconX,
   IconBell,
+  IconArrowRight,
 } from '@tabler/icons-react'
+import { toast } from 'sonner'
 import { usePushNotification } from '@/hooks/use-push-notification'
 import { ProductCard } from './components/product-card'
 import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { productApi } from '@/lib/products-api'
 import { userApi } from '@/lib/api'
@@ -31,6 +35,7 @@ const STATUS_FILTERS: { value: ProductStatus | 'ALL'; label: string }[] = [
 ]
 
 const MarketplacePage = () => {
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category | 'ALL'>('ALL')
   const [selectedStatus, setSelectedStatus] = useState<ProductStatus | 'ALL'>('ALL')
@@ -39,6 +44,7 @@ const MarketplacePage = () => {
   const [products, setProducts] = useState<ProductResponseDto[]>([])
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showPushBanner, setShowPushBanner] = useState(false)
   const { permission, isSupported, subscribe } = usePushNotification()
 
@@ -67,7 +73,10 @@ const MarketplacePage = () => {
 
   useEffect(() => {
     userApi.getMe().then(({ data }) => {
-      if (data) setCurrentUserId(data.id)
+      if (data) {
+        setCurrentUserId(data.id)
+        setIsAuthenticated(true)
+      }
     })
   }, [])
 
@@ -97,6 +106,18 @@ const MarketplacePage = () => {
   }
 
   const handleFavoriteToggle = async (id: string) => {
+    // 비로그인 사용자는 로그인 유도
+    if (!isAuthenticated) {
+      toast.info('로그인이 필요합니다', {
+        description: '찜하기를 하려면 먼저 로그인해주세요',
+        action: {
+          label: '로그인',
+          onClick: () => router.push(`/login?redirect=/marketplace/${id}`),
+        },
+      })
+      return
+    }
+
     const { data } = await productApi.toggleFavorite(id)
     if (!data) return
     setProducts((prev) =>
@@ -116,6 +137,31 @@ const MarketplacePage = () => {
           <h1 className="text-2xl font-extrabold text-foreground">중고거래</h1>
           <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓 🍑</p>
         </div>
+
+        {/* 비로그인 사용자 환영 배너 */}
+        {!isAuthenticated && !loading && (
+          <div className="mb-4 rounded-xl bg-gradient-to-r from-primary/10 via-peach-subtle to-primary/5 border border-primary/20 px-4 py-4 md:py-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-foreground">조지아 한인 중고마켓 🍑</h2>
+                <p className="text-sm text-fg-secondary mt-0.5">회원가입하고 안전하게 거래하세요</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link href="/login">
+                  <Button variant="outline" size="sm" className="text-sm font-semibold">
+                    로그인
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button size="sm" className="text-sm font-semibold gap-1">
+                    시작하기
+                    <IconArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 푸시 알림 배너 */}
         {showPushBanner && (
@@ -157,11 +203,11 @@ const MarketplacePage = () => {
 
       {/* 카테고리 필터 - full width scrollable */}
       <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide">
-        <div className="inline-flex items-center gap-2 px-4 md:px-6 pb-1">
+        <div className="inline-flex items-center gap-2.5 px-4 md:px-6 pb-1">
           <button
             onClick={() => setSelectedCategory('ALL')}
             className={cn(
-              'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+              'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-base font-semibold transition-all',
               selectedCategory === 'ALL'
                 ? 'bg-primary text-white shadow-md shadow-primary/30'
                 : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -174,7 +220,7 @@ const MarketplacePage = () => {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                'shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-sm font-semibold transition-all',
+                'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-base font-semibold transition-all',
                 selectedCategory === cat
                   ? 'bg-primary text-white shadow-md shadow-primary/30'
                   : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -190,13 +236,13 @@ const MarketplacePage = () => {
         {/* 상태 필터 + 정렬 */}
         <div className="flex items-center justify-between gap-2">
           <div className="relative flex-1 min-w-0">
-            <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide">
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
               {STATUS_FILTERS.map((filter) => (
                 <button
                   key={filter.value}
                   onClick={() => setSelectedStatus(filter.value)}
                   className={cn(
-                    'shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                    'shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-base font-semibold transition-all',
                     selectedStatus === filter.value
                       ? 'bg-primary/10 text-primary'
                       : 'text-fg-secondary hover:text-foreground hover:bg-peach-subtle'
@@ -208,9 +254,9 @@ const MarketplacePage = () => {
               {isFiltered && (
                 <button
                   onClick={resetFilters}
-                  className="flex items-center gap-1 ml-1 px-2.5 py-1.5 rounded-lg text-sm font-semibold text-fg-secondary hover:text-foreground hover:bg-peach-subtle transition-all"
+                  className="flex items-center gap-1.5 ml-1 px-3 py-2 rounded-lg text-base font-semibold text-fg-secondary hover:text-foreground hover:bg-peach-subtle transition-all"
                 >
-                  <IconX className="h-3.5 w-3.5" />
+                  <IconX className="h-4 w-4" />
                   초기화
                 </button>
               )}
@@ -222,16 +268,16 @@ const MarketplacePage = () => {
           <div className="relative shrink-0">
             <button
               onClick={() => setShowSortDropdown(!showSortDropdown)}
-              className="flex items-center gap-1 whitespace-nowrap text-sm font-medium text-fg-secondary hover:text-primary transition-colors"
+              className="flex items-center gap-1.5 whitespace-nowrap text-base font-medium text-fg-secondary hover:text-primary transition-colors py-2"
             >
-              <IconAdjustmentsHorizontal className="h-3.5 w-3.5" />
+              <IconAdjustmentsHorizontal className="h-4 w-4" />
               <span>{SORT_LABELS[sortBy]}</span>
-              <IconChevronDown className={cn('h-3.5 w-3.5 transition-transform', showSortDropdown && 'rotate-180')} />
+              <IconChevronDown className={cn('h-4 w-4 transition-transform', showSortDropdown && 'rotate-180')} />
             </button>
             {showSortDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowSortDropdown(false)} />
-                <div className="absolute right-0 top-full mt-2 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 min-w-32 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-2 min-w-36 overflow-hidden">
                   {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
                     <button
                       key={key}
@@ -240,7 +286,7 @@ const MarketplacePage = () => {
                         setShowSortDropdown(false)
                       }}
                       className={cn(
-                        'w-full px-4 py-2 text-left text-sm transition-colors',
+                        'w-full px-5 py-2.5 text-left text-base transition-colors',
                         sortBy === key
                           ? 'bg-primary/10 text-primary font-semibold'
                           : 'text-fg-secondary hover:bg-peach-subtle hover:text-foreground'
@@ -274,7 +320,10 @@ const MarketplacePage = () => {
               <ProductCard
                 key={product.id}
                 product={product}
-                onFavoriteToggle={product.seller.id !== currentUserId ? handleFavoriteToggle : undefined}
+                onFavoriteToggle={
+                  // 비로그인 사용자 또는 본인 상품이 아닌 경우에만 찜하기 활성화
+                  !isAuthenticated || product.seller.id !== currentUserId ? handleFavoriteToggle : undefined
+                }
               />
             ))}
           </div>

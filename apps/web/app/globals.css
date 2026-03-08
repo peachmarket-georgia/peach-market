@@ -184,7 +184,7 @@
   --color-info: var(--info);
   --color-info-subtle: var(--info-subtle);
 
-  --font-sans: var(--font-sans);
+  --font-sans: 'Pretendard', var(--font-sans), system-ui, sans-serif;
 }
 
 @layer base {
@@ -220,5 +220,10 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+
+  /* Safe area for bottom navigation */
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0);
   }
 }

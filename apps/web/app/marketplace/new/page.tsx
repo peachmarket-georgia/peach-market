@@ -12,6 +12,7 @@ import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import { createProduct } from '@/lib/products-api'
 import { ImageUpload } from '@/components/product/image-upload'
+import { StepIndicator } from '@/components/ui/step-indicator'
 import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
 
@@ -79,6 +80,23 @@ const ProductCreatePage = (): React.JSX.Element => {
     8
   )
 
+  // Step Indicator 계산
+  const hasImages = images.length > 0
+  const hasBasicInfo = title.trim() && category && price && location.trim()
+  const hasDescription = description.trim().length > 0
+
+  const getCurrentStep = () => {
+    if (!hasImages) return 0
+    if (!hasBasicInfo) return 1
+    return 2
+  }
+
+  const steps = [
+    { label: '사진 등록', completed: hasImages },
+    { label: '기본 정보', completed: Boolean(hasBasicInfo) },
+    { label: '상품 설명', completed: hasDescription },
+  ]
+
   const isValid =
     title.trim() && category && price && Number.isFinite(numericPrice) && numericPrice >= 0 && location.trim()
 
@@ -144,6 +162,9 @@ const ProductCreatePage = (): React.JSX.Element => {
         <h1 className="text-2xl font-extrabold text-foreground">상품 등록</h1>
         <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓에 올려보세요 🍑</p>
       </div>
+
+      {/* Step Indicator */}
+      <StepIndicator steps={steps} currentStep={getCurrentStep()} className="mb-6" />
 
       <div className="flex flex-col gap-6">
         {error && (

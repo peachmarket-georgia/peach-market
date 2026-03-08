@@ -35,7 +35,13 @@ const RootLayout = ({
 }>) => {
   return (
     <html lang="ko" className={inter.variable}>
-      <body className="antialiased">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+        />
+      </head>
+      <body className="antialiased font-sans">
         <SocketProvider>
           <MixpanelProvider>
             {children}
