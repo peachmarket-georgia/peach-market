@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
@@ -13,7 +13,9 @@ import {
   IconMessage,
   IconBug,
   IconShield,
+  IconMessageReport,
 } from '@tabler/icons-react'
+import { FeedbackButton as FeedbacklandButton } from 'feedbackland-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -36,9 +38,15 @@ export function Header({ initialUser }: HeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(!initialUser)
   const [bugReportOpen, setBugReportOpen] = useState(false)
+  const feedbackRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
   const { socket } = useSocket()
+
+  const handleFeedbackClick = () => {
+    const btn = feedbackRef.current?.querySelector('button')
+    btn?.click()
+  }
 
   // 클라이언트 사이드에서 인증 상태 확인
   useEffect(() => {
@@ -179,6 +187,10 @@ export function Header({ initialUser }: HeaderProps) {
                       </span>
                     )}
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleFeedbackClick}>
+                    <IconMessageReport className="w-4 h-4 mr-2" />
+                    피드백 보내기
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setBugReportOpen(true)}>
                     <IconBug className="w-4 h-4 mr-2" />
                     버그 신고
@@ -212,6 +224,16 @@ export function Header({ initialUser }: HeaderProps) {
         </nav>
       </div>
       <ReportDialog open={bugReportOpen} onOpenChange={setBugReportOpen} reportType="bug" />
+
+      {/* 숨겨진 Feedbackland 버튼 (헤더 드롭다운에서 트리거) */}
+      <div ref={feedbackRef} className="hidden">
+        <FeedbacklandButton
+          platformId="fef1fab9-adbc-4e89-9fe8-338380d84058"
+          widget="popover"
+          url="https://peachmarket.feedbackland.com/"
+          text="Feedback"
+        />
+      </div>
     </header>
   )
 }

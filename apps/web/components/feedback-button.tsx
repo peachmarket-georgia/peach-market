@@ -27,10 +27,10 @@ export function FeedbackButton() {
         />
       </div>
 
-      {/* 피치 아이콘 버튼 */}
+      {/* 피치 아이콘 버튼 - 모바일에서는 숨김 (FAB, Bottom Nav와 겹침 방지) */}
       <button
         onClick={handleClick}
-        className="fixed bottom-6 right-6 z-50 active:scale-95 peach-wiggle"
+        className="fixed bottom-6 right-6 z-50 active:scale-95 peach-wiggle hidden md:block"
         aria-label="Feedback"
       >
         <div className="relative">

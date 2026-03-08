@@ -25,7 +25,10 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
   const priceDisplay = `$${product.price.toLocaleString('en-US')}`
 
   return (
-    <Link href={`/marketplace/${product.id}`} className="group block">
+    <Link
+      href={`/marketplace/${product.id}`}
+      className="group block rounded-xl transition-all duration-300 hover:shadow-lg hover:ring-2 hover:ring-primary/20 p-1 -m-1"
+    >
       <div className="relative aspect-square rounded-lg overflow-hidden bg-muted">
         {product.images[0] ? (
           <Image
@@ -67,6 +70,15 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <span className="text-white font-bold text-lg">
               {product.status === 'CONFIRMED' ? '판매 확정' : '판매 종료'}
+            </span>
+          </div>
+        )}
+
+        {/* 데스크톱 호버 시 빠른 액션 */}
+        {product.status === 'SELLING' && (
+          <div className="absolute inset-x-0 bottom-0 hidden lg:flex items-end p-3 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <span className="flex-1 py-2.5 bg-primary text-white text-center rounded-lg font-semibold text-sm shadow-lg">
+              상세보기
             </span>
           </div>
         )}
