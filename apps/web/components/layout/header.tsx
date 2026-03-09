@@ -98,7 +98,7 @@ export function Header({ initialUser }: HeaderProps) {
   const isActive = (path: string) => pathname === path
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border mb-4 md:mb-0">
+    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         {/* 로고 */}
         <Link href={user ? '/marketplace' : '/'} className="flex items-center gap-2">
@@ -226,10 +226,10 @@ export function Header({ initialUser }: HeaderProps) {
       <ReportDialog open={bugReportOpen} onOpenChange={setBugReportOpen} reportType="bug" />
 
       {/* 숨겨진 Feedbackland 버튼 (헤더 드롭다운에서 트리거) */}
-      <div ref={feedbackRef} className="hidden">
+      <div ref={feedbackRef} className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden">
         <FeedbacklandButton
           platformId="fef1fab9-adbc-4e89-9fe8-338380d84058"
-          widget="popover"
+          widget="drawer"
           url="https://peachmarket.feedbackland.com/"
           text="Feedback"
         />
