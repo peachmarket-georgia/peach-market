@@ -40,6 +40,12 @@ export class ProductResponseDto {
   @ApiProperty({ description: '거래 희망 지역' })
   location: string
 
+  @ApiPropertyOptional({ description: '거래 희망 위치 위도', nullable: true })
+  lat: number | null
+
+  @ApiPropertyOptional({ description: '거래 희망 위치 경도', nullable: true })
+  lng: number | null
+
   @ApiProperty({ description: '선호 결제 수단', enum: PaymentMethod, isArray: true })
   paymentMethods: PaymentMethod[]
 

@@ -1,5 +1,5 @@
-import { IsString, IsInt, IsNotEmpty, IsArray, MaxLength, Min, IsEnum, IsOptional } from 'class-validator'
-import { Transform } from 'class-transformer'
+import { IsString, IsInt, IsNotEmpty, IsArray, MaxLength, Min, IsEnum, IsOptional, IsNumber } from 'class-validator'
+import { Transform, Type } from 'class-transformer'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 import { PaymentMethod } from '@prisma/client'
 
@@ -36,6 +36,18 @@ export class CreateProductDto {
   @IsArray()
   @IsString({ each: true })
   images?: string[]
+
+  @ApiPropertyOptional({ example: 33.9462, description: '거래 희망 위치 위도' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat?: number
+
+  @ApiPropertyOptional({ example: -84.2132, description: '거래 희망 위치 경도' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number
 
   @ApiPropertyOptional({
     description: '선호 결제 수단',

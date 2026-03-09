@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator'
+import { IsOptional, IsString, IsEnum, IsInt, IsNumber, Min, Max } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 import { ProductStatus } from '@prisma/client'
@@ -36,4 +36,23 @@ export class ProductQueryDto {
   @IsOptional()
   @IsString()
   sort?: 'latest' | 'price_asc' | 'price_desc' = 'latest'
+
+  @ApiPropertyOptional({ description: '필터 기준 위도 (radius와 함께 사용)', example: 33.9462 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lat?: number
+
+  @ApiPropertyOptional({ description: '필터 기준 경도 (radius와 함께 사용)', example: -84.2132 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  lng?: number
+
+  @ApiPropertyOptional({ description: '검색 반경 (km)', example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  radius?: number
 }

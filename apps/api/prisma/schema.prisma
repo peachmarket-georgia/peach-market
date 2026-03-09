@@ -168,6 +168,8 @@ model Product {
   status      ProductStatus @default(SELLING)
   images         String[] // 이미지 URL 배열 (최대 10장)
   location       String // 거래 희망 지역
+  lat            Float? // 거래 희망 위치 위도
+  lng            Float? // 거래 희망 위치 경도
   paymentMethods PaymentMethod[] @default([]) // 선호 결제 수단
   viewCount   Int           @default(0)
   createdAt   DateTime      @default(now())
