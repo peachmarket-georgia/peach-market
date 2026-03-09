@@ -11,7 +11,7 @@ type BottomNavigationProps = {
 
 const navItems = [
   { href: '/marketplace', icon: IconHome, label: '홈' },
-  { href: '/marketplace?focus=search', icon: IconSearch, label: '검색' },
+  // { href: '/marketplace?focus=search', icon: IconSearch, label: '검색' },
   { href: '/chat', icon: IconMessage, label: '채팅' },
   { href: '/mypage', icon: IconUser, label: '마이페이지' },
 ]
