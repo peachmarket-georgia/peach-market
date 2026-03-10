@@ -4,6 +4,17 @@ import { PrismaService } from '../../core/database/prisma.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
+// Haversine 공식: 두 좌표 간 거리(km) 계산
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 const SELLER_SELECT = {
   id: true,
   nickname: true,
@@ -22,6 +33,8 @@ const PRODUCT_SELECT = {
   status: true,
   images: true,
   location: true,
+  lat: true,
+  lng: true,
   paymentMethods: true,
   viewCount: true,
   createdAt: true,
@@ -64,7 +77,18 @@ function formatProduct(product: ProductWithCount, isFavorited = false) {
 export class ProductsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: { search?: string; category?: string; status?: string; sort?: string }, userId?: string) {
+  async findAll(
+    query: {
+      search?: string
+      category?: string
+      status?: string
+      sort?: string
+      lat?: number
+      lng?: number
+      radius?: number
+    },
+    userId?: string
+  ) {
     const conditions: object[] = [{ seller: { isBlocked: false } }]
 
     if (query.search) {
@@ -102,7 +126,19 @@ export class ProductsService {
       favoritedIds = new Set(favorites.map((f) => f.productId))
     }
 
-    return products.map((p) => formatProduct(p, favoritedIds.has((p as { id: string }).id)))
+    const formatted = products.map((p) => formatProduct(p, favoritedIds.has((p as { id: string }).id)))
+
+    // 반경 필터 적용 (lat, lng, radius 모두 있을 때만)
+    if (query.lat != null && query.lng != null && query.radius != null && query.radius > 0) {
+      return formatted.filter((p) => {
+        const lat = (p as { lat?: number | null }).lat
+        const lng = (p as { lng?: number | null }).lng
+        if (lat == null || lng == null) return false
+        return haversineKm(query.lat!, query.lng!, lat, lng) <= query.radius!
+      })
+    }
+
+    return formatted
   }
 
   async findMy(sellerId: string, status?: ProductStatus) {
@@ -166,6 +202,8 @@ export class ProductsService {
         price: dto.price,
         category: dto.category,
         location: dto.location,
+        lat: dto.lat,
+        lng: dto.lng,
         images: imageUrls,
         paymentMethods: dto.paymentMethods ?? [],
       },

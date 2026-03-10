@@ -109,6 +109,8 @@ export async function createProduct(
     price: number
     category: string
     location: string
+    lat?: number
+    lng?: number
   },
   files?: File[]
 ): Promise<ApiProduct> {
@@ -118,6 +120,8 @@ export async function createProduct(
   formData.append('price', String(body.price))
   formData.append('category', body.category)
   formData.append('location', body.location)
+  if (body.lat != null) formData.append('lat', String(body.lat))
+  if (body.lng != null) formData.append('lng', String(body.lng))
   files?.forEach((file) => formData.append('files', file))
 
   const response = await fetch(`${API_URL}/api/products`, {

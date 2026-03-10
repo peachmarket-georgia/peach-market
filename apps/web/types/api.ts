@@ -187,6 +187,8 @@ export interface ProductResponseDto {
   status: ProductStatus
   images: string[]
   location: string
+  lat: number | null
+  lng: number | null
   paymentMethods: PaymentMethod[]
   viewCount: number
   createdAt: string
@@ -250,6 +252,9 @@ export interface ProductQueryParams {
   category?: string
   status?: ProductStatus
   sort?: 'latest' | 'price_asc' | 'price_desc'
+  lat?: number
+  lng?: number
+  radius?: number
 }
 
 // ==================== Report Types ====================

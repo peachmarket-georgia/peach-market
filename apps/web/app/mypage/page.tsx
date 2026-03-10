@@ -17,6 +17,7 @@ import {
   IconShoppingBag,
   IconBell,
   IconBellOff,
+  IconCurrentLocation,
 } from '@tabler/icons-react'
 import { usePushNotification } from '@/hooks/use-push-notification'
 import { Header } from '@/components/layout/header'
@@ -25,6 +26,8 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ProductCard } from '@/app/marketplace/components/product-card'
 import { checkAuth, userApi } from '@/lib/api'
+import { useGeolocation } from '@/hooks/use-geolocation'
+import { LocationMap } from '@/components/location-map'
 import { ProductResponseDto, UserProfileResponseDto } from '@/types/api'
 import { productApi } from '@/lib/products-api'
 import { reservationApi } from '@/lib/reservation-api'
@@ -62,6 +65,25 @@ export default function MyPage() {
   const [editLocation, setEditLocation] = useState('')
   const [editLoading, setEditLoading] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+
+  const { loading: locationLoading, error: locationError, getLocation } = useGeolocation()
+
+  const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('distance-unit')
+    if (saved === 'miles' || saved === 'km') setDistanceUnit(saved)
+  }, [])
+
+  const handleDistanceUnitChange = (unit: 'miles' | 'km') => {
+    setDistanceUnit(unit)
+    localStorage.setItem('distance-unit', unit)
+  }
+
+  const handleGetLocation = async () => {
+    const result = await getLocation()
+    if (result) setEditLocation(result.formatted)
+  }
 
   // 인증 및 유저 정보 로드
   useEffect(() => {
@@ -233,6 +255,9 @@ export default function MyPage() {
           </div>
         </section>
 
+        {/* 위치 지도 */}
+        <LocationMap location={user.location} />
+
         {/* 알림 설정 */}
         {isSupported && (
           <section
@@ -289,6 +314,32 @@ export default function MyPage() {
             )}
           </section>
         )}
+
+        {/* 거리 단위 설정 */}
+        <section className="bg-card rounded-2xl px-6 py-4 mb-6 shadow-sm flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">거리 단위</p>
+            <p className="text-xs text-muted-foreground">마켓플레이스 반경 필터에 적용됩니다</p>
+          </div>
+          <div className="flex items-center bg-muted rounded-lg p-1 gap-1">
+            <button
+              onClick={() => handleDistanceUnitChange('miles')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                distanceUnit === 'miles' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'
+              }`}
+            >
+              mi
+            </button>
+            <button
+              onClick={() => handleDistanceUnitChange('km')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                distanceUnit === 'km' ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground'
+              }`}
+            >
+              km
+            </button>
+          </div>
+        </section>
 
         {/* 탭 */}
         <div className="flex border-b mb-6">
@@ -458,12 +509,30 @@ export default function MyPage() {
               <label htmlFor="location" className="text-sm font-medium">
                 지역
               </label>
-              <Input
-                id="location"
-                value={editLocation}
-                onChange={(e) => setEditLocation(e.target.value)}
-                placeholder="예: Duluth, GA"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="location"
+                  value={editLocation}
+                  onChange={(e) => setEditLocation(e.target.value)}
+                  placeholder="예: Duluth, GA"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleGetLocation}
+                  disabled={locationLoading}
+                  title="현재 위치 가져오기"
+                  className="shrink-0"
+                >
+                  {locationLoading ? (
+                    <IconLoader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <IconCurrentLocation className="w-4 h-4" />
+                  )}
+                </Button>
+              </div>
+              {locationError && <p className="text-xs text-destructive">{locationError}</p>}
             </div>
           </div>
 

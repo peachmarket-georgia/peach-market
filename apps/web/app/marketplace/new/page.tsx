@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { IconChevronLeft, IconCurrencyDollar, IconLoader2 } from '@tabler/icons-react'
+import { IconChevronLeft, IconCurrencyDollar, IconLoader2, IconCurrentLocation } from '@tabler/icons-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { createProduct } from '@/lib/products-api'
 import { ImageUpload } from '@/components/product/image-upload'
 // import { StepIndicator } from '@/components/ui/step-indicator'
+import { useGeolocation } from '@/hooks/use-geolocation'
 import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
 
@@ -69,9 +70,23 @@ const ProductCreatePage = (): React.JSX.Element => {
   const [isLocationFocused, setIsLocationFocused] = useState(false)
   const [description, setDescription] = useState('')
   const [images, setImages] = useState<ImageItem[]>([])
+  const [lat, setLat] = useState<number | undefined>(undefined)
+  const [lng, setLng] = useState<number | undefined>(undefined)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+
+  const { loading: locationLoading, getLocation } = useGeolocation()
+
+  const handleGetLocation = async () => {
+    const result = await getLocation()
+    if (result) {
+      setLocation(result.formatted)
+      setLat(result.lat)
+      setLng(result.lng)
+      setFieldErrors((prev) => ({ ...prev, location: undefined }))
+    }
+  }
 
   const numericPrice = Number(price.replaceAll(',', ''))
   const normalizedLocation = location.trim().toLowerCase()
@@ -137,6 +152,8 @@ const ProductCreatePage = (): React.JSX.Element => {
           price: numericPrice,
           location: location.trim(),
           description: description.trim(),
+          lat,
+          lng,
         },
         images.map((img) => img.file)
       )
@@ -268,42 +285,62 @@ const ProductCreatePage = (): React.JSX.Element => {
             <Label htmlFor="location" className="text-sm font-semibold text-foreground">
               거래 희망 지역 <span className="text-primary">*</span>
             </Label>
-            <div className="relative">
-              <Input
-                id="location"
-                placeholder="예: Duluth"
-                value={location}
-                onFocus={() => setIsLocationFocused(true)}
-                onBlur={() => setTimeout(() => setIsLocationFocused(false), 100)}
-                onChange={(e) => {
-                  setLocation(e.target.value)
-                  if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, location: undefined }))
-                }}
-                autoComplete="off"
-                className={cn(
-                  'h-11 rounded-xl border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary transition-colors',
-                  fieldErrors.location && 'border-destructive focus-visible:border-destructive'
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="location"
+                  placeholder="예: Duluth"
+                  value={location}
+                  onFocus={() => setIsLocationFocused(true)}
+                  onBlur={() => setTimeout(() => setIsLocationFocused(false), 100)}
+                  onChange={(e) => {
+                    setLocation(e.target.value)
+                    setLat(undefined)
+                    setLng(undefined)
+                    if (e.target.value.trim()) setFieldErrors((prev) => ({ ...prev, location: undefined }))
+                  }}
+                  autoComplete="off"
+                  className={cn(
+                    'h-11 rounded-xl border-2 border-peach-muted focus-visible:ring-0 focus-visible:border-primary transition-colors',
+                    fieldErrors.location && 'border-destructive focus-visible:border-destructive'
+                  )}
+                />
+                {isLocationFocused && filteredLocations.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 overflow-hidden">
+                    <ul className="max-h-48 overflow-y-auto p-1">
+                      {filteredLocations.map((item) => (
+                        <li key={item}>
+                          <button
+                            type="button"
+                            className="w-full rounded-lg px-3 py-2 text-left text-sm text-fg-secondary hover:bg-peach-subtle hover:text-primary transition-colors"
+                            onMouseDown={() => handleLocationSelect(item)}
+                          >
+                            {item}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
-              />
-              {isLocationFocused && filteredLocations.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 z-20 bg-white border-2 border-peach-muted rounded-xl shadow-xl py-1.5 overflow-hidden">
-                  <ul className="max-h-48 overflow-y-auto p-1">
-                    {filteredLocations.map((item) => (
-                      <li key={item}>
-                        <button
-                          type="button"
-                          className="w-full rounded-lg px-3 py-2 text-left text-sm text-fg-secondary hover:bg-peach-subtle hover:text-primary transition-colors"
-                          onMouseDown={() => handleLocationSelect(item)}
-                        >
-                          {item}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={handleGetLocation}
+                disabled={locationLoading}
+                title="현재 위치 가져오기"
+                className="shrink-0 h-11 w-11 rounded-xl border-2 border-peach-muted"
+              >
+                {locationLoading ? (
+                  <IconLoader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <IconCurrentLocation className={cn('h-4 w-4', lat != null ? 'text-primary' : '')} />
+                )}
+              </Button>
             </div>
             {fieldErrors.location && <span className="text-xs text-destructive">{fieldErrors.location}</span>}
+            {lat != null && <p className="text-xs text-primary">📍 GPS 좌표가 저장되었습니다</p>}
           </div>
         </div>
 
