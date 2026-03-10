@@ -12,7 +12,7 @@ import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import { createProduct } from '@/lib/products-api'
 import { ImageUpload } from '@/components/product/image-upload'
-import { StepIndicator } from '@/components/ui/step-indicator'
+// import { StepIndicator } from '@/components/ui/step-indicator'
 import { useGeolocation } from '@/hooks/use-geolocation'
 import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
@@ -181,7 +181,7 @@ const ProductCreatePage = (): React.JSX.Element => {
       </div>
 
       {/* Step Indicator */}
-      <StepIndicator steps={steps} currentStep={getCurrentStep()} className="mb-6" />
+      {/* <StepIndicator steps={steps} currentStep={getCurrentStep()} className="mb-6" /> */}
 
       <div className="flex flex-col gap-6">
         {error && (
