@@ -338,7 +338,9 @@ const MarketplacePage = () => {
               <span className={cn('text-xs font-bold', sliderMiles > 0 ? 'text-primary' : 'text-fg-tertiary')}>
                 {radiusLabel}
               </span>
-              <span className="text-xs text-fg-tertiary">30mi</span>
+              <span className="text-xs text-fg-tertiary">
+                {distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}
+              </span>
             </div>
             <input
               type="range"
@@ -471,13 +473,33 @@ const MarketplacePage = () => {
             </DialogTitle>
           </DialogHeader>
           {userLat != null && userLng != null ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <RadiusMap lat={userLat} lng={userLng} radiusKm={sliderMiles > 0 ? sliderMiles * MILES_TO_KM : 8} />
-              <p className="text-sm text-center text-fg-secondary">
-                {sliderMiles > 0
-                  ? `${radiusLabel} 매물만 표시 중`
-                  : '슬라이더로 반경을 설정하면 해당 범위의 매물만 보입니다'}
-              </p>
+
+              {/* 지도 내 슬라이더 */}
+              <div className="flex flex-col gap-2 px-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-fg-tertiary">거리무관</span>
+                  <span className={cn('text-xs font-bold', sliderMiles > 0 ? 'text-primary' : 'text-fg-tertiary')}>
+                    {radiusLabel}
+                  </span>
+                  <span className="text-xs text-fg-tertiary">
+                    {distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={30}
+                  step={1}
+                  value={sliderMiles}
+                  onChange={(e) => handleSliderDrag(Number(e.target.value))}
+                  className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary"
+                />
+                <p className="text-xs text-center text-fg-secondary">
+                  {sliderMiles > 0 ? `${radiusLabel} 매물만 표시 중` : '슬라이더를 움직여 반경을 설정하세요'}
+                </p>
+              </div>
             </div>
           ) : (
             <div className="py-6 flex flex-col items-center gap-3">
