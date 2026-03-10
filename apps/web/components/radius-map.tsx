@@ -1,22 +1,16 @@
 'use client'
 
-import { IconExternalLink } from '@tabler/icons-react'
+import { useEffect, useRef } from 'react'
 
-// 원형을 폴리곤 path 포인트로 변환 (Static Maps API용)
-function buildCirclePath(lat: number, lng: number, radiusKm: number, numPoints = 32): string {
-  const latDeg = radiusKm / 111.32
-  const lngDeg = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180))
-  return Array.from({ length: numPoints + 1 }, (_, i) => {
-    const angle = (i * 2 * Math.PI) / numPoints
-    return `${(lat + latDeg * Math.cos(angle)).toFixed(5)},${(lng + lngDeg * Math.sin(angle)).toFixed(5)}`
-  }).join('|')
-}
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 function getZoom(radiusKm: number): number {
-  if (radiusKm <= 1) return 14
-  if (radiusKm <= 3) return 13
-  if (radiusKm <= 5) return 12
-  return 11
+  if (radiusKm <= 1.6) return 14
+  if (radiusKm <= 5) return 13
+  if (radiusKm <= 8) return 12
+  if (radiusKm <= 16) return 11
+  if (radiusKm <= 32) return 10
+  return 9
 }
 
 type RadiusMapProps = {
@@ -26,39 +20,90 @@ type RadiusMapProps = {
 }
 
 export function RadiusMap({ lat, lng, radiusKm }: RadiusMapProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  if (!apiKey) return null
+  const mapRef = useRef<HTMLDivElement>(null)
+  const mapInstanceRef = useRef<any>(null)
+  const circleRef = useRef<any>(null)
+  const markerRef = useRef<any>(null)
 
-  const circlePath = buildCirclePath(lat, lng, radiusKm)
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    if (!apiKey || !mapRef.current) return
 
-  const staticMapUrl =
-    `https://maps.googleapis.com/maps/api/staticmap` +
-    `?center=${lat},${lng}` +
-    `&zoom=${getZoom(radiusKm)}` +
-    `&size=600x400` +
-    `&scale=2` +
-    `&markers=color:0xFF6B35|${lat},${lng}` +
-    `&path=color:0xFF6B35FF|weight:2|fillcolor:0xFF6B3533|${circlePath}` +
-    `&style=feature:poi|visibility:off` +
-    `&style=feature:transit|visibility:off` +
-    `&key=${apiKey}`
+    const initMap = () => {
+      if (!mapRef.current) return
+      const gmaps = (window as any).google.maps
 
-  return (
-    <a
-      href={mapsUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block relative group rounded-xl overflow-hidden"
-    >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={staticMapUrl} alt={`반경 ${radiusKm}km 지도`} className="w-full h-64 object-cover" loading="lazy" />
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-        <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
-          <IconExternalLink className="w-3.5 h-3.5" />
-          Google Maps에서 보기
-        </span>
-      </div>
-    </a>
-  )
+      const map = new gmaps.Map(mapRef.current, {
+        center: { lat, lng },
+        zoom: getZoom(radiusKm),
+        gestureHandling: 'greedy',
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        styles: [
+          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        ],
+      })
+      mapInstanceRef.current = map
+
+      markerRef.current = new gmaps.Marker({
+        position: { lat, lng },
+        map,
+        title: '내 위치',
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: '#FF6B35',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      })
+
+      circleRef.current = new gmaps.Circle({
+        map,
+        center: { lat, lng },
+        radius: radiusKm * 1000,
+        fillColor: '#FF6B35',
+        fillOpacity: 0.15,
+        strokeColor: '#FF6B35',
+        strokeWeight: 2,
+      })
+    }
+
+    if ((window as any).google?.maps) {
+      initMap()
+    } else {
+      const existingScript = document.querySelector('#gmaps-script') as HTMLScriptElement | null
+      if (existingScript) {
+        existingScript.addEventListener('load', initMap, { once: true })
+      } else {
+        const script = document.createElement('script')
+        script.id = 'gmaps-script'
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`
+        script.async = true
+        script.addEventListener('load', initMap, { once: true })
+        document.head.appendChild(script)
+      }
+    }
+
+    return () => {
+      circleRef.current?.setMap(null)
+      markerRef.current?.setMap(null)
+      circleRef.current = null
+      markerRef.current = null
+      mapInstanceRef.current = null
+    }
+  }, [lat, lng]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 반경 변경 시 원과 줌만 업데이트
+  useEffect(() => {
+    if (!circleRef.current || !mapInstanceRef.current) return
+    circleRef.current.setRadius(radiusKm * 1000)
+    mapInstanceRef.current.setZoom(getZoom(radiusKm))
+  }, [radiusKm])
+
+  return <div ref={mapRef} className="w-full h-80 rounded-xl" />
 }
