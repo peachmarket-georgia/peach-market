@@ -9,7 +9,7 @@ const MarketPlaceLayout = ({
   return (
     <>
       <Header />
-      <div className="pb-20 md:pb-0">{children}</div>
+      <div className="mt-4 md:mt-0 pb-20 md:pb-0">{children}</div>
       <MarketplaceNavigation />
     </>
   )

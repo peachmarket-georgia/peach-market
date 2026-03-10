@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,7 @@ type Props = {
 
 export const ImageCarousel = ({ images, alt, status }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0)
+  const touchStartX = useRef<number | null>(null)
   const isSold = status === 'ENDED' || status === 'CONFIRMED'
   const hasMultiple = images.length > 1
 
@@ -21,6 +22,17 @@ export const ImageCarousel = ({ images, alt, status }: Props) => {
     if (idx < 0) setCurrentIndex(images.length - 1)
     else if (idx >= images.length) setCurrentIndex(0)
     else setCurrentIndex(idx)
+  }
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0]?.clientX ?? null
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const diff = touchStartX.current - (e.changedTouches[0]?.clientX ?? 0)
+    if (Math.abs(diff) > 40) goTo(currentIndex + (diff > 0 ? 1 : -1))
+    touchStartX.current = null
   }
 
   if (images.length === 0) {
@@ -34,7 +46,11 @@ export const ImageCarousel = ({ images, alt, status }: Props) => {
   return (
     <div className="space-y-3">
       {/* 메인 이미지 */}
-      <div className="relative aspect-square overflow-hidden rounded-2xl bg-muted group shadow-lg">
+      <div
+        className="relative aspect-square overflow-hidden rounded-2xl bg-muted group shadow-lg"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <Image
           src={images[currentIndex] ?? images[0]!}
           alt={alt}

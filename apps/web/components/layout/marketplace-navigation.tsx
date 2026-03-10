@@ -53,7 +53,8 @@ export function MarketplaceNavigation() {
   }, [pathname])
 
   // 상품 등록/상세 페이지에서는 FAB 숨김 (비로그인도 표시, 클릭 시 로그인 유도)
-  const hideFAB = pathname === '/marketplace/new' || pathname.match(/^\/marketplace\/[^/]+$/)
+  const hideFAB =
+    pathname === '/marketplace/new' || !!pathname.match(/^\/marketplace\/[^/]+$/) || !!pathname.match(/^\/chat\/.+/)
 
   return (
     <>

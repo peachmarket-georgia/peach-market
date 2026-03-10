@@ -11,7 +11,8 @@ import type { ReservationDto } from '@/types/reservation'
 import { STATUS_LABEL } from '@/lib/product-types'
 import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
-import { IconChevronLeft, IconSend, IconDotsVertical, IconFlag } from '@tabler/icons-react'
+import Image from 'next/image'
+import { IconChevronLeft, IconSend, IconDotsVertical, IconFlag, IconChevronDown } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ReportDialog } from '@/components/report-dialog'
@@ -253,26 +254,24 @@ export default function ChatRoomPage() {
   const completedReservation = reservation?.status === 'COMPLETED'
 
   return (
-    <div className="flex flex-col h-dvh bg-background">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-10 flex items-center gap-3 px-3 py-2.5 bg-primary">
-        <button onClick={() => router.push('/chat')} className="p-1.5 rounded-full hover:bg-white/20 transition-colors">
+      <header className="sticky top-0 z-10 flex items-center gap-2.5 px-3 py-2 bg-primary">
+        <button onClick={() => router.push('/chat')} className="p-1 rounded-full hover:bg-white/20 transition-colors">
           <IconChevronLeft className="w-5 h-5 text-white" />
         </button>
 
-        <div className="flex items-center gap-2.5 flex-1 min-w-0">
-          <div className="w-9 h-9 rounded-full bg-white/25 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="w-8 h-8 rounded-full bg-white/25 flex items-center justify-center overflow-hidden shrink-0">
             {otherUser.avatarUrl ? (
               <img src={otherUser.avatarUrl} alt={otherUser.nickname} className="w-full h-full object-cover" />
             ) : (
-              <span className="text-sm font-bold text-white">{otherUser.nickname[0]}</span>
+              <span className="text-xs font-bold text-white">{otherUser.nickname[0]}</span>
             )}
           </div>
-          <div className="min-w-0">
-            <span className="font-semibold text-sm truncate block text-white">{otherUser.nickname}</span>
-            <span className="text-xs text-white/70">
-              {typingUser ? <span className="text-white font-medium">입력 중...</span> : '온라인'}
-            </span>
+          <div className="min-w-0 flex items-center gap-1.5">
+            <span className="font-semibold text-sm truncate text-white">{otherUser.nickname}</span>
+            {typingUser && <span className="text-xs text-white/80 shrink-0">입력 중...</span>}
           </div>
         </div>
 
@@ -307,98 +306,118 @@ export default function ChatRoomPage() {
       )}
 
       {/* Product Card */}
-      <div className="border-b border-primary/15 bg-primary/5">
+      <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-primary/15 bg-primary/5">
+        {/* 이미지 */}
         <div
-          className="flex items-center gap-3 px-3 py-3 cursor-pointer active:bg-primary/10 transition-colors"
+          className="relative w-10 h-10 rounded-lg overflow-hidden bg-muted shrink-0 cursor-pointer active:opacity-70 transition-opacity"
           onClick={() =>
             productDeleted ? toast.error('삭제된 매물입니다') : router.push(`/marketplace/${chatRoom.product!.id}`)
           }
         >
-          <div className="w-11 h-11 rounded-xl overflow-hidden bg-muted shrink-0">
-            {chatRoom.product?.images[0] ? (
-              <img
-                src={chatRoom.product.images[0]}
-                alt={chatRoom.product.title}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                No Image
-              </div>
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            {productDeleted ? (
-              <p className="text-sm text-fg-tertiary italic">삭제된 매물입니다</p>
-            ) : (
-              <>
+          {chatRoom.product?.images[0] ? (
+            <Image
+              src={chatRoom.product.images[0]}
+              alt={chatRoom.product.title}
+              fill
+              sizes="40px"
+              className="object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">
+              No Img
+            </div>
+          )}
+        </div>
+
+        {/* 상품 정보 */}
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={() =>
+            productDeleted ? toast.error('삭제된 매물입니다') : router.push(`/marketplace/${chatRoom.product!.id}`)
+          }
+        >
+          {productDeleted ? (
+            <p className="text-xs text-muted-foreground italic">삭제된 매물입니다</p>
+          ) : (
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span
+                className={cn(
+                  'shrink-0 px-2 py-0.5 text-xs font-bold rounded',
+                  productStatus === 'SELLING' && 'bg-success-subtle text-success',
+                  productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
+                  productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
+                  productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
+                )}
+              >
+                {STATUS_LABEL[productStatus]}
+              </span>
+              <span className="text-sm font-medium truncate">{chatRoom.product!.title}</span>
+              <span className="shrink-0 text-sm font-bold text-primary">
+                ${chatRoom.product!.price.toLocaleString('en-US')}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* 판매자 액션 버튼 */}
+        {isSeller && !productDeleted && productStatus !== 'CONFIRMED' && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={statusLoading}
+                className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border bg-background text-xs font-medium text-foreground transition-all disabled:opacity-50 hover:bg-muted/50"
+              >
+                <span className="text-[10px] text-muted-foreground font-normal">상태</span>
                 <span
                   className={cn(
-                    'inline-block px-1.5 py-0.5 text-[10px] font-bold rounded-md mb-0.5',
-                    productStatus === 'SELLING' && 'bg-success-subtle text-success',
-                    productStatus === 'RESERVED' && 'bg-warning-subtle text-warning',
-                    productStatus === 'CONFIRMED' && 'bg-success-subtle text-success',
-                    productStatus === 'ENDED' && 'bg-muted text-muted-foreground'
+                    'font-bold',
+                    productStatus === 'SELLING' && 'text-success',
+                    productStatus === 'RESERVED' && 'text-warning',
+                    productStatus === 'ENDED' && 'text-muted-foreground'
                   )}
                 >
                   {STATUS_LABEL[productStatus]}
                 </span>
-                <p className="text-sm font-medium truncate">{chatRoom.product!.title}</p>
-                <p className="text-sm font-bold text-primary">${chatRoom.product!.price.toLocaleString('en-US')}</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* 판매자 상태 변경 버튼 — 상품이 존재할 때만 */}
-        {isSeller && !productDeleted && productStatus !== 'CONFIRMED' && (
-          <div className="flex gap-2 px-3 pb-3 overflow-x-auto [&::-webkit-scrollbar]:hidden">
-            {productStatus === 'SELLING' && (
-              <>
-                <button
-                  onClick={() => setPendingAction('RESERVED')}
-                  disabled={statusLoading}
-                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-warning text-white shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                >
-                  예약중으로 변경
-                </button>
-                <button
-                  onClick={() => setPendingAction('ENDED')}
-                  disabled={statusLoading}
-                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-surface-tertiary text-fg-secondary shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                >
-                  판매종료
-                </button>
-              </>
-            )}
-            {productStatus === 'RESERVED' && (
-              <>
-                <button
-                  onClick={() => setPendingAction('confirm')}
-                  disabled={statusLoading}
-                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-success text-white shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                >
-                  거래완료 처리
-                </button>
-                <button
-                  onClick={() => setPendingAction('cancel')}
-                  disabled={statusLoading}
-                  className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-surface-tertiary text-fg-secondary shadow-sm active:scale-95 transition-all disabled:opacity-50"
-                >
-                  예약취소
-                </button>
-              </>
-            )}
-            {productStatus === 'ENDED' && (
-              <button
-                onClick={() => setPendingAction('SELLING')}
-                disabled={statusLoading}
-                className="shrink-0 px-4 py-2 text-xs font-bold rounded-xl bg-success text-white shadow-sm active:scale-95 transition-all disabled:opacity-50"
-              >
-                판매중으로 변경
+                <IconChevronDown className="w-3 h-3 text-muted-foreground" />
               </button>
-            )}
-          </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {productStatus === 'SELLING' && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setPendingAction('RESERVED')}
+                    className="text-warning focus:text-warning"
+                  >
+                    예약중으로 변경
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPendingAction('ENDED')} className="text-muted-foreground">
+                    판매종료
+                  </DropdownMenuItem>
+                </>
+              )}
+              {productStatus === 'RESERVED' && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => setPendingAction('confirm')}
+                    className="text-success focus:text-success"
+                  >
+                    거래완료 처리
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setPendingAction('cancel')} className="text-muted-foreground">
+                    예약취소
+                  </DropdownMenuItem>
+                </>
+              )}
+              {productStatus === 'ENDED' && (
+                <DropdownMenuItem
+                  onClick={() => setPendingAction('SELLING')}
+                  className="text-success focus:text-success"
+                >
+                  판매중으로 변경
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
@@ -477,7 +496,7 @@ export default function ChatRoomPage() {
       </div>
 
       {/* Input */}
-      <div className="sticky bottom-0 bg-background border-t border-primary/15 px-3 py-2.5 safe-area-pb">
+      <div className="sticky bottom-0 bg-background border-t border-primary/15 px-3 pt-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))]">
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -509,11 +528,11 @@ export default function ChatRoomPage() {
       {/* 상태 변경 확인 모달 */}
       {pendingAction && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 px-0 pb-0 sm:items-center sm:px-6"
+          className="fixed inset-0 z-60 flex items-end justify-center bg-black/40 px-0 pb-20 md:pb-0 sm:items-center sm:px-6"
           onClick={() => setPendingAction(null)}
         >
           <div
-            className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            className="bg-white rounded-3xl sm:rounded-2xl p-6 w-full max-w-sm shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-base font-bold text-foreground mb-1.5">{MODAL_CONFIG[pendingAction].title}</h3>
