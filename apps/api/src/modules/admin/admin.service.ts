@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
-import { ReportType, ReportStatus } from '@prisma/client'
+import { ReportType, ReportStatus, ProductStatus } from '@prisma/client'
 import { PrismaService } from '../../core/database/prisma.service'
 import { UpdateReportDto } from './dto/update-report.dto'
 
@@ -18,6 +18,20 @@ const REPORT_DETAIL_SELECT = {
   targetUser: { select: { id: true, nickname: true, email: true, avatarUrl: true, isBlocked: true } },
 } as const
 
+const ADMIN_PRODUCT_SELECT = {
+  id: true,
+  title: true,
+  price: true,
+  category: true,
+  status: true,
+  images: true,
+  location: true,
+  viewCount: true,
+  createdAt: true,
+  seller: { select: { id: true, nickname: true, email: true, avatarUrl: true } },
+  _count: { select: { favorites: true, reports: true } },
+} as const
+
 const USER_SELECT = {
   id: true,
   email: true,
@@ -32,6 +46,44 @@ const USER_SELECT = {
 @Injectable()
 export class AdminService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async getStats() {
+    const now = new Date()
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+    const [
+      totalUsers,
+      newUsersLast7Days,
+      blockedUsers,
+      totalProducts,
+      activeProducts,
+      totalReports,
+      pendingReports,
+      reviewingReports,
+      recentReports,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
+      this.prisma.user.count({ where: { isBlocked: true } }),
+      this.prisma.product.count(),
+      this.prisma.product.count({ where: { status: { in: ['SELLING', 'RESERVED'] } } }),
+      this.prisma.report.count(),
+      this.prisma.report.count({ where: { status: 'PENDING' } }),
+      this.prisma.report.count({ where: { status: 'REVIEWING' } }),
+      this.prisma.report.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: REPORT_DETAIL_SELECT,
+      }),
+    ])
+
+    return {
+      users: { total: totalUsers, newLast7Days: newUsersLast7Days, blocked: blockedUsers },
+      products: { total: totalProducts, active: activeProducts },
+      reports: { total: totalReports, pending: pendingReports, reviewing: reviewingReports },
+      recentReports,
+    }
+  }
 
   async findAllReports(filters: { type?: ReportType; status?: ReportStatus }) {
     const where: Record<string, unknown> = {}
@@ -163,5 +215,50 @@ export class AdminService {
     await this.prisma.user.update({ where: { id: userId }, data: { role: 'USER' } })
 
     return { message: '관리자 권한이 해제되었습니다' }
+  }
+
+  // ==================== 상품 관리 ====================
+
+  async findAllProducts(filters: { search?: string; status?: ProductStatus; category?: string }) {
+    const where: Record<string, unknown> = {}
+
+    if (filters.search) {
+      where.OR = [{ title: { contains: filters.search } }, { seller: { nickname: { contains: filters.search } } }]
+    }
+    if (filters.status) where.status = filters.status
+    if (filters.category) where.category = filters.category
+
+    const products = await this.prisma.product.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: ADMIN_PRODUCT_SELECT,
+    })
+
+    return products.map((p) => {
+      const { _count, ...rest } = p
+      return { ...rest, favoriteCount: _count.favorites, reportCount: _count.reports }
+    })
+  }
+
+  async deleteProduct(productId: string) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } })
+    if (!product) {
+      throw new NotFoundException('상품을 찾을 수 없습니다')
+    }
+
+    await this.prisma.product.delete({ where: { id: productId } })
+
+    return { message: '상품이 삭제되었습니다' }
+  }
+
+  async updateProductStatus(productId: string, status: ProductStatus) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } })
+    if (!product) {
+      throw new NotFoundException('상품을 찾을 수 없습니다')
+    }
+
+    await this.prisma.product.update({ where: { id: productId }, data: { status } })
+
+    return { message: '상품 상태가 변경되었습니다' }
   }
 }

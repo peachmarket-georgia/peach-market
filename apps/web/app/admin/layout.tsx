@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { IconShield, IconFlag, IconUsers, IconLoader2 } from '@tabler/icons-react'
+import { IconShield, IconDashboard, IconFlag, IconUsers, IconPackage, IconLoader2 } from '@tabler/icons-react'
 import { checkAuth } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 const TABS = [
+  { href: '/admin', label: '대시보드', icon: IconDashboard, exact: true },
   { href: '/admin/reports', label: '신고 관리', icon: IconFlag },
+  { href: '/admin/products', label: '상품 관리', icon: IconPackage },
   { href: '/admin/users', label: '사용자 관리', icon: IconUsers },
 ]
 
@@ -44,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <nav className="flex gap-1 mb-6 border-b border-border">
         {TABS.map((tab) => {
-          const isActive = pathname.startsWith(tab.href)
+          const isActive = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href)
           return (
             <Link
               key={tab.href}
