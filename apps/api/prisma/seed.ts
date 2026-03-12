@@ -10,6 +10,14 @@ if (process.env.NODE_ENV === 'production') {
   process.exit(1)
 }
 
+const dbUrl = process.env.DATABASE_URL ?? ''
+const isLocalDb = /localhost|127\.0\.0\.1|::1/.test(dbUrl)
+if (!isLocalDb) {
+  console.error('🚫 Seed는 로컬 데이터베이스에서만 실행할 수 있습니다.')
+  console.error(`   현재 DATABASE_URL: ${dbUrl.replace(/\/\/.*@/, '//***@')}`)
+  process.exit(1)
+}
+
 const pool = new Pool({ connectionString: process.env.DATABASE_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
