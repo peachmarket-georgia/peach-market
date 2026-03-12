@@ -30,6 +30,19 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash(TEST_PASSWORD, 10)
 
+  // 관리자 계정 생성
+  const admin = await prisma.user.create({
+    data: {
+      email: 'admin@peachmarket.app',
+      password: await bcrypt.hash('P3ach!Adm1n@2026#', 10),
+      nickname: '관리자',
+      location: 'Atlanta, GA',
+      mannerScore: 5.0,
+      isEmailVerified: true,
+      role: 'ADMIN',
+    },
+  })
+
   // 테스트 유저 생성
   const user1 = await prisma.user.create({
     data: {
@@ -225,6 +238,7 @@ async function main() {
 
   console.log(`Seeded ${products.length} products`)
   console.log(`Seeded 2 chat rooms with ${messages1.length + messages2.length} messages`)
+  console.log(`Admin: ${admin.email} (password: P3ach!Adm1n@2026#)`)
   console.log(`Users: ${user1.nickname}, ${user2.nickname}`)
 }
 

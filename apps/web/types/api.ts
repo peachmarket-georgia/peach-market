@@ -302,3 +302,25 @@ export interface AdminUserDto {
   isBlocked: boolean
   createdAt: string
 }
+
+export interface AdminProductDto {
+  id: string
+  title: string
+  price: number
+  category: string
+  status: ProductStatus
+  images: string[]
+  location: string
+  viewCount: number
+  createdAt: string
+  seller: { id: string; nickname: string; email: string; avatarUrl: string | null }
+  favoriteCount: number
+  reportCount: number
+}
+
+export interface AdminStatsDto {
+  users: { total: number; newLast7Days: number; blocked: number }
+  products: { total: number; active: number }
+  reports: { total: number; pending: number; reviewing: number }
+  recentReports: AdminReportDto[]
+}

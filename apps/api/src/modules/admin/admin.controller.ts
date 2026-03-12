@@ -1,6 +1,6 @@
-import { Controller, Get, Patch, Param, Query, Body, UseGuards } from '@nestjs/common'
+import { Controller, Get, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiCookieAuth, ApiQuery } from '@nestjs/swagger'
-import { ReportType, ReportStatus } from '@prisma/client'
+import { ReportType, ReportStatus, ProductStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { AdminRoleGuard } from './admin-role.guard'
 import { AdminService } from './admin.service'
@@ -12,6 +12,15 @@ import { UpdateReportDto } from './dto/update-report.dto'
 @ApiCookieAuth('access_token')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
+
+  // ==================== 대시보드 ====================
+
+  @Get('stats')
+  @ApiOperation({ summary: '대시보드 통계', description: '관리자 대시보드에 표시할 통계 데이터를 반환합니다' })
+  @ApiResponse({ status: 200, description: '통계 데이터 반환' })
+  getStats() {
+    return this.adminService.getStats()
+  }
 
   // ==================== 신고 관리 ====================
 
@@ -82,5 +91,37 @@ export class AdminController {
   @ApiResponse({ status: 404, description: '사용자를 찾을 수 없음' })
   demoteUser(@Param('id') id: string) {
     return this.adminService.demoteUser(id)
+  }
+
+  // ==================== 상품 관리 ====================
+
+  @Get('products')
+  @ApiOperation({ summary: '상품 목록 조회', description: '모든 상품을 조회합니다 (관리자 전용)' })
+  @ApiQuery({ name: 'search', required: false, description: '제목 또는 판매자 닉네임 검색' })
+  @ApiQuery({ name: 'status', enum: ProductStatus, required: false })
+  @ApiQuery({ name: 'category', required: false })
+  @ApiResponse({ status: 200, description: '상품 목록 반환' })
+  findAllProducts(
+    @Query('search') search?: string,
+    @Query('status') status?: ProductStatus,
+    @Query('category') category?: string
+  ) {
+    return this.adminService.findAllProducts({ search, status, category })
+  }
+
+  @Patch('products/:id/status')
+  @ApiOperation({ summary: '상품 상태 변경', description: '관리자가 상품 상태를 강제 변경합니다' })
+  @ApiResponse({ status: 200, description: '상태 변경 성공' })
+  @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
+  updateProductStatus(@Param('id') id: string, @Body('status') status: ProductStatus) {
+    return this.adminService.updateProductStatus(id, status)
+  }
+
+  @Delete('products/:id')
+  @ApiOperation({ summary: '상품 삭제', description: '관리자가 부적절한 상품을 삭제합니다' })
+  @ApiResponse({ status: 200, description: '삭제 성공' })
+  @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
+  deleteProduct(@Param('id') id: string) {
+    return this.adminService.deleteProduct(id)
   }
 }

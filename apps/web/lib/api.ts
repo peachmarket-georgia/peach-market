@@ -18,6 +18,8 @@ import {
   ReportResponseDto,
   AdminReportDto,
   AdminUserDto,
+  AdminProductDto,
+  AdminStatsDto,
 } from '@/types/api'
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
@@ -353,6 +355,8 @@ export const reportApi = {
 // ==================== Admin API ====================
 
 export const adminApi = {
+  getStats: () => apiRequest<AdminStatsDto>('/api/admin/stats'),
+
   getReports: (params?: { type?: string; status?: string }) => {
     const query = new URLSearchParams()
     if (params?.type) query.set('type', params.type)
@@ -385,6 +389,24 @@ export const adminApi = {
 
   demoteUser: (userId: string) =>
     apiRequest<MessageResponseDto>(`/api/admin/users/${userId}/demote`, { method: 'PATCH' }),
+
+  getProducts: (params?: { search?: string; status?: string; category?: string }) => {
+    const query = new URLSearchParams()
+    if (params?.search) query.set('search', params.search)
+    if (params?.status) query.set('status', params.status)
+    if (params?.category) query.set('category', params.category)
+    const qs = query.toString()
+    return apiRequest<AdminProductDto[]>(`/api/admin/products${qs ? `?${qs}` : ''}`)
+  },
+
+  updateProductStatus: (productId: string, status: string) =>
+    apiRequest<MessageResponseDto>(`/api/admin/products/${productId}/status`, {
+      method: 'PATCH',
+      body: { status },
+    }),
+
+  deleteProduct: (productId: string) =>
+    apiRequest<MessageResponseDto>(`/api/admin/products/${productId}`, { method: 'DELETE' }),
 }
 
 // ==================== Helper Functions ====================
