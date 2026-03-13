@@ -171,14 +171,20 @@ export class AuthService {
     const refreshExpiresAt = new Date()
     refreshExpiresAt.setDate(refreshExpiresAt.getDate() + 7)
 
-    await this.prisma.session.create({
-      data: {
-        userId: user.id,
-        refreshToken: hashedRefreshToken,
-        deviceInfo: deviceInfo || 'Unknown',
-        expiresAt: refreshExpiresAt,
-      },
-    })
+    // 만료된 세션 정리 후 새 세션 생성
+    await this.prisma.$transaction([
+      this.prisma.session.deleteMany({
+        where: { userId: user.id, expiresAt: { lte: new Date() } },
+      }),
+      this.prisma.session.create({
+        data: {
+          userId: user.id,
+          refreshToken: hashedRefreshToken,
+          deviceInfo: deviceInfo || 'Unknown',
+          expiresAt: refreshExpiresAt,
+        },
+      }),
+    ])
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...userWithoutPassword } = user

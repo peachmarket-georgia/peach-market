@@ -162,16 +162,22 @@ export function LoginClient() {
             <IconBrandGoogle className="size-5 mr-2" />
             Google로 계속하기
           </Button>
+
+          {/* 회원가입 링크 */}
+          <div className="pt-2 border-t border-border">
+            <p className="text-center text-sm text-muted-foreground mb-3">아직 계정이 없으신가요?</p>
+            <Link href="/signup">
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full border-primary/40 text-primary hover:bg-primary hover:text-white hover:border-primary font-semibold transition-colors duration-200"
+              >
+                회원가입하기
+              </Button>
+            </Link>
+          </div>
         </CardContent>
       </Card>
-
-      {/* 회원가입 링크 */}
-      <p className="mt-6 text-center text-sm text-muted-foreground">
-        계정이 없으신가요?{' '}
-        <Link href="/signup" className="text-primary hover:underline font-medium">
-          회원가입
-        </Link>
-      </p>
     </div>
   )
 }
