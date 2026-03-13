@@ -54,9 +54,15 @@ export function Header({ initialUser }: HeaderProps) {
       checkAuth().then(({ user }) => {
         setUser(user ?? null)
         setLoading(false)
+        // 프로필 미완료 유저 → 온보딩으로 리다이렉트
+        if (user && !user.isProfileComplete && pathname !== '/onboarding') {
+          router.replace('/onboarding')
+        }
       })
+    } else if (initialUser && !initialUser.isProfileComplete && pathname !== '/onboarding') {
+      router.replace('/onboarding')
     }
-  }, [initialUser])
+  }, [initialUser, pathname, router])
 
   // 안읽은 채팅 메시지 수 초기 조회
   useEffect(() => {

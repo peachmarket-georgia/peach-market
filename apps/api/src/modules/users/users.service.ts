@@ -34,6 +34,26 @@ export class UsersService {
     return !user // true면 사용 가능
   }
 
+  async completeProfile(userId: string, dto: { nickname: string; location: string }) {
+    const existingUser = await this.findByNickname(dto.nickname)
+    if (existingUser && existingUser.id !== userId) {
+      throw new ConflictException('이미 사용 중인 닉네임입니다')
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        nickname: dto.nickname,
+        location: dto.location,
+        isProfileComplete: true,
+      },
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _password, ...result } = updatedUser
+    return result
+  }
+
   async updateProfile(userId: string, updateDto: UpdateUserDto) {
     // 닉네임 변경 시 중복 체크
     if (updateDto.nickname) {

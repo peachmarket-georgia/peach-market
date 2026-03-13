@@ -99,6 +99,7 @@ export interface UserProfileResponseDto {
   location: string
   /** @example true */
   isEmailVerified: boolean
+  isProfileComplete: boolean
   /** @example "https://example.com/avatar.jpg" */
   avatarUrl?: string | null
   role: UserRole

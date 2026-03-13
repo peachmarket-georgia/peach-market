@@ -16,7 +16,8 @@ model User {
   mannerScore     Float    @default(0.0) // 매너 점수 (0.0 ~ 5.0)
   role            UserRole @default(USER) // 사용자 역할
   isBlocked       Boolean  @default(false) // 차단 여부
-  isEmailVerified Boolean  @default(false) // 이메일 인증 여부
+  isEmailVerified   Boolean  @default(false) // 이메일 인증 여부
+  isProfileComplete Boolean  @default(true) // 프로필 설정 완료 여부 (구글 신규 유저는 false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 

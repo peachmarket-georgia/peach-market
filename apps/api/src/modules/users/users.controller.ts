@@ -6,6 +6,7 @@ import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
 import { CheckAvailabilityResponseDto } from './dto/check-availability-response.dto'
 import { UserProfileResponseDto } from './dto/user-response.dto'
 import { UpdateUserDto } from './dto/update-user.dto'
+import { CompleteProfileDto } from './dto/complete-profile.dto'
 
 @ApiTags('users')
 @Controller('users')
@@ -70,6 +71,16 @@ export class UsersController {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password: _password, ...result } = user
     return result
+  }
+
+  @Patch('me/complete-profile')
+  @ApiOperation({ summary: '프로필 설정 완료', description: '회원가입 후 닉네임/지역 설정 (Google OAuth 신규 유저)' })
+  @ApiCookieAuth('access_token')
+  @ApiResponse({ status: 200, description: '프로필 설정 완료', type: UserProfileResponseDto })
+  @ApiResponse({ status: 401, description: '인증되지 않은 사용자' })
+  @ApiResponse({ status: 409, description: '닉네임 중복' })
+  async completeProfile(@CurrentUser() { userId }: JwtUser, @Body() dto: CompleteProfileDto) {
+    return this.usersService.completeProfile(userId, dto)
   }
 
   @Patch('me')

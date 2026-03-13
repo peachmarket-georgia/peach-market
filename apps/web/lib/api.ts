@@ -244,6 +244,15 @@ export const userApi = {
     }),
 
   /**
+   * 프로필 설정 완료 (Google OAuth 신규 유저)
+   */
+  completeProfile: (data: { nickname: string; location: string }) =>
+    apiRequest<UserProfileResponseDto>('/api/users/me/complete-profile', {
+      method: 'PATCH',
+      body: data,
+    }),
+
+  /**
    * 프로필 수정
    */
   updateProfile: (data: UpdateUserDto) =>

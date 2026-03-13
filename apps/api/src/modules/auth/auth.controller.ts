@@ -203,6 +203,7 @@ export class AuthController {
     res.cookie('access_token', result.accessToken, googleCookieOptions(15 * 60 * 1000))
     res.cookie('refresh_token', result.refreshToken, googleCookieOptions(7 * 24 * 60 * 60 * 1000))
 
-    res.redirect(`${frontendUrl}/marketplace`)
+    const redirectPath = result.user.isProfileComplete ? '/marketplace' : '/onboarding'
+    res.redirect(`${frontendUrl}${redirectPath}`)
   }
 }

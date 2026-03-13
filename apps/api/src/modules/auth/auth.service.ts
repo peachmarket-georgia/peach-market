@@ -357,6 +357,7 @@ export class AuthService {
           avatarUrl: googleUser.avatarUrl,
           location: 'Georgia',
           isEmailVerified: true,
+          isProfileComplete: false,
         },
       })
 
