@@ -34,11 +34,13 @@ type HeaderProps = {
 }
 
 export function Header({ initialUser }: HeaderProps) {
-  const [user, setUser] = useState<UserProfileResponseDto | null>(initialUser ?? null)
+  const [user, setUser] = useState<UserProfileResponseDto | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(!initialUser)
+  const [loading, setLoading] = useState(true)
   const [bugReportOpen, setBugReportOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const feedbackRef = useRef<HTMLDivElement>(null)
+  const initialUserRef = useRef(initialUser)
   const router = useRouter()
   const pathname = usePathname()
   const { socket } = useSocket()
@@ -48,15 +50,22 @@ export function Header({ initialUser }: HeaderProps) {
     btn?.click()
   }
 
-  // 클라이언트 사이드에서 인증 상태 확인
   useEffect(() => {
-    if (!initialUser) {
+    setMounted(true)
+  }, [])
+
+  // 클라이언트 마운트 후 인증 상태 확인 (SSR 항상 로딩 상태로 고정)
+  useEffect(() => {
+    if (initialUserRef.current) {
+      setUser(initialUserRef.current)
+      setLoading(false)
+    } else {
       checkAuth().then(({ user }) => {
         setUser(user ?? null)
         setLoading(false)
       })
     }
-  }, [initialUser])
+  }, [])
 
   // 안읽은 채팅 메시지 수 초기 조회
   useEffect(() => {
@@ -226,14 +235,16 @@ export function Header({ initialUser }: HeaderProps) {
       <ReportDialog open={bugReportOpen} onOpenChange={setBugReportOpen} reportType="bug" />
 
       {/* 숨겨진 Feedbackland 버튼 (헤더 드롭다운에서 트리거) */}
-      <div ref={feedbackRef} className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden">
-        <FeedbacklandButton
-          platformId="fef1fab9-adbc-4e89-9fe8-338380d84058"
-          widget="drawer"
-          url="https://peachmarket.feedbackland.com/"
-          text="Feedback"
-        />
-      </div>
+      {mounted && (
+        <div ref={feedbackRef} className="absolute opacity-0 pointer-events-none w-0 h-0 overflow-hidden">
+          <FeedbacklandButton
+            platformId="fef1fab9-adbc-4e89-9fe8-338380d84058"
+            widget="drawer"
+            url="https://peachmarket.feedbackland.com/"
+            text="Feedback"
+          />
+        </div>
+      )}
     </header>
   )
 }

@@ -92,16 +92,27 @@ export async function apiRequest<T>(
 
     // 401 → refresh token 시도 후 재요청 (auth 엔드포인트 제외, 재시도 1회만)
     if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/')) {
-      const refreshed = await tryRefresh(apiUrl)
+      let refreshed = false
+      try {
+        refreshed = await tryRefresh(apiUrl)
+      } catch {
+        // network error during refresh → treat as refresh failure
+      }
 
       if (refreshed) {
-        return apiRequest<T>(endpoint, options, cookies, true)
+        const retryResult = await apiRequest<T>(endpoint, options, cookies, true)
+        // retry도 401이면 세션 만료로 로그인 페이지로 이동
+        if (retryResult.status === 401 && typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+        return retryResult
       }
 
       // refresh 실패 → 로그인 페이지로 이동
       if (typeof window !== 'undefined') {
         window.location.href = '/login'
       }
+      return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
     }
 
     if (!response.ok) {
@@ -303,7 +314,10 @@ export const uploadApi = {
    * 이미지 업로드
    * @param files - 업로드할 파일들 (최대 5개)
    */
-  uploadImages: async (files: File[]): Promise<{ data?: UploadResponseDto; error?: string; status: number }> => {
+  uploadImages: async (
+    files: File[],
+    _isRetry = false
+  ): Promise<{ data?: UploadResponseDto; error?: string; status: number }> => {
     try {
       const formData = new FormData()
       files.forEach((file) => formData.append('files', file))
@@ -321,6 +335,23 @@ export const uploadApi = {
         data = await response.json()
       } catch {
         data = null
+      }
+
+      // 401 → refresh 후 재시도
+      if (response.status === 401 && !_isRetry) {
+        let refreshed = false
+        try {
+          refreshed = await tryRefresh(apiUrl)
+        } catch {
+          // network error during refresh
+        }
+        if (refreshed) {
+          return uploadApi.uploadImages(files, true)
+        }
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
+        return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
       }
 
       if (!response.ok) {

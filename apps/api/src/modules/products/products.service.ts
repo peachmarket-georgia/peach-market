@@ -103,6 +103,8 @@ export class ProductsService {
 
     if (query.status) {
       conditions.push({ status: query.status })
+    } else {
+      conditions.push({ status: { notIn: ['CONFIRMED', 'ENDED'] } })
     }
 
     const where = conditions.length > 0 ? { AND: conditions } : {}
@@ -210,7 +212,7 @@ export class ProductsService {
       select: PRODUCT_SELECT,
     })
 
-    return formatProduct(product as ProductWithCount)
+    return formatProduct(product as unknown as ProductWithCount)
   }
 
   async update(id: string, dto: UpdateProductDto, userId: string) {

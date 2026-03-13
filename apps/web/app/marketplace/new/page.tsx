@@ -1,8 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { IconChevronLeft, IconCurrencyDollar, IconLoader2, IconCurrentLocation } from '@tabler/icons-react'
+import {
+  IconChevronLeft,
+  IconCurrencyDollar,
+  IconLoader2,
+  IconCurrentLocation,
+  IconCircleX,
+  IconCircleCheck,
+} from '@tabler/icons-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -78,6 +85,40 @@ const ProductCreatePage = (): React.JSX.Element => {
 
   const { loading: locationLoading, getLocation } = useGeolocation()
 
+  const imagesRef = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
+  const categoryRef = useRef<HTMLDivElement>(null)
+  const priceRef = useRef<HTMLInputElement>(null)
+  const locationRef = useRef<HTMLInputElement>(null)
+
+  const focusField = (key: keyof FieldErrors) => {
+    const map = {
+      images: () => imagesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+      title: () => {
+        titleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        titleRef.current?.focus()
+      },
+      category: () => categoryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }),
+      price: () => {
+        priceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        priceRef.current?.focus()
+      },
+      location: () => {
+        locationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        locationRef.current?.focus()
+      },
+    }
+    map[key]?.()
+  }
+
+  const scrollToFirstMissing = () => {
+    if (images.length === 0) return focusField('images')
+    if (!title.trim()) return focusField('title')
+    if (!category) return focusField('category')
+    if (!price) return focusField('price')
+    if (!location.trim()) return focusField('location')
+  }
+
   const handleGetLocation = async () => {
     const result = await getLocation()
     if (result) {
@@ -141,7 +182,11 @@ const ProductCreatePage = (): React.JSX.Element => {
   }
 
   const handleSubmit = async () => {
-    if (!validate() || loading) return
+    if (loading) return
+    if (!validate()) {
+      scrollToFirstMissing()
+      return
+    }
     setLoading(true)
     setError('')
     try {
@@ -191,7 +236,7 @@ const ProductCreatePage = (): React.JSX.Element => {
         )}
 
         {/* 이미지 업로드 */}
-        <div className="flex flex-col gap-1.5">
+        <div ref={imagesRef} className="flex flex-col gap-1.5">
           <ImageUpload
             images={images}
             onChange={(imgs) => {
@@ -210,6 +255,7 @@ const ProductCreatePage = (): React.JSX.Element => {
               제목 <span className="text-primary">*</span>
             </Label>
             <Input
+              ref={titleRef}
               id="title"
               placeholder="상품명을 입력하세요"
               maxLength={50}
@@ -230,7 +276,7 @@ const ProductCreatePage = (): React.JSX.Element => {
           </div>
 
           {/* 카테고리 */}
-          <div className="flex flex-col gap-1.5">
+          <div ref={categoryRef} className="flex flex-col gap-1.5">
             <Label className="text-sm font-semibold text-foreground">
               카테고리 <span className="text-primary">*</span>
             </Label>
@@ -265,6 +311,7 @@ const ProductCreatePage = (): React.JSX.Element => {
             <div className="relative">
               <IconCurrencyDollar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/60" />
               <Input
+                ref={priceRef}
                 id="price"
                 type="text"
                 placeholder="0"
@@ -288,6 +335,7 @@ const ProductCreatePage = (): React.JSX.Element => {
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Input
+                  ref={locationRef}
                   id="location"
                   placeholder="예: Duluth"
                   value={location}
@@ -362,6 +410,34 @@ const ProductCreatePage = (): React.JSX.Element => {
           />
         </div>
 
+        {/* 미입력 항목 안내 */}
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              { done: images.length > 0, label: '사진', key: 'images' },
+              { done: Boolean(title.trim()), label: '제목', key: 'title' },
+              { done: Boolean(category), label: '카테고리', key: 'category' },
+              { done: Boolean(price), label: '가격', key: 'price' },
+              { done: Boolean(location.trim()), label: '거래 지역', key: 'location' },
+            ] as { done: boolean; label: string; key: keyof FieldErrors }[]
+          ).map(({ done, label, key }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => !done && focusField(key)}
+              className={cn(
+                'inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium transition-colors',
+                done
+                  ? 'bg-green-100 text-green-600 cursor-default'
+                  : 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+              )}
+            >
+              {done ? <IconCircleCheck className="h-3 w-3" /> : <IconCircleX className="h-3 w-3" />}
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* 등록 버튼 */}
         <Button
           className={cn(
@@ -370,7 +446,7 @@ const ProductCreatePage = (): React.JSX.Element => {
               ? 'bg-primary hover:bg-primary/90 text-white hover:shadow-lg'
               : 'bg-peach-muted text-fg-tertiary cursor-not-allowed'
           )}
-          disabled={loading || !isValid}
+          disabled={loading}
           onClick={handleSubmit}
         >
           {loading ? (

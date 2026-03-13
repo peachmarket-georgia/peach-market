@@ -75,7 +75,7 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
         )}
 
         {/* 데스크톱 호버 시 빠른 액션 */}
-        {product.status === 'SELLING' && (
+        {(product.status === 'SELLING' || product.status === 'RESERVED') && (
           <div className="absolute inset-x-0 bottom-0 hidden lg:flex items-end p-3 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <span className="flex-1 py-2.5 bg-primary text-white text-center rounded-lg font-semibold text-sm shadow-lg">
               상세보기
