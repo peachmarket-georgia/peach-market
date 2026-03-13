@@ -254,7 +254,7 @@ export default function ChatRoomPage() {
   const completedReservation = reservation?.status === 'COMPLETED'
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-full bg-background max-w-5xl mx-auto w-full">
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-2.5 px-3 py-2 bg-primary">
         <button onClick={() => router.push('/chat')} className="p-1 rounded-full hover:bg-white/20 transition-colors">
@@ -464,7 +464,7 @@ export default function ChatRoomPage() {
               >
                 <div
                   className={cn(
-                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl wrap-break-word whitespace-pre-wrap min-w-0',
+                    'px-3.5 py-2 text-[14px] leading-relaxed rounded-2xl wrap-break-word whitespace-pre-wrap min-w-0 max-w-full',
                     msg.senderId === currentUserId
                       ? 'bg-primary text-white rounded-br-md'
                       : 'bg-primary/10 text-foreground rounded-bl-md'
