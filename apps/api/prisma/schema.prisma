@@ -181,6 +181,7 @@ model Product {
   chatRooms ChatRoom[]
   favorites Favorite[]
   reservations Reservation[]
+  reports   Report[]   @relation("ProductReports")
 
   @@index([sellerId])
   @@index([status])
@@ -302,15 +303,16 @@ model Report {
   imageUrls    String[] // 증거 이미지 URL
   reporterId   String
   targetUserId String? // BUG 타입은 null
-  productId    String? // 관련 상품 ID (relation 없음)
+  productId    String? // 관련 상품 ID
   adminNote    String?
   resolvedAt   DateTime?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
   // 관계
-  reporter   User  @relation("ReportSubmitter", fields: [reporterId], references: [id], onDelete: Cascade)
-  targetUser User? @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  reporter   User     @relation("ReportSubmitter", fields: [reporterId], references: [id], onDelete: Cascade)
+  targetUser User?    @relation("ReportTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+  product    Product? @relation("ProductReports", fields: [productId], references: [id], onDelete: SetNull)
 
   @@index([reporterId])
   @@index([targetUserId])
