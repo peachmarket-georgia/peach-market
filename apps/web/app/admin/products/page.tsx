@@ -138,9 +138,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* 상품 수 */}
-      {!loading && (
-        <p className="text-xs text-muted-foreground mb-3">총 {products.length}개 상품</p>
-      )}
+      {!loading && <p className="text-xs text-muted-foreground mb-3">총 {products.length}개 상품</p>}
 
       {/* 목록 */}
       {loading ? (
@@ -185,6 +183,7 @@ export default function AdminProductsPage() {
                     <Badge variant="outline" className="text-xs">
                       {product.category}
                     </Badge>
+                    {product.isHidden && <Badge className="text-xs bg-muted text-muted-foreground">숨김</Badge>}
                     {product.reportCount > 0 && (
                       <Badge variant="destructive" className="text-xs">
                         신고 {product.reportCount}
@@ -211,10 +210,7 @@ export default function AdminProductsPage() {
                     </Button>
                   </Link>
 
-                  <Select
-                    value={product.status}
-                    onValueChange={(value) => handleStatusChange(product.id, value)}
-                  >
+                  <Select value={product.status} onValueChange={(value) => handleStatusChange(product.id, value)}>
                     <SelectTrigger className="h-7 text-xs w-20">
                       <SelectValue />
                     </SelectTrigger>

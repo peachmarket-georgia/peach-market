@@ -172,6 +172,7 @@ model Product {
   lng            Float? // 거래 희망 위치 경도
   paymentMethods PaymentMethod[] @default([]) // 선호 결제 수단
   viewCount   Int           @default(0)
+  isHidden    Boolean       @default(false) // 판매자가 숨긴 상품 여부
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -185,6 +186,7 @@ model Product {
 
   @@index([sellerId])
   @@index([status])
+  @@index([isHidden])
   @@index([createdAt(sort: Desc)])
   @@map("products")
 }

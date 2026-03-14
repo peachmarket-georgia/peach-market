@@ -1,8 +1,16 @@
 import { Injectable, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common'
 import { ProductStatus } from '@prisma/client'
 import { PrismaService } from '../../core/database/prisma.service'
+import { ChatGateway } from '../../chat/chat.gateway'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
+
+const STATUS_LABEL: Record<string, string> = {
+  SELLING: '판매중',
+  RESERVED: '예약중',
+  CONFIRMED: '판매확정',
+  ENDED: '판매종료',
+}
 
 // Haversine 공식: 두 좌표 간 거리(km) 계산
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -37,6 +45,7 @@ const PRODUCT_SELECT = {
   lng: true,
   paymentMethods: true,
   viewCount: true,
+  isHidden: true,
   createdAt: true,
   updatedAt: true,
   seller: { select: SELLER_SELECT },
@@ -75,7 +84,41 @@ function formatProduct(product: ProductWithCount, isFavorited = false) {
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chatGateway: ChatGateway
+  ) {}
+
+  /** 상품 관련 모든 채팅방에 시스템 메시지 저장 + 소켓 브로드캐스트 */
+  private async broadcastSystemMessage(productId: string, sellerId: string, message: string) {
+    const chatRooms = await this.prisma.chatRoom.findMany({
+      where: { productId },
+      select: { id: true },
+    })
+
+    if (chatRooms.length === 0) return
+
+    const content = JSON.stringify({ type: 'system', message })
+
+    const savedMessages = await Promise.all(
+      chatRooms.map(async (room) => {
+        const msg = await this.prisma.message.create({
+          data: { chatRoomId: room.id, senderId: sellerId, content },
+          include: { sender: true },
+        })
+        await this.prisma.chatRoom.update({
+          where: { id: room.id },
+          data: { lastMessage: message, updatedAt: new Date() },
+        })
+        return { roomId: room.id, message: msg }
+      })
+    )
+
+    // 소켓으로 실시간 전달
+    for (const { roomId, message: msg } of savedMessages) {
+      this.chatGateway.server.to(roomId).emit('newMessage', msg)
+    }
+  }
 
   async findAll(
     query: {
@@ -89,7 +132,7 @@ export class ProductsService {
     },
     userId?: string
   ) {
-    const conditions: object[] = [{ seller: { isBlocked: false } }]
+    const conditions: object[] = [{ seller: { isBlocked: false } }, { isHidden: false }]
 
     if (query.search) {
       conditions.push({
@@ -164,6 +207,21 @@ export class ProductsService {
 
     if (!product) {
       throw new NotFoundException(`Product ${id} not found`)
+    }
+
+    // 숨김 상품 접근 제어: 판매자 본인이 아닌 경우 찜/채팅 관계 확인
+    if ((product as { isHidden: boolean }).isHidden && product.sellerId !== userId) {
+      const hasRelation = await this.prisma.$transaction(async (tx) => {
+        if (!userId) return false
+        const [favorite, chatRoom] = await Promise.all([
+          tx.favorite.findUnique({ where: { userId_productId: { userId, productId: id } } }),
+          tx.chatRoom.findFirst({ where: { productId: id, buyerId: userId } }),
+        ])
+        return !!(favorite || chatRoom)
+      })
+      if (!hasRelation) {
+        throw new NotFoundException(`Product ${id} not found`)
+      }
     }
 
     // 조회수 증가 (같은 IP의 중복 조회 무시)
@@ -258,6 +316,8 @@ export class ProductsService {
       select: PRODUCT_SELECT,
     })
 
+    await this.broadcastSystemMessage(id, userId, `상품 상태가 ${STATUS_LABEL[status] ?? status}(으)로 변경되었습니다`)
+
     return formatProduct(updated)
   }
 
@@ -330,5 +390,30 @@ export class ProductsService {
     })
 
     return favorites.map((f) => formatProduct(f.product, true))
+  }
+
+  async toggleHidden(id: string, userId: string): Promise<{ isHidden: boolean }> {
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+      select: { sellerId: true, isHidden: true },
+    })
+
+    if (!product) {
+      throw new NotFoundException(`Product ${id} not found`)
+    }
+
+    if (product.sellerId !== userId) {
+      throw new ForbiddenException('본인의 상품만 숨길 수 있습니다')
+    }
+
+    const updated = await this.prisma.product.update({
+      where: { id },
+      data: { isHidden: !product.isHidden },
+    })
+
+    const hiddenMessage = updated.isHidden ? '판매자가 상품을 숨겼습니다' : '판매자가 상품 숨김을 해제했습니다'
+    await this.broadcastSystemMessage(id, userId, hiddenMessage)
+
+    return { isHidden: updated.isHidden }
   }
 }

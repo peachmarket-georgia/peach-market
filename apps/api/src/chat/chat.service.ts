@@ -66,6 +66,10 @@ export class ChatService {
       throw new BadRequestException('자신의 상품에는 채팅을 시작할 수 없습니다')
     }
 
+    if (product.isHidden) {
+      throw new BadRequestException('숨겨진 상품에는 채팅을 시작할 수 없습니다')
+    }
+
     // Check if chat room already exists
     const existingRoom = await this.findChatRoomByProductAndBuyer(productId, buyerId)
     if (existingRoom) {

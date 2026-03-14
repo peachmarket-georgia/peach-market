@@ -121,6 +121,14 @@ export class ChatGateway implements OnGatewayInit {
     client.to(data.chatRoomId).emit('productStatusUpdated', { status: data.status })
   }
 
+  @SubscribeMessage('productHiddenUpdate')
+  handleProductHiddenUpdate(
+    @MessageBody() data: { chatRoomId: string; isHidden: boolean },
+    @ConnectedSocket() client: Socket
+  ) {
+    client.to(data.chatRoomId).emit('productHiddenUpdated', { isHidden: data.isHidden })
+  }
+
   @SubscribeMessage('markAsRead')
   async handleMarkAsRead(
     @MessageBody() data: { chatRoomId: string; userId: string },
