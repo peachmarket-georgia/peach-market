@@ -26,13 +26,22 @@ async function reverseGeocode(lat: number, lng: number): Promise<GeolocationResu
     throw new Error('주소를 가져올 수 없습니다')
   }
 
-  // locality(city), administrative_area_level_1(state) 추출
+  // city, state 추출 (여러 타입 fallback 적용)
+  const CITY_TYPES = [
+    'locality',
+    'sublocality_level_1',
+    'sublocality',
+    'administrative_area_level_3',
+    'neighborhood',
+    'postal_town',
+  ]
+
   let city = ''
   let state = ''
 
   for (const result of data.results) {
     for (const component of result.address_components) {
-      if (!city && component.types.includes('locality')) {
+      if (!city && CITY_TYPES.some((t) => component.types.includes(t))) {
         city = component.long_name
       }
       if (!state && component.types.includes('administrative_area_level_1')) {
@@ -42,9 +51,11 @@ async function reverseGeocode(lat: number, lng: number): Promise<GeolocationResu
     if (city && state) break
   }
 
-  if (!city || !state) throw new Error('도시/주 정보를 찾을 수 없습니다')
+  // state만 있어도 반환, 둘 다 없으면 에러
+  if (!state) throw new Error('위치 정보를 가져올 수 없습니다')
 
-  return { formatted: `${city}, ${state}`, lat, lng }
+  const formatted = city ? `${city}, ${state}` : state
+  return { formatted, lat, lng }
 }
 
 export function useGeolocation() {

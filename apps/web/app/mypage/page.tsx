@@ -18,7 +18,7 @@ import {
   IconBell,
   IconBellOff,
   IconCurrentLocation,
-  IconExternalLink,
+  IconMaximize,
 } from '@tabler/icons-react'
 import { usePushNotification } from '@/hooks/use-push-notification'
 import { Header } from '@/components/layout/header'
@@ -29,6 +29,7 @@ import { ProductCard } from '@/app/marketplace/components/product-card'
 import { checkAuth, userApi } from '@/lib/api'
 import { useGeolocation } from '@/hooks/use-geolocation'
 import { RadiusMap } from '@/components/radius-map'
+import { cn } from '@/lib/utils'
 import { ProductResponseDto, UserProfileResponseDto } from '@/types/api'
 import { productApi } from '@/lib/products-api'
 import { reservationApi } from '@/lib/reservation-api'
@@ -62,6 +63,14 @@ export default function MyPage() {
 
   const displaySubscribed = optimisticSubscribed ?? isSubscribed
 
+  const [showMapModal, setShowMapModal] = useState(false)
+  const [sliderMiles, setSliderMiles] = useState(0)
+  const [sliderMilesTemp, setSliderMilesTemp] = useState(0)
+  const [userLat, setUserLat] = useState<number | null>(null)
+  const [userLng, setUserLng] = useState<number | null>(null)
+  const [showLocationConfirm, setShowLocationConfirm] = useState(false)
+  const [pendingLocation, setPendingLocation] = useState<{ lat: number; lng: number; formatted: string } | null>(null)
+
   // 프로필 수정 상태
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [editNickname, setEditNickname] = useState('')
@@ -73,28 +82,9 @@ export default function MyPage() {
 
   const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
 
-  // 반경 설정 상태
-  const [savedRadiusMiles, setSavedRadiusMiles] = useState(0)
-  const [tempRadiusMiles, setTempRadiusMiles] = useState(0)
-  const [userLat, setUserLat] = useState<number | null>(null)
-  const [userLng, setUserLng] = useState<number | null>(null)
-
   useEffect(() => {
-    const savedUnit = localStorage.getItem('distance-unit')
-    if (savedUnit === 'miles' || savedUnit === 'km') setDistanceUnit(savedUnit)
-
-    const savedRadius = localStorage.getItem('distance-radius-miles')
-    const savedLat = localStorage.getItem('user-location-lat')
-    const savedLng = localStorage.getItem('user-location-lng')
-
-    const miles = savedRadius ? Number(savedRadius) : 0
-    setSavedRadiusMiles(miles)
-    setTempRadiusMiles(miles)
-
-    if (savedLat && savedLng) {
-      setUserLat(Number(savedLat))
-      setUserLng(Number(savedLng))
-    }
+    const saved = localStorage.getItem('distance-unit')
+    if (saved === 'miles' || saved === 'km') setDistanceUnit(saved)
   }, [])
 
   const handleDistanceUnitChange = (unit: 'miles' | 'km') => {
@@ -107,28 +97,6 @@ export default function MyPage() {
     if (result) setEditLocation(result.formatted)
   }
 
-  const handleGetMyLocation = async () => {
-    const result = await getLocation()
-    if (result) {
-      setUserLat(result.lat)
-      setUserLng(result.lng)
-      localStorage.setItem('user-location-lat', String(result.lat))
-      localStorage.setItem('user-location-lng', String(result.lng))
-    }
-  }
-
-  const handleRadiusConfirm = () => {
-    setSavedRadiusMiles(tempRadiusMiles)
-    localStorage.setItem('distance-radius-miles', String(tempRadiusMiles))
-  }
-
-  const radiusLabel =
-    tempRadiusMiles === 0
-      ? '전체 보기'
-      : distanceUnit === 'miles'
-        ? `반경 ${tempRadiusMiles}mi 이내`
-        : `반경 ${(tempRadiusMiles * MILES_TO_KM).toFixed(1)}km 이내`
-
   // 인증 및 유저 정보 로드
   useEffect(() => {
     const loadData = async () => {
@@ -140,6 +108,9 @@ export default function MyPage() {
       }
 
       setUser(userData)
+      if (userData.lat != null) setUserLat(userData.lat)
+      if (userData.lng != null) setUserLng(userData.lng)
+      if (userData.searchRadiusMiles != null) setSliderMiles(userData.searchRadiusMiles)
       setLoading(false)
     }
 
@@ -205,6 +176,63 @@ export default function MyPage() {
     }
   }
 
+  // 내 위치 확인 버튼
+  const handleGetMyLocation = async () => {
+    const result = await getLocation()
+    if (result) {
+      setPendingLocation({ lat: result.lat, lng: result.lng, formatted: result.formatted })
+      setShowLocationConfirm(true)
+    }
+  }
+
+  // 위치 설정 확인
+  const handleLocationConfirm = async () => {
+    if (!pendingLocation) return
+    setUserLat(pendingLocation.lat)
+    setUserLng(pendingLocation.lng)
+    await userApi.updateProfile({ lat: pendingLocation.lat, lng: pendingLocation.lng })
+    setShowLocationConfirm(false)
+    setPendingLocation(null)
+  }
+
+  // 마이페이지 슬라이더 저장 버튼
+  const handlePageSliderCommit = async (miles: number) => {
+    if (miles === 0) {
+      userApi.updateProfile({ searchRadiusMiles: 0 })
+      return
+    }
+    if (userLat == null || userLng == null) {
+      const result = await getLocation()
+      if (!result) {
+        setSliderMiles(0)
+        return
+      }
+      setUserLat(result.lat)
+      setUserLng(result.lng)
+      userApi.updateProfile({ lat: result.lat, lng: result.lng, searchRadiusMiles: miles })
+    } else {
+      userApi.updateProfile({ searchRadiusMiles: miles })
+    }
+  }
+
+  // 반경 확인 버튼
+  const handleRadiusConfirm = async () => {
+    if (sliderMilesTemp > 0 && (userLat == null || userLng == null)) {
+      const result = await getLocation()
+      if (!result) {
+        setSliderMilesTemp(0)
+        return
+      }
+      setUserLat(result.lat)
+      setUserLng(result.lng)
+      await userApi.updateProfile({ lat: result.lat, lng: result.lng, searchRadiusMiles: sliderMilesTemp })
+    } else {
+      await userApi.updateProfile({ searchRadiusMiles: sliderMilesTemp })
+    }
+    setSliderMiles(sliderMilesTemp)
+    setShowMapModal(false)
+  }
+
   // 프로필 수정 다이얼로그 열기
   const openEditDialog = () => {
     if (user) {
@@ -258,19 +286,6 @@ export default function MyPage() {
     return null
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  const staticMapUrl =
-    apiKey && user.location
-      ? `https://maps.googleapis.com/maps/api/staticmap` +
-        `?center=${encodeURIComponent(user.location)}` +
-        `&zoom=13&size=600x500&scale=2` +
-        `&markers=color:0xFF6B35|${encodeURIComponent(user.location)}` +
-        `&style=feature:poi|visibility:off` +
-        `&style=feature:transit|visibility:off` +
-        `&key=${apiKey}`
-      : null
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(user.location)}`
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -311,91 +326,181 @@ export default function MyPage() {
           </div>
         </section>
 
-        {/* 위치 지도 + 반경 설정 */}
-        <section className="bg-card rounded-2xl overflow-hidden shadow-sm mb-6">
-          {/* 지도 위쪽 UI */}
-          <div className="px-4 pt-4 pb-3 space-y-3">
-            {/* 위치 레이블 + GPS 활성화 */}
-            <div className="flex items-center gap-2">
-              <IconMapPin className="w-5 h-5 text-primary shrink-0" />
-              <span className="text-base font-semibold flex-1 truncate">{user.location}</span>
-              <button
-                onClick={handleGetMyLocation}
-                disabled={locationLoading}
-                className="flex items-center gap-1.5 text-sm text-primary font-semibold shrink-0 disabled:opacity-50"
-              >
-                {locationLoading ? (
-                  <IconLoader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <IconCurrentLocation className="w-4 h-4" />
-                )}
-                {userLat != null ? '위치 새로고침' : '내 위치 활성화'}
-              </button>
+        {/* 위치 및 반경 설정 */}
+        <section className="bg-card rounded-2xl p-6 mb-6 shadow-sm">
+          {/* 헤더 */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-sm font-medium">내 주변 상품 보기</p>
+              <p className="text-xs text-muted-foreground">마켓플레이스 반경 필터에 적용됩니다</p>
             </div>
-
-            {/* 현재 설정된 반경 표시 */}
-            <div className="flex items-center justify-between">
-              <p className="text-base font-semibold">검색 반경</p>
-              <span className={`text-base font-bold ${tempRadiusMiles > 0 ? 'text-primary' : 'text-muted-foreground'}`}>
-                {radiusLabel}
-              </span>
-            </div>
-          </div>
-
-          {/* 지도 영역 */}
-          {userLat != null && userLng != null ? (
-            <RadiusMap
-              lat={userLat}
-              lng={userLng}
-              radiusKm={tempRadiusMiles > 0 ? tempRadiusMiles * MILES_TO_KM : 8}
-              className="w-full h-[40rem]"
-            />
-          ) : staticMapUrl ? (
-            <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="block relative group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={staticMapUrl}
-                alt={`${user.location} 지도`}
-                className="w-full h-[40rem] object-cover"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
-                  <IconExternalLink className="w-3.5 h-3.5" />
-                  Google Maps에서 보기
-                </span>
-              </div>
-            </a>
-          ) : null}
-
-          {/* 하단: 슬라이더 + 확인 버튼 */}
-          <div className="px-4 py-4 space-y-4">
-            {/* 반경 슬라이더 */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>거리무관</span>
-                <span>{distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={30}
-                step={1}
-                value={tempRadiusMiles}
-                onChange={(e) => setTempRadiusMiles(Number(e.target.value))}
-                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary"
-              />
-              {tempRadiusMiles > 0 && userLat == null && (
-                <p className="text-sm text-muted-foreground">반경 필터를 적용하려면 내 위치를 활성화해주세요</p>
+            <Button variant="outline" size="sm" onClick={handleGetMyLocation} disabled={locationLoading}>
+              {locationLoading ? (
+                <IconLoader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <IconCurrentLocation className="w-4 h-4" />
               )}
-            </div>
-
-            {/* 확인 버튼 */}
-            <Button onClick={handleRadiusConfirm} className="w-full" disabled={tempRadiusMiles === savedRadiusMiles}>
-              확인
+              <span className="ml-1">내 위치 확인</span>
             </Button>
           </div>
+
+          {/* 지도 썸네일 */}
+          {(() => {
+            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+            if (!apiKey || !user.location) return null
+            const encoded = encodeURIComponent(user.location)
+            const staticMapUrl =
+              `https://maps.googleapis.com/maps/api/staticmap` +
+              `?center=${encoded}&zoom=13&size=600x300&scale=2` +
+              `&markers=color:0xFF6B35|${encoded}` +
+              `&style=feature:poi|visibility:off` +
+              `&style=feature:transit|visibility:off` +
+              `&key=${apiKey}`
+            return (
+              <div
+                className="rounded-xl overflow-hidden mb-4 cursor-pointer relative group"
+                onClick={() => {
+                  setSliderMilesTemp(sliderMiles)
+                  setShowMapModal(true)
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={staticMapUrl}
+                  alt={`${user.location} 지도`}
+                  className="w-full h-48 object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 text-sm font-medium px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
+                    <IconMaximize className="w-3.5 h-3.5" />
+                    지도 확대
+                  </span>
+                </div>
+                <div className="px-4 py-3 flex items-center gap-2 bg-muted/30">
+                  <IconMapPin className="w-4 h-4 text-primary shrink-0" />
+                  <span className="text-sm font-medium text-foreground">{user.location}</span>
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* 반경 슬라이더 */}
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-muted-foreground">거리무관</span>
+              <span className={cn('text-sm font-bold', sliderMiles > 0 ? 'text-primary' : 'text-muted-foreground')}>
+                {sliderMiles === 0
+                  ? '전체 보기'
+                  : distanceUnit === 'miles'
+                    ? `반경 ${sliderMiles}mi 이내`
+                    : `반경 ${(sliderMiles * MILES_TO_KM).toFixed(1)}km 이내`}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={30}
+              step={1}
+              value={sliderMiles}
+              onChange={(e) => setSliderMiles(Number(e.target.value))}
+              disabled={locationLoading}
+              className="w-full h-1 rounded-full appearance-none cursor-pointer disabled:cursor-not-allowed"
+              style={{
+                accentColor: '#FF6B35',
+                background: `linear-gradient(to right, #FF6B35 ${(sliderMiles / 30) * 100}%, #FFE0D0 ${(sliderMiles / 30) * 100}%)`,
+              }}
+            />
+          </div>
+
+          {/* 저장 버튼 */}
+          <Button
+            className="w-full mt-4"
+            onClick={() => handlePageSliderCommit(sliderMiles)}
+            disabled={locationLoading}
+          >
+            {locationLoading && <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />}
+            저장
+          </Button>
         </section>
+
+        {/* 반경 지도 모달 */}
+        <Dialog open={showMapModal} onOpenChange={setShowMapModal}>
+          <DialogContent className="sm:max-w-5xl p-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <IconCurrentLocation className="h-5 w-5 text-primary" />내 주변 반경 설정
+              </DialogTitle>
+            </DialogHeader>
+            {userLat != null && userLng != null ? (
+              <div className="space-y-4">
+                <RadiusMap
+                  lat={userLat}
+                  lng={userLng}
+                  radiusKm={sliderMilesTemp > 0 ? sliderMilesTemp * MILES_TO_KM : 8}
+                  className="w-full h-[640px] rounded-xl"
+                />
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">거리무관</span>
+                    <span
+                      className={cn(
+                        'text-sm font-bold',
+                        sliderMilesTemp > 0 ? 'text-primary' : 'text-muted-foreground'
+                      )}
+                    >
+                      {sliderMilesTemp === 0
+                        ? '전체 보기'
+                        : distanceUnit === 'miles'
+                          ? `반경 ${sliderMilesTemp}mi 이내`
+                          : `반경 ${(sliderMilesTemp * MILES_TO_KM).toFixed(1)}km 이내`}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={30}
+                    step={1}
+                    value={sliderMilesTemp}
+                    onChange={(e) => setSliderMilesTemp(Number(e.target.value))}
+                    className="w-full h-1 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      accentColor: '#FF6B35',
+                      background: `linear-gradient(to right, #FF6B35 ${(sliderMilesTemp / 30) * 100}%, #FFE0D0 ${(sliderMilesTemp / 30) * 100}%)`,
+                    }}
+                  />
+                </div>
+                <Button onClick={handleRadiusConfirm} className="w-full" disabled={locationLoading}>
+                  {locationLoading && <IconLoader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  확인
+                </Button>
+              </div>
+            ) : (
+              <div className="py-6 flex flex-col items-center gap-3">
+                <p className="text-sm text-muted-foreground">위치 정보가 필요합니다</p>
+                <Button
+                  onClick={async () => {
+                    const result = await getLocation()
+                    if (result) {
+                      setUserLat(result.lat)
+                      setUserLng(result.lng)
+                    }
+                  }}
+                  disabled={locationLoading}
+                >
+                  {locationLoading && <IconLoader2 className="h-4 w-4 animate-spin mr-2" />}
+                  위치 허용하기
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         {/* 알림 설정 */}
         {isSupported && (
@@ -574,6 +679,36 @@ export default function MyPage() {
           </div>
         )}
       </main>
+
+      {/* 위치 설정 확인 다이얼로그 */}
+      <Dialog open={showLocationConfirm} onOpenChange={setShowLocationConfirm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>위치 설정</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-2 text-sm text-muted-foreground">
+            <p>이 위치로 설정하시겠습니까?</p>
+            {pendingLocation && (
+              <p className="flex items-center gap-1 font-medium text-foreground">
+                <IconMapPin className="w-4 h-4 text-primary shrink-0" />
+                {pendingLocation.formatted}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowLocationConfirm(false)
+                setPendingLocation(null)
+              }}
+            >
+              취소
+            </Button>
+            <Button onClick={handleLocationConfirm}>확인</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* 알림 차단 해제 안내 다이얼로그 */}
       <Dialog open={showPushBlockedDialog} onOpenChange={setShowPushBlockedDialog}>

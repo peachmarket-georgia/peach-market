@@ -169,6 +169,8 @@ export function toProduct(p: ApiProduct): Product {
     thumbnailUrl: p.images[0] || '',
     images: p.images,
     location: p.location,
+    lat: p.lat,
+    lng: p.lng,
     timeAgo: timeAgo(p.createdAt),
     seller: {
       id: p.seller.id,

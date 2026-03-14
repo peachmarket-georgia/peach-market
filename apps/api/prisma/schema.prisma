@@ -13,6 +13,9 @@ model User {
   nickname        String   @unique // 닉네임 중복 불가
   avatarUrl       String?
   location        String // 활동 지역 (둘루스, 애틀랜타 등)
+  lat             Float?   // GPS 위도
+  lng             Float?   // GPS 경도
+  searchRadiusMiles Int?   // 검색 반경 (miles, null=거리무관)
   mannerScore     Float    @default(0.0) // 매너 점수 (0.0 ~ 5.0)
   role            UserRole @default(USER) // 사용자 역할
   isBlocked       Boolean  @default(false) // 차단 여부

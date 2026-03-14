@@ -1,4 +1,4 @@
-import { IsString, IsOptional, MinLength, MaxLength, IsUrl } from 'class-validator'
+import { IsString, IsOptional, MinLength, MaxLength, IsUrl, IsNumber, IsInt, Min, Max } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 
 export class UpdateUserDto {
@@ -18,4 +18,21 @@ export class UpdateUserDto {
   @IsOptional()
   @IsUrl()
   avatarUrl?: string
+
+  @ApiPropertyOptional({ description: 'GPS 위도', example: 33.9462 })
+  @IsOptional()
+  @IsNumber()
+  lat?: number
+
+  @ApiPropertyOptional({ description: 'GPS 경도', example: -84.2132 })
+  @IsOptional()
+  @IsNumber()
+  lng?: number
+
+  @ApiPropertyOptional({ description: '검색 반경 (miles, 0=거리무관)', example: 10 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(30)
+  searchRadiusMiles?: number
 }
