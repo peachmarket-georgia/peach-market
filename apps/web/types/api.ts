@@ -137,6 +137,7 @@ export interface ChatMessageDto {
   senderId: string
   content: string
   isRead: boolean
+  isSystem?: boolean
   createdAt: string
   sender: ChatUserDto
 }
@@ -157,6 +158,8 @@ export interface ChatRoomDto {
 
 export interface ChatRoomWithMessagesDto extends Omit<ChatRoomDto, 'unreadCount'> {
   messages: ChatMessageDto[]
+  leftByOther: boolean
+  currentUserLeft: boolean
 }
 
 export interface CreateChatRoomDto {
