@@ -42,6 +42,7 @@ export default function ChatRoomPage() {
   const [typingUser, setTypingUser] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [productStatus, setProductStatus] = useState<ProductStatus>('SELLING')
+  const [productHidden, setProductHidden] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
@@ -77,7 +78,10 @@ export default function ChatRoomPage() {
       if (data) {
         setChatRoom(data)
         setMessages(data.messages)
-        if (data.product) setProductStatus(data.product.status as ProductStatus)
+        if (data.product) {
+          setProductStatus(data.product.status as ProductStatus)
+          setProductHidden(!!(data.product as { isHidden?: boolean }).isHidden)
+        }
       }
       setLoading(false)
 
@@ -176,17 +180,22 @@ export default function ChatRoomPage() {
     const handleProductStatusUpdated = ({ status }: { status: ProductStatus }) => {
       setProductStatus(status)
     }
+    const handleProductHiddenUpdated = ({ isHidden }: { isHidden: boolean }) => {
+      setProductHidden(isHidden)
+    }
 
     socket.on('newMessage', handleNewMessage)
     socket.on('userTyping', handleUserTyping)
     socket.on('userStoppedTyping', handleUserStoppedTyping)
     socket.on('productStatusUpdated', handleProductStatusUpdated)
+    socket.on('productHiddenUpdated', handleProductHiddenUpdated)
 
     return () => {
       socket.off('newMessage', handleNewMessage)
       socket.off('userTyping', handleUserTyping)
       socket.off('userStoppedTyping', handleUserStoppedTyping)
       socket.off('productStatusUpdated', handleProductStatusUpdated)
+      socket.off('productHiddenUpdated', handleProductHiddenUpdated)
     }
   }, [socket, roomId, currentUserId])
 
@@ -351,6 +360,11 @@ export default function ChatRoomPage() {
               >
                 {STATUS_LABEL[productStatus]}
               </span>
+              {productHidden && (
+                <span className="shrink-0 px-2 py-0.5 text-xs font-bold rounded bg-muted text-muted-foreground">
+                  숨김
+                </span>
+              )}
               <span className="text-sm font-medium truncate">{chatRoom.product!.title}</span>
               <span className="shrink-0 text-sm font-bold text-primary">
                 ${chatRoom.product!.price.toLocaleString('en-US')}
@@ -448,10 +462,21 @@ export default function ChatRoomPage() {
           </div>
         ) : (
           messages.map((msg) => {
-            // 구 시스템 메세지 스킵 (confirm_request, buyer_confirmed)
+            // JSON 시스템 메시지 처리
             try {
               const parsed = JSON.parse(msg.content)
+              // 구 시스템 메세지 스킵 (confirm_request, buyer_confirmed)
               if (parsed?.type === 'confirm_request' || parsed?.type === 'buyer_confirmed') return null
+              // 새 시스템 메시지 렌더링
+              if (parsed?.type === 'system') {
+                return (
+                  <div key={msg.id} className="flex justify-center py-1">
+                    <span className="text-xs text-muted-foreground bg-muted/60 px-3 py-1 rounded-full">
+                      {parsed.message}
+                    </span>
+                  </div>
+                )
+              }
             } catch {}
 
             return (

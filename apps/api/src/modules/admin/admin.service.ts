@@ -24,6 +24,7 @@ const ADMIN_PRODUCT_SELECT = {
   price: true,
   category: true,
   status: true,
+  isHidden: true,
   images: true,
   location: true,
   viewCount: true,
@@ -260,5 +261,19 @@ export class AdminService {
     await this.prisma.product.update({ where: { id: productId }, data: { status } })
 
     return { message: '상품 상태가 변경되었습니다' }
+  }
+
+  async toggleProductHidden(productId: string) {
+    const product = await this.prisma.product.findUnique({ where: { id: productId } })
+    if (!product) {
+      throw new NotFoundException('상품을 찾을 수 없습니다')
+    }
+
+    await this.prisma.product.update({
+      where: { id: productId },
+      data: { isHidden: !product.isHidden },
+    })
+
+    return { message: product.isHidden ? '상품 숨김이 해제되었습니다' : '상품이 숨김 처리되었습니다' }
   }
 }
