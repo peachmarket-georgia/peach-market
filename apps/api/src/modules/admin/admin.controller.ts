@@ -117,6 +117,14 @@ export class AdminController {
     return this.adminService.updateProductStatus(id, status)
   }
 
+  @Patch('products/:id/hide')
+  @ApiOperation({ summary: '상품 숨기기 토글', description: '관리자가 상품 숨김 상태를 변경합니다' })
+  @ApiResponse({ status: 200, description: '숨김 상태 변경 성공' })
+  @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
+  toggleProductHidden(@Param('id') id: string) {
+    return this.adminService.toggleProductHidden(id)
+  }
+
   @Delete('products/:id')
   @ApiOperation({ summary: '상품 삭제', description: '관리자가 부적절한 상품을 삭제합니다' })
   @ApiResponse({ status: 200, description: '삭제 성공' })

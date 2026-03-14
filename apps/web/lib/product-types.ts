@@ -34,6 +34,7 @@ export type Product = {
   price: number
   category: string
   status: ProductStatus
+  isHidden?: boolean
   thumbnailUrl: string
   images: string[]
   location: string

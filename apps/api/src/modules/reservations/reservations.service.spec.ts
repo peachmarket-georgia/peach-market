@@ -3,6 +3,7 @@ import { NotFoundException, ForbiddenException, BadRequestException, ConflictExc
 import { ProductStatus, ReservationStatus } from '@prisma/client'
 import { ReservationsService } from './reservations.service'
 import { PrismaService } from '../../core/database/prisma.service'
+import { ChatGateway } from '../../chat/chat.gateway'
 
 describe('ReservationsService', () => {
   let service: ReservationsService
@@ -44,8 +45,19 @@ describe('ReservationsService', () => {
       },
     }
 
+    const mockChatGateway = {
+      server: { to: jest.fn().mockReturnValue({ emit: jest.fn() }) },
+    }
+
+    prisma.chatRoom = { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() }
+    prisma.message = { create: jest.fn() }
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ReservationsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        ReservationsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ChatGateway, useValue: mockChatGateway },
+      ],
     }).compile()
 
     service = module.get<ReservationsService>(ReservationsService)

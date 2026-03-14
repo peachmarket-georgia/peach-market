@@ -7,7 +7,15 @@ import {
 } from '@nestjs/common'
 import { ProductStatus, ReservationStatus } from '@prisma/client'
 import { PrismaService } from '../../core/database/prisma.service'
+import { ChatGateway } from '../../chat/chat.gateway'
 import { CreateReservationDto } from './dto/create-reservation.dto'
+
+const STATUS_LABEL: Record<string, string> = {
+  SELLING: '판매중',
+  RESERVED: '예약중',
+  CONFIRMED: '판매확정',
+  ENDED: '판매종료',
+}
 
 const USER_SELECT = {
   id: true,
@@ -42,7 +50,40 @@ const RESERVATION_SELECT = {
 
 @Injectable()
 export class ReservationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly chatGateway: ChatGateway
+  ) {}
+
+  /** 상품 관련 모든 채팅방에 시스템 메시지 저장 + 소켓 브로드캐스트 */
+  private async broadcastSystemMessage(productId: string, senderId: string, message: string) {
+    const chatRooms = await this.prisma.chatRoom.findMany({
+      where: { productId },
+      select: { id: true },
+    })
+
+    if (chatRooms.length === 0) return
+
+    const content = JSON.stringify({ type: 'system', message })
+
+    const savedMessages = await Promise.all(
+      chatRooms.map(async (room) => {
+        const msg = await this.prisma.message.create({
+          data: { chatRoomId: room.id, senderId, content },
+          include: { sender: true },
+        })
+        await this.prisma.chatRoom.update({
+          where: { id: room.id },
+          data: { lastMessage: message, updatedAt: new Date() },
+        })
+        return { roomId: room.id, message: msg }
+      })
+    )
+
+    for (const { roomId, message: msg } of savedMessages) {
+      this.chatGateway.server.to(roomId).emit('newMessage', msg)
+    }
+  }
 
   /**
    * 예약 생성
@@ -114,6 +155,12 @@ export class ReservationsService {
       }),
     ])
 
+    await this.broadcastSystemMessage(
+      dto.productId,
+      sellerId,
+      `상품 상태가 ${STATUS_LABEL.RESERVED}(으)로 변경되었습니다`
+    )
+
     return reservation
   }
 
@@ -170,6 +217,12 @@ export class ReservationsService {
       }),
     ])
 
+    await this.broadcastSystemMessage(
+      reservation.productId,
+      userId,
+      `상품 상태가 ${STATUS_LABEL.CONFIRMED}(으)로 변경되었습니다`
+    )
+
     return updated
   }
 
@@ -214,6 +267,12 @@ export class ReservationsService {
         data: { status: ProductStatus.SELLING },
       }),
     ])
+
+    await this.broadcastSystemMessage(
+      reservation.productId,
+      userId,
+      `상품 상태가 ${STATUS_LABEL.SELLING}(으)로 변경되었습니다`
+    )
 
     return updated
   }

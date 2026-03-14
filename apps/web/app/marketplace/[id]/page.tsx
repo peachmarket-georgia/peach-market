@@ -17,6 +17,7 @@ import {
   IconClock,
   IconPencil,
   IconFlag,
+  IconEyeOff,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -70,14 +71,17 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [isHidden, setIsHidden] = useState(false)
+  const [hiddenLoading, setHiddenLoading] = useState(false)
 
   useEffect(() => {
     getProduct(id)
       .then((data) => {
         setProduct(toProduct(data))
-        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean }
+        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean; isHidden?: boolean }
         setFavoriteCount(raw.favoriteCount ?? 0)
         setIsFavorited(raw.isFavorited ?? false)
+        setIsHidden(raw.isHidden ?? false)
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
@@ -107,6 +111,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
       setFavoriteCount((c) => c + (prev ? 1 : -1))
     }
     setFavoriteLoading(false)
+  }
+
+  const handleToggleHidden = async () => {
+    if (hiddenLoading) return
+    setHiddenLoading(true)
+    const { data } = await productApi.toggleHidden(id)
+    if (data) setIsHidden(data.isHidden)
+    setHiddenLoading(false)
   }
 
   if (loading) {
@@ -173,6 +185,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
               {STATUS_LABEL[product.status]}
             </Badge>
           </div>
+
+          {/* 숨김 배너 (구매자에게 표시) */}
+          {isHidden && !isOwner && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted/60 border border-muted-foreground/20 mb-4">
+              <IconEyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm font-medium text-muted-foreground">판매자가 숨긴 상품입니다</span>
+            </div>
+          )}
 
           {/* 제목 */}
           <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">{product.title}</h1>
@@ -290,6 +310,21 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                     )}
                   </>
                 )}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleToggleHidden}
+                  disabled={hiddenLoading}
+                  className={cn(
+                    'gap-2 border-2 hover:scale-105 transition-all shadow-sm',
+                    isHidden
+                      ? 'border-primary/40 text-primary bg-primary/10 hover:bg-primary/20'
+                      : 'border-border text-muted-foreground bg-muted/50 hover:bg-muted'
+                  )}
+                >
+                  <IconEyeOff className="h-4 w-4" />
+                  {isHidden ? '숨김 해제' : '숨기기'}
+                </Button>
               </>
             ) : (
               <>
@@ -328,11 +363,11 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 <Button
                   size="lg"
                   className="flex-1 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                  disabled={isSold || chatLoading}
+                  disabled={isSold || isHidden || chatLoading}
                   onClick={handleChat}
                 >
                   <IconMessageCircle className="h-5 w-5" />
-                  {chatLoading ? '연결 중...' : '채팅하기'}
+                  {chatLoading ? '연결 중...' : isHidden ? '숨김 상품' : '채팅하기'}
                 </Button>
               </>
             )}
@@ -386,6 +421,19 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 </div>
               </div>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggleHidden}
+              disabled={hiddenLoading}
+              className={cn(
+                'shrink-0 border-2 active:scale-95 transition-all h-10',
+                isHidden ? 'border-primary/40 text-primary bg-primary/10' : 'border-border text-muted-foreground'
+              )}
+            >
+              <IconEyeOff className="h-4 w-4 mr-1" />
+              {isHidden ? '숨김 해제' : '숨기기'}
+            </Button>
           </>
         ) : (
           <>
@@ -419,11 +467,11 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </div>
             <Button
               className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
-              disabled={isSold || chatLoading}
+              disabled={isSold || isHidden || chatLoading}
               onClick={handleChat}
             >
               <IconMessageCircle className="h-5 w-5" />
-              {chatLoading ? '연결 중...' : '채팅하기'}
+              {chatLoading ? '연결 중...' : isHidden ? '숨김 상품' : '채팅하기'}
             </Button>
           </>
         )}
