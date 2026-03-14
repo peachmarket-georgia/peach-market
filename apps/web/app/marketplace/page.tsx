@@ -13,14 +13,10 @@ import {
   IconX,
   IconBell,
   IconArrowRight,
-  IconCurrentLocation,
 } from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { usePushNotification } from '@/hooks/use-push-notification'
-import { useGeolocation } from '@/hooks/use-geolocation'
 import { ProductCard } from './components/product-card'
-import { RadiusMap } from '@/components/radius-map'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CATEGORIES, STATUS_LABEL, SORT_LABELS } from '@/lib/product-types'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -52,30 +48,26 @@ const MarketplacePage = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showPushBanner, setShowPushBanner] = useState(false)
-  const [userLat, setUserLat] = useState<number | null>(null)
-  const [userLng, setUserLng] = useState<number | null>(null)
-  const [sliderMiles, setSliderMiles] = useState(0) // 0=거리무관, 1~30=miles
-  const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
-  const [showRadiusMap, setShowRadiusMap] = useState(false)
-  const { permission, isSupported, subscribe } = usePushNotification()
-  const { loading: locationLoading, getLocation } = useGeolocation()
 
-  // localStorage에서 거리 단위 불러오기
+  // 저장된 반경 설정 (마이페이지에서 설정)
+  const [savedRadiusMiles, setSavedRadiusMiles] = useState(0)
+  const [savedLat, setSavedLat] = useState<number | null>(null)
+  const [savedLng, setSavedLng] = useState<number | null>(null)
+
+  const { permission, isSupported, subscribe } = usePushNotification()
+
+  // localStorage에서 저장된 반경 및 위치 불러오기
   useEffect(() => {
-    const saved = localStorage.getItem('distance-unit')
-    if (saved === 'miles' || saved === 'km') setDistanceUnit(saved)
+    const miles = localStorage.getItem('distance-radius-miles')
+    const lat = localStorage.getItem('user-location-lat')
+    const lng = localStorage.getItem('user-location-lng')
+    if (miles) setSavedRadiusMiles(Number(miles))
+    if (lat) setSavedLat(Number(lat))
+    if (lng) setSavedLng(Number(lng))
   }, [])
 
   // 슬라이더 값(miles) → 실제 반경(km, GPS 없으면 null)
-  const effectiveRadius = sliderMiles > 0 && userLat != null ? sliderMiles * MILES_TO_KM : null
-
-  // 반경 표시 레이블
-  const radiusLabel =
-    sliderMiles === 0
-      ? '전체 보기'
-      : distanceUnit === 'miles'
-        ? `반경 ${sliderMiles}mi 이내`
-        : `반경 ${(sliderMiles * MILES_TO_KM).toFixed(1)}km 이내`
+  const effectiveRadius = savedRadiusMiles > 0 && savedLat != null ? savedRadiusMiles * MILES_TO_KM : null
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -85,8 +77,8 @@ const MarketplacePage = () => {
         category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
         status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
         sort: sortBy,
-        lat: effectiveRadius != null ? (userLat ?? undefined) : undefined,
-        lng: effectiveRadius != null ? (userLng ?? undefined) : undefined,
+        lat: effectiveRadius != null ? (savedLat ?? undefined) : undefined,
+        lng: effectiveRadius != null ? (savedLng ?? undefined) : undefined,
         radius: effectiveRadius ?? undefined,
       })
       if (error || !data) throw new Error(error)
@@ -96,7 +88,7 @@ const MarketplacePage = () => {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, selectedCategory, selectedStatus, sortBy, effectiveRadius, userLat, userLng])
+  }, [searchQuery, selectedCategory, selectedStatus, sortBy, effectiveRadius, savedLat, savedLng])
 
   useEffect(() => {
     const timer = setTimeout(fetchProducts, 300)
@@ -128,52 +120,16 @@ const MarketplacePage = () => {
     localStorage.setItem('push-banner-dismissed', '1')
   }
 
-  const isFiltered =
-    searchQuery !== '' ||
-    selectedCategory !== 'ALL' ||
-    selectedStatus !== 'ALL' ||
-    sortBy !== 'latest' ||
-    sliderMiles > 0
+  const isFiltered = searchQuery !== '' || selectedCategory !== 'ALL' || selectedStatus !== 'ALL' || sortBy !== 'latest'
 
   const resetFilters = () => {
     setSearchQuery('')
     setSelectedCategory('ALL')
     setSelectedStatus('ALL')
     setSortBy('latest')
-    setSliderMiles(0)
-  }
-
-  // 드래그 중: 시각적 업데이트만 (부드러운 슬라이딩)
-  const handleSliderDrag = (miles: number) => {
-    setSliderMiles(miles)
-  }
-
-  // 드래그 종료 시: GPS 요청
-  const handleSliderCommit = async (miles: number) => {
-    if (miles === 0) return
-    if (userLat == null || userLng == null) {
-      const result = await getLocation()
-      if (!result) {
-        setSliderMiles(0) // GPS 거부 시 원위치
-        return
-      }
-      setUserLat(result.lat)
-      setUserLng(result.lng)
-    }
-  }
-
-  const handleOpenRadiusMap = async () => {
-    if (userLat == null || userLng == null) {
-      const result = await getLocation()
-      if (!result) return
-      setUserLat(result.lat)
-      setUserLng(result.lng)
-    }
-    setShowRadiusMap(true)
   }
 
   const handleFavoriteToggle = async (id: string) => {
-    // 비로그인 사용자는 로그인 유도
     if (!isAuthenticated) {
       toast.info('로그인이 필요합니다', {
         description: '찜하기를 하려면 먼저 로그인해주세요',
@@ -299,65 +255,6 @@ const MarketplacePage = () => {
         </div>
       </div>
 
-      {/* 반경 필터 (슬라이더) */}
-      <div className="container mx-auto max-w-5xl px-4 md:px-6">
-        <div className="flex items-center gap-3 bg-white rounded-2xl border-2 border-peach-muted px-4 py-3 shadow-sm">
-          {/* 내 주변 버튼 → 지도 모달 */}
-          <button
-            onClick={handleOpenRadiusMap}
-            disabled={locationLoading}
-            className="flex flex-col items-center gap-0.5 shrink-0 group disabled:opacity-50"
-          >
-            {locationLoading ? (
-              <IconLoader2 className="h-5 w-5 animate-spin text-primary" />
-            ) : (
-              <IconCurrentLocation
-                className={cn(
-                  'h-5 w-5 transition-colors',
-                  userLat != null ? 'text-primary' : 'text-fg-secondary group-hover:text-primary'
-                )}
-              />
-            )}
-            <span
-              className={cn(
-                'text-xs font-semibold whitespace-nowrap',
-                userLat != null ? 'text-primary' : 'text-fg-secondary'
-              )}
-            >
-              내 주변
-            </span>
-          </button>
-
-          {/* 구분선 */}
-          <div className="w-px h-9 bg-border shrink-0" />
-
-          {/* 슬라이더 */}
-          <div className="flex-1 flex flex-col gap-1.5">
-            <div className="flex justify-between items-center">
-              <span className="text-xs text-fg-tertiary">거리무관</span>
-              <span className={cn('text-xs font-bold', sliderMiles > 0 ? 'text-primary' : 'text-fg-tertiary')}>
-                {radiusLabel}
-              </span>
-              <span className="text-xs text-fg-tertiary">
-                {distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}
-              </span>
-            </div>
-            <input
-              type="range"
-              min={0}
-              max={30}
-              step={1}
-              value={sliderMiles}
-              onChange={(e) => handleSliderDrag(Number(e.target.value))}
-              onMouseUp={(e) => handleSliderCommit(Number((e.target as HTMLInputElement).value))}
-              onTouchEnd={(e) => handleSliderCommit(Number((e.currentTarget as HTMLInputElement).value))}
-              disabled={locationLoading}
-              className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-primary disabled:cursor-not-allowed"
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 max-w-5xl md:px-6 flex flex-col gap-4">
         {/* 상태 필터 + 정렬 */}
         <div className="flex items-center justify-between gap-2">
@@ -431,6 +328,7 @@ const MarketplacePage = () => {
         {!loading && products && (
           <p className="text-sm font-medium text-fg-secondary">
             <span className="text-primary font-bold">{products.length}</span>개의 매물
+            {effectiveRadius != null && <span className="ml-1 text-fg-tertiary">· 반경 {savedRadiusMiles}mi 이내</span>}
           </p>
         )}
 
@@ -447,7 +345,6 @@ const MarketplacePage = () => {
                 key={product.id}
                 product={product}
                 onFavoriteToggle={
-                  // 비로그인 사용자 또는 본인 상품이 아닌 경우에만 찜하기 활성화
                   !isAuthenticated || product.seller.id !== currentUserId ? handleFavoriteToggle : undefined
                 }
               />
@@ -463,64 +360,6 @@ const MarketplacePage = () => {
           </div>
         )}
       </div>
-
-      {/* 내 주변 지도 모달 */}
-      <Dialog open={showRadiusMap} onOpenChange={setShowRadiusMap}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <IconCurrentLocation className="h-5 w-5 text-primary" />내 주변 반경
-            </DialogTitle>
-          </DialogHeader>
-          {userLat != null && userLng != null ? (
-            <div className="space-y-4">
-              <RadiusMap lat={userLat} lng={userLng} radiusKm={sliderMiles > 0 ? sliderMiles * MILES_TO_KM : 8} />
-
-              {/* 지도 내 슬라이더 */}
-              <div className="flex flex-col gap-2 px-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-fg-tertiary">거리무관</span>
-                  <span className={cn('text-xs font-bold', sliderMiles > 0 ? 'text-primary' : 'text-fg-tertiary')}>
-                    {radiusLabel}
-                  </span>
-                  <span className="text-xs text-fg-tertiary">
-                    {distanceUnit === 'miles' ? '30mi' : `${(30 * MILES_TO_KM).toFixed(0)}km`}
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={30}
-                  step={1}
-                  value={sliderMiles}
-                  onChange={(e) => handleSliderDrag(Number(e.target.value))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer accent-primary"
-                />
-                <p className="text-xs text-center text-fg-secondary">
-                  {sliderMiles > 0 ? `${radiusLabel} 매물만 표시 중` : '슬라이더를 움직여 반경을 설정하세요'}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="py-6 flex flex-col items-center gap-3">
-              <p className="text-sm text-fg-secondary">위치 정보가 필요합니다</p>
-              <Button
-                onClick={async () => {
-                  const result = await getLocation()
-                  if (result) {
-                    setUserLat(result.lat)
-                    setUserLng(result.lng)
-                  }
-                }}
-                disabled={locationLoading}
-              >
-                {locationLoading && <IconLoader2 className="h-4 w-4 animate-spin mr-2" />}
-                위치 허용하기
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

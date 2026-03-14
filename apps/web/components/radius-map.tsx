@@ -17,9 +17,10 @@ type RadiusMapProps = {
   lat: number
   lng: number
   radiusKm: number
+  className?: string
 }
 
-export function RadiusMap({ lat, lng, radiusKm }: RadiusMapProps) {
+export function RadiusMap({ lat, lng, radiusKm, className }: RadiusMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<any>(null)
   const circleRef = useRef<any>(null)
@@ -37,6 +38,7 @@ export function RadiusMap({ lat, lng, radiusKm }: RadiusMapProps) {
         center: { lat, lng },
         zoom: getZoom(radiusKm),
         gestureHandling: 'greedy',
+        scrollwheel: true,
         zoomControl: true,
         mapTypeControl: false,
         streetViewControl: false,
@@ -105,5 +107,5 @@ export function RadiusMap({ lat, lng, radiusKm }: RadiusMapProps) {
     mapInstanceRef.current.setZoom(getZoom(radiusKm))
   }, [radiusKm])
 
-  return <div ref={mapRef} className="w-full h-80 rounded-xl" />
+  return <div ref={mapRef} className={className ?? 'w-full h-80 rounded-xl'} />
 }
