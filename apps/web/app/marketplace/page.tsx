@@ -211,18 +211,18 @@ const MarketplacePage = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
                 <h2 className="text-lg font-bold text-foreground">조지아 한인 중고마켓 🍑</h2>
-                <p className="text-sm text-fg-secondary mt-0.5">회원가입하고 안전하게 거래하세요</p>
+                <p className="text-sm text-fg-secondary mt-0.5">처음이신가요? 회원가입부터 해주세요!</p>
               </div>
               <div className="flex items-center gap-2">
-                <Link href="/login">
-                  <Button variant="outline" size="sm" className="text-sm font-semibold">
-                    로그인
+                <Link href="/signup">
+                  <Button size="sm" className="text-sm font-semibold gap-1">
+                    회원가입
+                    <IconArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/login">
-                  <Button size="sm" className="text-sm font-semibold gap-1">
-                    시작하기
-                    <IconArrowRight className="h-4 w-4" />
+                  <Button variant="outline" size="sm" className="text-sm font-semibold">
+                    기존 회원 로그인
                   </Button>
                 </Link>
               </div>

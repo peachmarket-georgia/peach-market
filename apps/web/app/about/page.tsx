@@ -23,8 +23,8 @@ const AboutPage = () => {
                 매물 보기
               </Button>
             </Link>
-            <Link href="/login">
-              <Button size="sm">로그인</Button>
+            <Link href="/auth">
+              <Button size="sm">시작하기</Button>
             </Link>
           </div>
         </div>
@@ -47,8 +47,8 @@ const AboutPage = () => {
           </p>
 
           <div className="flex items-center gap-3">
-            <Link href="/login">
-              <Button size="lg">시작하기</Button>
+            <Link href="/signup">
+              <Button size="lg">무료 회원가입</Button>
             </Link>
             <Link href="/">
               <Button variant="outline" size="lg">
@@ -133,8 +133,8 @@ const AboutPage = () => {
           <p className="text-muted-foreground mb-8">지금 피치마켓에서 시작하세요.</p>
 
           <div className="flex items-center justify-center gap-3">
-            <Link href="/login">
-              <Button size="lg">시작하기</Button>
+            <Link href="/signup">
+              <Button size="lg">무료 회원가입</Button>
             </Link>
             <Link href="/">
               <Button variant="outline" size="lg">
