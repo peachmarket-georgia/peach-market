@@ -1,14 +1,20 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { FeedbackButton as FeedbacklandButton } from 'feedbackland-react'
 
 export function FeedbackButton() {
+  const [mounted, setMounted] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) return null
   if (pathname.startsWith('/chat')) return null
 
   const handleClick = () => {
