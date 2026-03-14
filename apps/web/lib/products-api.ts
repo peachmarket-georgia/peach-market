@@ -52,6 +52,11 @@ export const productApi = {
       method: 'POST',
     }),
 
+  toggleHidden: (id: string) =>
+    apiRequest<{ isHidden: boolean }>(`/api/products/${id}/hide`, {
+      method: 'PATCH',
+    }),
+
   getFavorites: (cookies?: string) => apiRequest<ProductResponseDto[]>('/api/products/favorites', undefined, cookies),
 
   getMyProducts: (status?: ProductStatus, cookies?: string) => {

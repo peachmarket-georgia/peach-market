@@ -3,6 +3,7 @@ import { ForbiddenException, NotFoundException, BadRequestException } from '@nes
 import { ProductStatus } from '@prisma/client'
 import { ProductsService } from './products.service'
 import { PrismaService } from '../../core/database/prisma.service'
+import { ChatGateway } from '../../chat/chat.gateway'
 
 describe('ProductsService', () => {
   let service: ProductsService
@@ -53,8 +54,19 @@ describe('ProductsService', () => {
       },
     }
 
+    const mockChatGateway = {
+      server: { to: jest.fn().mockReturnValue({ emit: jest.fn() }) },
+    }
+
+    prisma.chatRoom = { findMany: jest.fn().mockResolvedValue([]), update: jest.fn() }
+    prisma.message = { create: jest.fn() }
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ProductsService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        ProductsService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: ChatGateway, useValue: mockChatGateway },
+      ],
     }).compile()
 
     service = module.get<ProductsService>(ProductsService)

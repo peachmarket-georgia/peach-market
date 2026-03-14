@@ -74,6 +74,13 @@ export function ProductCard({ product, onFavoriteToggle }: ProductCardProps) {
           </div>
         )}
 
+        {/* 숨김 오버레이 (찜목록/마이페이지에서 표시) */}
+        {product.isHidden && (
+          <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+            <span className="bg-muted/90 text-muted-foreground font-bold text-sm px-3 py-1 rounded-full">숨김</span>
+          </div>
+        )}
+
         {/* 데스크톱 호버 시 빠른 액션 */}
         {(product.status === 'SELLING' || product.status === 'RESERVED') && (
           <div className="absolute inset-x-0 bottom-0 hidden lg:flex items-end p-3 bg-gradient-to-t from-black/60 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">

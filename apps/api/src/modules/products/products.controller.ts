@@ -142,6 +142,16 @@ export class ProductsController {
     return this.productsService.updateStatus(id, status, userId)
   }
 
+  @Patch(':id/hide')
+  @ApiOperation({ summary: '상품 숨기기 토글', description: '본인의 상품을 숨기거나 숨김 해제합니다' })
+  @ApiParam({ name: 'id', description: '상품 ID' })
+  @ApiResponse({ status: 200, description: '숨김 상태 변경 성공' })
+  @ApiResponse({ status: 403, description: '본인의 상품만 숨길 수 있음' })
+  @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
+  toggleHidden(@Param('id') id: string, @CurrentUser() { userId }: JwtUser) {
+    return this.productsService.toggleHidden(id, userId)
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '상품 삭제', description: '본인이 등록한 상품을 삭제합니다 (로그인 필요)' })

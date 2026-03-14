@@ -128,6 +128,7 @@ export interface ChatProductDto {
   price: number
   images: string[]
   status: string
+  isHidden?: boolean
 }
 
 export interface ChatMessageDto {
@@ -196,6 +197,7 @@ export interface ProductResponseDto {
   seller: ProductSellerDto
   favoriteCount: number
   isFavorited: boolean
+  isHidden?: boolean
 }
 
 export interface ProductListResponseDto {
@@ -309,6 +311,7 @@ export interface AdminProductDto {
   price: number
   category: string
   status: ProductStatus
+  isHidden: boolean
   images: string[]
   location: string
   viewCount: number
