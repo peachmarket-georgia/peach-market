@@ -2,13 +2,23 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { IconPhoto, IconX, IconCrown } from '@tabler/icons-react'
+import { IconPhoto, IconX, IconCrown, IconLoader2 } from '@tabler/icons-react'
+import imageCompression from 'browser-image-compression'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
 const MAX_IMAGES = 5
+const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+const COMPRESSION_OPTIONS = {
+  maxSizeMB: 2,
+  maxWidthOrHeight: 1920,
+  useWebWorker: true,
+  fileType: 'image/webp',
+  initialQuality: 0.85,
+}
 
 export type ImageItem = {
   id: string
@@ -26,24 +36,51 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
   const [dragOverZone, setDragOverZone] = useState(false)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [compressing, setCompressing] = useState(false)
 
   const addImages = useCallback(
-    (files: FileList | File[]) => {
-      const validFiles = Array.from(files).filter((f) => ACCEPTED_TYPES.includes(f.type))
+    async (files: FileList | File[]) => {
+      const allFiles = Array.from(files)
+
+      const oversized = allFiles.filter((f) => f.size > MAX_FILE_SIZE)
+      if (oversized.length > 0) {
+        toast.error(`파일 크기는 10MB 이하여야 합니다.`, {
+          description: oversized.map((f) => f.name).join(', '),
+        })
+      }
+
+      const validFiles = allFiles.filter((f) => ACCEPTED_TYPES.includes(f.type) && f.size <= MAX_FILE_SIZE)
       const remaining = MAX_IMAGES - images.length
 
       if (images.length >= MAX_IMAGES || validFiles.length > remaining) {
         toast.error(`이미지는 최대 ${MAX_IMAGES}장까지 등록할 수 있습니다.`)
       }
 
-      const toAdd = validFiles.slice(0, remaining)
-      const newItems: ImageItem[] = toAdd.map((file) => ({
-        id: crypto.randomUUID(),
-        file,
-        preview: URL.createObjectURL(file),
-      }))
+      const toCompress = validFiles.slice(0, remaining)
+      if (toCompress.length === 0) return
 
-      onChange([...images, ...newItems])
+      setCompressing(true)
+      try {
+        const compressed = await Promise.all(
+          toCompress.map(async (file) => {
+            // GIF는 압축 스킵
+            if (file.type === 'image/gif') return file
+            return imageCompression(file, COMPRESSION_OPTIONS)
+          })
+        )
+
+        const newItems: ImageItem[] = compressed.map((file) => ({
+          id: crypto.randomUUID(),
+          file,
+          preview: URL.createObjectURL(file),
+        }))
+
+        onChange([...images, ...newItems])
+      } catch {
+        toast.error('이미지 처리 중 오류가 발생했습니다.')
+      } finally {
+        setCompressing(false)
+      }
     },
     [images, onChange]
   )
@@ -116,17 +153,30 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
           onDragOver={handleZoneDragOver}
           onDragLeave={handleZoneDragLeave}
           onDrop={handleZoneDrop}
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => !compressing && fileInputRef.current?.click()}
           className={cn(
-            'aspect-4/3 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors',
-            dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
+            'aspect-4/3 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors',
+            compressing ? 'cursor-not-allowed border-primary/40 bg-primary/5' : 'cursor-pointer',
+            !compressing &&
+              (dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50')
           )}
         >
-          <IconPhoto className="h-10 w-10 text-muted-foreground" />
-          <div className="text-center">
-            <p className="text-sm font-medium text-muted-foreground">클릭 또는 드래그하여 이미지 추가</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">JPG, PNG, WebP, GIF · 최대 {MAX_IMAGES}장</p>
-          </div>
+          {compressing ? (
+            <>
+              <IconLoader2 className="h-10 w-10 text-primary animate-spin" />
+              <p className="text-sm font-medium text-primary">이미지 압축 중...</p>
+            </>
+          ) : (
+            <>
+              <IconPhoto className="h-10 w-10 text-muted-foreground" />
+              <div className="text-center">
+                <p className="text-sm font-medium text-muted-foreground">클릭 또는 드래그하여 이미지 추가</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  JPG, PNG, WebP, GIF · 최대 {MAX_IMAGES}장 · 장당 10MB 이하
+                </p>
+              </div>
+            </>
+          )}
         </div>
       ) : (
         /*
@@ -211,14 +261,23 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
               onDragOver={handleZoneDragOver}
               onDragLeave={handleZoneDragLeave}
               onDrop={handleZoneDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => !compressing && fileInputRef.current?.click()}
               className={cn(
-                'aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 cursor-pointer transition-colors',
-                dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50'
+                'aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-colors',
+                compressing
+                  ? 'cursor-not-allowed border-primary/40 bg-primary/5'
+                  : 'cursor-pointer ' +
+                      (dragOverZone ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50')
               )}
             >
-              <IconPhoto className="h-5 w-5 text-muted-foreground" />
-              <p className="text-[10px] text-muted-foreground">추가</p>
+              {compressing ? (
+                <IconLoader2 className="h-5 w-5 text-primary animate-spin" />
+              ) : (
+                <>
+                  <IconPhoto className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-[10px] text-muted-foreground">추가</p>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -229,6 +288,7 @@ export const ImageUpload = ({ images, onChange }: ImageUploadProps) => {
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
         multiple
+        disabled={compressing}
         className="hidden"
         onChange={(e) => {
           if (e.target.files) addImages(e.target.files)
