@@ -69,6 +69,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const [favoriteCount, setFavoriteCount] = useState(0)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
@@ -87,7 +88,12 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
       .finally(() => setLoading(false))
 
     userApi.getMe().then(({ data }) => {
-      if (data) setCurrentUserId(data.id)
+      if (data) {
+        setCurrentUserId(data.id)
+        setIsAuthenticated(true)
+      } else {
+        setIsAuthenticated(false)
+      }
     })
   }, [id])
 
@@ -100,6 +106,10 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   }
 
   const handleFavoriteToggle = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/marketplace/${id}`)
+      return
+    }
     if (favoriteLoading) return
     setFavoriteLoading(true)
     const prev = isFavorited
@@ -295,6 +305,19 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </p>
           </div>
 
+          {/* 비로그인 안내 배너 */}
+          {isAuthenticated === false && !isOwner && (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-sm text-muted-foreground">로그인하면 찜하기·채팅이 가능해요</p>
+              <Link
+                href={`/login?redirect=/marketplace/${id}`}
+                className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                로그인
+              </Link>
+            </div>
+          )}
+
           {/* 데스크톱 액션 버튼 */}
           <div className="hidden md:flex gap-3 pt-6">
             {isOwner ? (
@@ -406,7 +429,19 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
 
       {/* 모바일 하단 고정 액션바 - 하단 네비게이션(h-16=64px) 위에 배치 */}
       <div className="fixed bottom-16 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        {isOwner ? (
+        {isAuthenticated === false ? (
+          <>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs text-muted-foreground">로그인 후 거래 가능</span>
+              <p className="text-base font-bold truncate text-foreground">{product.title}</p>
+            </div>
+            <Link href={`/login?redirect=/marketplace/${id}`}>
+              <Button className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all">
+                로그인하기
+              </Button>
+            </Link>
+          </>
+        ) : isOwner ? (
           <>
             {isConfirmed ? (
               <div className="flex-1 flex items-center justify-center px-3 py-2 rounded-xl bg-[#F3E8FF]/60 border border-[#6B21A8]/20">

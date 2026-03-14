@@ -49,9 +49,9 @@ export class StorageService {
       throw new BadRequestException(`허용되지 않는 파일 형식입니다. JPG, PNG, WebP만 가능합니다.`)
     }
 
-    const maxSize = 5 * 1024 * 1024
+    const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      throw new BadRequestException(`파일 크기는 5MB 이하여야 합니다.`)
+      throw new BadRequestException(`파일 크기는 10MB 이하여야 합니다.`)
     }
 
     if (!this.validateMagicBytes(file.buffer, file.mimetype)) {

@@ -24,7 +24,7 @@ export class UploadController {
   @UseInterceptors(
     FilesInterceptor('files', 5, {
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
+        fileSize: 10 * 1024 * 1024, // 10MB
       },
       fileFilter: (_req, file, callback) => {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']

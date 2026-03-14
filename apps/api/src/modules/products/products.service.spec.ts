@@ -115,6 +115,47 @@ describe('ProductsService', () => {
       )
     })
 
+    it('비로그인 유저는 isFavorited=false로 반환해야 한다', async () => {
+      prisma.product.findMany.mockResolvedValue([mockProduct])
+
+      const result = await service.findAll({})
+
+      expect(prisma.favorite.findMany).not.toHaveBeenCalled()
+      expect(result[0]).toHaveProperty('isFavorited', false)
+    })
+
+    it('상태 필터 없을 때 CONFIRMED/ENDED를 제외해야 한다', async () => {
+      prisma.product.findMany.mockResolvedValue([])
+
+      await service.findAll({})
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                status: { notIn: ['CONFIRMED', 'ENDED'] },
+              }),
+            ]),
+          }),
+        })
+      )
+    })
+
+    it('상태 필터 지정 시 해당 상태 조건을 포함해야 한다', async () => {
+      prisma.product.findMany.mockResolvedValue([])
+
+      await service.findAll({ status: 'SELLING' })
+
+      expect(prisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([{ status: 'SELLING' }]),
+          }),
+        })
+      )
+    })
+
     it('로그인 유저의 찜 상태를 포함해야 한다', async () => {
       prisma.product.findMany.mockResolvedValue([mockProduct])
       prisma.favorite.findMany.mockResolvedValue([{ productId: 'product-1' }])

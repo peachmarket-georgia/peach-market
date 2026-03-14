@@ -18,6 +18,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiCookieAuth, ApiParam, 
 import type { Request } from 'express'
 import { ProductStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard'
 import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
 import { ProductsService } from './products.service'
 import { StorageService } from '../../core/storage/storage.service'
@@ -26,7 +27,6 @@ import { UpdateProductDto } from './dto/update-product.dto'
 
 @ApiTags('products')
 @Controller('products')
-@UseGuards(JwtAuthGuard)
 @ApiCookieAuth('access_token')
 export class ProductsController {
   constructor(
@@ -35,24 +35,25 @@ export class ProductsController {
   ) {}
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: '상품 목록 조회', description: '검색, 카테고리, 상태 필터 및 정렬 지원' })
   @ApiQuery({ name: 'search', required: false, description: '검색어 (제목, 설명)' })
   @ApiQuery({ name: 'category', required: false, description: '카테고리 필터' })
   @ApiQuery({ name: 'status', required: false, description: '상태 필터 (판매중, 예약중, 판매완료)' })
   @ApiQuery({ name: 'sort', required: false, description: '정렬', enum: ['price_asc', 'price_desc'] })
   @ApiResponse({ status: 200, description: '상품 목록 반환' })
-  @ApiResponse({ status: 401, description: '인증 필요' })
   findAll(
-    @CurrentUser() { userId }: JwtUser,
+    @CurrentUser() user: JwtUser | undefined,
     @Query('search') search?: string,
     @Query('category') category?: string,
     @Query('status') status?: string,
     @Query('sort') sort?: string
   ) {
-    return this.productsService.findAll({ search, category, status, sort }, userId)
+    return this.productsService.findAll({ search, category, status, sort }, user?.userId)
   }
 
   @Get('favorites')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '찜 목록 조회', description: '사용자가 찜한 상품 목록을 조회합니다.' })
   @ApiResponse({ status: 200, description: '찜 목록 반환' })
   @ApiResponse({ status: 401, description: '인증 필요' })
@@ -61,6 +62,7 @@ export class ProductsController {
   }
 
   @Get('my')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '내 상품 목록 조회', description: '로그인한 사용자가 등록한 상품 목록' })
   @ApiQuery({ name: 'status', enum: ProductStatus, required: false, description: '상품 상태 필터' })
   @ApiResponse({ status: 200, description: '내 상품 목록 반환' })
@@ -70,23 +72,24 @@ export class ProductsController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: '상품 상세 조회',
     description: '상품 상세 정보 조회 및 조회수 증가 (IP 기반 24시간 중복 방지)',
   })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '상품 상세 정보 반환' })
-  @ApiResponse({ status: 401, description: '인증 필요' })
   @ApiResponse({ status: 404, description: '상품을 찾을 수 없음' })
-  findOne(@Param('id') id: string, @Req() req: Request, @CurrentUser() { userId }: JwtUser) {
+  findOne(@Param('id') id: string, @Req() req: Request, @CurrentUser() user: JwtUser | undefined) {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || 'unknown'
-    return this.productsService.findOne(id, ip, userId)
+    return this.productsService.findOne(id, ip, user?.userId)
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(
     FilesInterceptor('files', 5, {
-      limits: { fileSize: 5 * 1024 * 1024 },
+      limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, callback) => {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
         if (!allowedTypes.includes(file.mimetype)) {
@@ -116,6 +119,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '상품 수정', description: '본인이 등록한 상품을 수정합니다 (로그인 필요)' })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '상품 수정 성공' })
@@ -127,6 +131,7 @@ export class ProductsController {
   }
 
   @Patch(':id/status')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '상품 상태 변경', description: '상품 상태를 변경합니다 (판매중/예약중/판매완료)' })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '상태 변경 성공' })
@@ -148,6 +153,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '상품 삭제', description: '본인이 등록한 상품을 삭제합니다 (로그인 필요)' })
   @ApiResponse({ status: 200, description: '상품 삭제 성공' })
   @ApiResponse({ status: 401, description: '인증 필요' })
@@ -158,6 +164,7 @@ export class ProductsController {
   }
 
   @Post(':id/favorite')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: '찜 토글', description: '상품 찜하기/찜 해제' })
   @ApiParam({ name: 'id', description: '상품 ID' })
   @ApiResponse({ status: 200, description: '찜 상태 변경 성공' })
