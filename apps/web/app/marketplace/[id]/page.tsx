@@ -138,8 +138,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const isOwner = !!(currentUserId && currentUserId === product.seller.id)
 
   return (
-    <div className="max-w-5xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
-      {/* 뒤로가기 + 수정 */}
+    <div className="max-w-5xl mx-auto px-4 md:px-6 pb-36 md:pb-8 md:mt-10">
+      {/* 뒤로가기 + 액션 */}
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/marketplace"
@@ -148,15 +148,34 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
-        {isOwner && (
-          <Link
-            href={`/marketplace/${id}/edit`}
-            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            <IconPencil className="h-4 w-4" />
-            수정
-          </Link>
-        )}
+        <div className="flex items-center gap-1">
+          {!isOwner && (
+            <>
+              <button
+                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all"
+                aria-label="공유"
+              >
+                <IconShare className="h-5 w-5" />
+              </button>
+              <button
+                className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
+                onClick={() => setReportOpen(true)}
+                aria-label="신고"
+              >
+                <IconFlag className="h-5 w-5" />
+              </button>
+            </>
+          )}
+          {isOwner && (
+            <Link
+              href={`/marketplace/${id}/edit`}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              <IconPencil className="h-4 w-4" />
+              수정
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">
@@ -385,8 +404,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         reportType="user"
       />
 
-      {/* 모바일 하단 고정 액션바 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+      {/* 모바일 하단 고정 액션바 - 하단 네비게이션(h-16=64px) 위에 배치 */}
+      <div className="fixed bottom-16 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
         {isOwner ? (
           <>
             {isConfirmed ? (
@@ -439,9 +458,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           <>
             <Button
               variant="outline"
-              size="icon"
               className={cn(
-                'shrink-0 h-12 w-12 border-2 text-primary active:scale-95 transition-all shadow-sm disabled:opacity-50',
+                'shrink-0 h-12 px-3 gap-1.5 border-2 text-primary active:scale-95 transition-all shadow-sm disabled:opacity-50',
                 isFavorited
                   ? 'border-primary bg-primary/10 hover:bg-primary/20'
                   : 'border-primary/40 hover:bg-primary/10 hover:border-primary'
@@ -449,7 +467,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
               disabled={isSold || favoriteLoading}
               onClick={handleFavoriteToggle}
             >
-              {isFavorited ? <IconHeartFilled className="h-6 w-6" /> : <IconHeart className="h-6 w-6" />}
+              {isFavorited ? <IconHeartFilled className="h-5 w-5" /> : <IconHeart className="h-5 w-5" />}
+              <span className="text-sm font-semibold">{isFavorited ? '찜완료' : '찜하기'}</span>
             </Button>
             <div className="border-l border-border/30 h-10 mx-0.5" />
             <div className="flex-1 flex flex-col min-w-0 mr-2">
