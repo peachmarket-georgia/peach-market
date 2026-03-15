@@ -17,7 +17,8 @@ const SYSTEM_MESSAGE_LABELS: Record<string, string> = {
 function formatLastMessage(lastMessage: string | null, productTitle: string): string {
   if (!lastMessage) return productTitle
   try {
-    const parsed = JSON.parse(lastMessage) as { type?: string }
+    const parsed = JSON.parse(lastMessage) as { type?: string; message?: string }
+    if (parsed.type === 'system' && parsed.message) return parsed.message
     if (parsed.type && SYSTEM_MESSAGE_LABELS[parsed.type]) {
       return SYSTEM_MESSAGE_LABELS[parsed.type]!
     }

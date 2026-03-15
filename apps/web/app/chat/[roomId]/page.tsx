@@ -12,7 +12,14 @@ import { STATUS_LABEL } from '@/lib/product-types'
 import type { ProductStatus } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import Image from 'next/image'
-import { IconChevronLeft, IconSend, IconDotsVertical, IconFlag, IconChevronDown } from '@tabler/icons-react'
+import {
+  IconChevronLeft,
+  IconSend,
+  IconDotsVertical,
+  IconFlag,
+  IconChevronDown,
+  IconDoorExit,
+} from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { ReportDialog } from '@/components/report-dialog'
@@ -47,7 +54,9 @@ export default function ChatRoomPage() {
   const [reservation, setReservation] = useState<ReservationDto | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null)
   const [reportOpen, setReportOpen] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+  const [isLeaving, setIsLeaving] = useState(false)
+  const [otherUserLeft, setOtherUserLeft] = useState(false)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const isInitialLoad = useRef(true)
   const productDeleted = chatRoom !== null && chatRoom.product === null
@@ -76,8 +85,13 @@ export default function ChatRoomPage() {
         return
       }
       if (data) {
+        if (data.currentUserLeft) {
+          router.push('/chat')
+          return
+        }
         setChatRoom(data)
         setMessages(data.messages)
+        setOtherUserLeft(data.leftByOther)
         if (data.product) {
           setProductStatus(data.product.status as ProductStatus)
           setProductHidden(!!(data.product as { isHidden?: boolean }).isHidden)
@@ -183,12 +197,16 @@ export default function ChatRoomPage() {
     const handleProductHiddenUpdated = ({ isHidden }: { isHidden: boolean }) => {
       setProductHidden(isHidden)
     }
+    const handleUserLeft = ({ roomId: leftRoomId }: { roomId: string }) => {
+      if (leftRoomId === roomId) setOtherUserLeft(true)
+    }
 
     socket.on('newMessage', handleNewMessage)
     socket.on('userTyping', handleUserTyping)
     socket.on('userStoppedTyping', handleUserStoppedTyping)
     socket.on('productStatusUpdated', handleProductStatusUpdated)
     socket.on('productHiddenUpdated', handleProductHiddenUpdated)
+    socket.on('userLeft', handleUserLeft)
 
     return () => {
       socket.off('newMessage', handleNewMessage)
@@ -196,19 +214,30 @@ export default function ChatRoomPage() {
       socket.off('userStoppedTyping', handleUserStoppedTyping)
       socket.off('productStatusUpdated', handleProductStatusUpdated)
       socket.off('productHiddenUpdated', handleProductHiddenUpdated)
+      socket.off('userLeft', handleUserLeft)
     }
   }, [socket, roomId, currentUserId])
 
   // Auto scroll
   useEffect(() => {
     if (messages.length === 0) return
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false
-      const container = scrollContainerRef.current
-      if (container) container.scrollTop = container.scrollHeight
-    } else {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
+
+    // 두 번 rAF: 첫 번째는 React DOM 커밋 후, 두 번째는 브라우저 레이아웃 계산 후
+    const raf = requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        if (isInitialLoad.current) {
+          isInitialLoad.current = false
+          container.scrollTop = container.scrollHeight
+        } else {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+        }
+      })
+    })
+
+    return () => cancelAnimationFrame(raf)
   }, [messages])
 
   const handleTyping = useCallback(() => {
@@ -226,6 +255,17 @@ export default function ChatRoomPage() {
       socket.emit('stopTyping', { chatRoomId: roomId })
     }, 2000)
   }, [socket, roomId, isTyping])
+
+  const handleLeaveRoom = async () => {
+    setIsLeaving(true)
+    const { error } = await chatApi.leaveRoom(roomId)
+    if (error) {
+      toast.error('채팅방 나가기에 실패했습니다.')
+      setIsLeaving(false)
+      return
+    }
+    router.push('/chat')
+  }
 
   const handleSend = () => {
     if (!socket || !newMessage.trim() || !currentUserId) return
@@ -291,6 +331,13 @@ export default function ChatRoomPage() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={() => setLeaveDialogOpen(true)}
+              className="text-destructive focus:text-destructive"
+            >
+              <IconDoorExit className="w-4 h-4 mr-2" />
+              채팅방 나가기
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setReportOpen(true)} className="text-destructive focus:text-destructive">
               <IconFlag className="w-4 h-4 mr-2" />
               사용자 신고
@@ -516,8 +563,6 @@ export default function ChatRoomPage() {
             <span className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce [animation-delay:300ms]" />
           </div>
         )}
-
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
@@ -531,13 +576,15 @@ export default function ChatRoomPage() {
               handleTyping()
             }}
             onKeyDown={handleKeyDown}
-            disabled={!isConnected}
-            placeholder={isConnected ? '메시지를 입력하세요...' : '연결 중...'}
+            disabled={!isConnected || otherUserLeft}
+            placeholder={
+              otherUserLeft ? '상대방이 채팅방을 나갔습니다' : isConnected ? '메시지를 입력하세요...' : '연결 중...'
+            }
             className="flex-1 px-4 py-2.5 bg-white border border-primary/25 rounded-full text-base outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-50 transition-all"
           />
           <button
             onClick={handleSend}
-            disabled={!newMessage.trim() || !isConnected}
+            disabled={!newMessage.trim() || !isConnected || otherUserLeft}
             className={cn(
               'w-10 h-10 rounded-full flex items-center justify-center transition-all',
               newMessage.trim() && isConnected
@@ -581,6 +628,38 @@ export default function ChatRoomPage() {
                 )}
               >
                 확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* 채팅방 나가기 확인 모달 */}
+      {leaveDialogOpen && (
+        <div
+          className="fixed inset-0 z-60 flex items-end justify-center bg-black/40 px-0 pb-20 md:pb-0 sm:items-center sm:px-6"
+          onClick={() => setLeaveDialogOpen(false)}
+        >
+          <div
+            className="bg-white rounded-3xl sm:rounded-2xl p-6 w-full max-w-sm shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold text-foreground mb-1.5">채팅방 나가기</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              채팅방을 나가면 목록에서 삭제되며 다시 입장할 수 없습니다.
+            </p>
+            <div className="flex gap-2 mt-5">
+              <button
+                onClick={() => setLeaveDialogOpen(false)}
+                className="flex-1 py-3 text-sm font-semibold rounded-xl border border-border text-muted-foreground hover:bg-muted/50 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleLeaveRoom}
+                disabled={isLeaving}
+                className="flex-1 py-3 text-sm font-bold rounded-xl bg-destructive text-white hover:bg-destructive/90 disabled:opacity-50 transition-colors"
+              >
+                {isLeaving ? '나가는 중...' : '나가기'}
               </button>
             </div>
           </div>

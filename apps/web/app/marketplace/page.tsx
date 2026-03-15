@@ -224,12 +224,12 @@ const MarketplacePage = () => {
       </div>
 
       {/* 카테고리 필터 - full width scrollable */}
-      <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide">
+      <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide text-sm sm:text-base font-semibold">
         <div className="inline-flex items-center gap-2.5 px-4 md:px-6 pb-1">
           <button
             onClick={() => setSelectedCategory('ALL')}
             className={cn(
-              'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-base font-semibold transition-all',
+              'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full transition-all',
               selectedCategory === 'ALL'
                 ? 'bg-primary text-white shadow-md shadow-primary/30'
                 : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -242,7 +242,7 @@ const MarketplacePage = () => {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-base font-semibold transition-all',
+                'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full  transition-all',
                 selectedCategory === cat
                   ? 'bg-primary text-white shadow-md shadow-primary/30'
                   : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'

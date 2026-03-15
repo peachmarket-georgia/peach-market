@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { ChatRoom, Message } from '@prisma/client'
 import { PrismaService } from '../core/database/prisma.service'
 
@@ -15,8 +15,8 @@ export class ChatService {
     return this.prisma.chatRoom.findUnique({ where: { id } })
   }
 
-  async findChatRoomByIdWithMessages(id: string) {
-    return this.prisma.chatRoom.findUnique({
+  async findChatRoomByIdWithMessages(id: string, userId?: string) {
+    const room = await this.prisma.chatRoom.findUnique({
       where: { id },
       include: {
         messages: {
@@ -28,12 +28,32 @@ export class ChatService {
         product: true,
       },
     })
+
+    if (!room) return null
+
+    let leftByOther = false
+    let currentUserLeft = false
+
+    if (userId) {
+      if (userId === room.buyerId) {
+        leftByOther = room.sellerLeftAt !== null
+        currentUserLeft = room.buyerLeftAt !== null
+      } else if (userId === room.sellerId) {
+        leftByOther = room.buyerLeftAt !== null
+        currentUserLeft = room.sellerLeftAt !== null
+      }
+    }
+
+    return { ...room, leftByOther, currentUserLeft }
   }
 
   async findChatRoomsByUserId(userId: string): Promise<ChatRoom[]> {
     return this.prisma.chatRoom.findMany({
       where: {
-        OR: [{ buyerId: userId }, { sellerId: userId }],
+        OR: [
+          { buyerId: userId, buyerLeftAt: null },
+          { sellerId: userId, sellerLeftAt: null },
+        ],
       },
       include: {
         buyer: true,
@@ -42,6 +62,51 @@ export class ChatService {
       },
       orderBy: { updatedAt: 'desc' },
     })
+  }
+
+  async leaveRoom(roomId: string, userId: string): Promise<{ otherUserId: string }> {
+    const room = await this.prisma.chatRoom.findUnique({ where: { id: roomId } })
+
+    if (!room) throw new NotFoundException('채팅방을 찾을 수 없습니다')
+
+    const isBuyer = room.buyerId === userId
+    const isSeller = room.sellerId === userId
+
+    if (!isBuyer && !isSeller) {
+      throw new ForbiddenException('채팅방에 접근할 권한이 없습니다')
+    }
+
+    if (isBuyer && room.buyerLeftAt !== null) {
+      throw new BadRequestException('이미 채팅방을 나갔습니다')
+    }
+    if (isSeller && room.sellerLeftAt !== null) {
+      throw new BadRequestException('이미 채팅방을 나갔습니다')
+    }
+
+    await this.prisma.chatRoom.update({
+      where: { id: roomId },
+      data: isBuyer ? { buyerLeftAt: new Date() } : { sellerLeftAt: new Date() },
+    })
+
+    const systemContent = JSON.stringify({ type: 'system', message: '상대방이 채팅방을 나갔습니다' })
+    await this.saveSystemMessage(roomId, userId, systemContent)
+
+    const otherUserId = isBuyer ? room.sellerId : room.buyerId
+    return { otherUserId }
+  }
+
+  private async saveSystemMessage(chatRoomId: string, senderId: string, content: string) {
+    const message = await this.prisma.message.create({
+      data: { chatRoomId, senderId, content, isSystem: true },
+      include: { sender: true },
+    })
+
+    await this.prisma.chatRoom.update({
+      where: { id: chatRoomId },
+      data: { lastMessage: content, updatedAt: new Date() },
+    })
+
+    return message
   }
 
   async findChatRoomByProductAndBuyer(productId: string, buyerId: string): Promise<ChatRoom | null> {
@@ -114,7 +179,10 @@ export class ChatService {
   async getTotalUnreadCount(userId: string): Promise<number> {
     const chatRooms = await this.prisma.chatRoom.findMany({
       where: {
-        OR: [{ buyerId: userId }, { sellerId: userId }],
+        OR: [
+          { buyerId: userId, buyerLeftAt: null },
+          { sellerId: userId, sellerLeftAt: null },
+        ],
       },
       select: { id: true },
     })

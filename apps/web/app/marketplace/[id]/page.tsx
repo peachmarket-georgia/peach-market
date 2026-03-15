@@ -193,6 +193,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
     setFavoriteLoading(false)
   }
 
+  const handleReportClick = () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/marketplace/${id}`)
+      return
+    }
+    setReportOpen(true)
+  }
+
   const handleToggleHidden = async () => {
     if (hiddenLoading) return
     setHiddenLoading(true)
@@ -239,7 +247,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
               </button>
               <button
                 className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
-                onClick={() => setReportOpen(true)}
+                onClick={handleReportClick}
                 aria-label="신고"
               >
                 <IconFlag className="h-5 w-5" />
@@ -492,7 +500,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                   variant="outline"
                   size="lg"
                   className="gap-2 border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-105 transition-all shadow-sm hover:shadow-md"
-                  onClick={() => setReportOpen(true)}
+                  onClick={handleReportClick}
                 >
                   <IconFlag className="h-5 w-5" />
                   <span className="font-semibold">신고</span>

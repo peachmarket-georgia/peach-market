@@ -160,9 +160,9 @@ export function Header({ initialUser }: HeaderProps) {
               </Link>
 
               {/* 알림 */}
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+              {/* <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
                 <IconBell className="w-5 h-5" />
-              </Button>
+              </Button> */}
 
               {/* 상품 등록 */}
               <Link href="/marketplace/new">
