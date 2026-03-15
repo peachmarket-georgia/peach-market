@@ -13,6 +13,7 @@ import {
   IconEye,
   IconLoader2,
   IconArrowRight,
+  IconBan,
 } from '@tabler/icons-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -32,6 +33,10 @@ const REPORT_TYPE_LABEL: Record<string, string> = {
   SCAM: '사기',
   INAPPROPRIATE: '부적절',
   SPAM: '스팸',
+  NO_SHOW: '노쇼',
+  COMMERCIAL_SELLER: '업자',
+  PROFANITY: '욕설',
+  EXPLICIT_CONTENT: '음란물',
   BUG: '버그',
   OTHER: '기타',
 }
@@ -111,6 +116,13 @@ export default function AdminDashboardPage() {
       icon: IconFlag,
       color: 'text-orange-600',
       bg: 'bg-orange-50',
+    },
+    {
+      label: '사용자 간 차단',
+      value: stats.userBlocks.total,
+      icon: IconBan,
+      color: 'text-rose-600',
+      bg: 'bg-rose-50',
     },
   ]
 

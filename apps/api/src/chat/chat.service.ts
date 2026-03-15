@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common'
 import { ChatRoom, Message } from '@prisma/client'
 import { PrismaService } from '../core/database/prisma.service'
+import { UserBlocksService } from '../modules/user-blocks/user-blocks.service'
 
 @Injectable()
 export class ChatService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly userBlocksService: UserBlocksService
+  ) {}
 
   async findUserById(id: string) {
     return this.prisma.user.findUnique({ where: { id }, select: { id: true, nickname: true } })
@@ -135,6 +139,12 @@ export class ChatService {
       throw new BadRequestException('숨겨진 상품에는 채팅을 시작할 수 없습니다')
     }
 
+    // 차단 관계 확인
+    const isBlocked = await this.userBlocksService.isBlocked(buyerId, product.sellerId)
+    if (isBlocked) {
+      throw new BadRequestException('차단된 사용자와는 채팅할 수 없습니다')
+    }
+
     // Check if chat room already exists
     const existingRoom = await this.findChatRoomByProductAndBuyer(productId, buyerId)
     if (existingRoom) {
@@ -166,8 +176,18 @@ export class ChatService {
   async getChatRoomsWithUnreadCount(userId: string) {
     const chatRooms = await this.findChatRoomsByUserId(userId)
 
+    // 차단된 사용자와의 채팅방 필터링
+    const blockedIds = await this.userBlocksService.getBlockedUserIds(userId)
+    const filteredRooms =
+      blockedIds.length > 0
+        ? chatRooms.filter((room) => {
+            const otherId = room.buyerId === userId ? room.sellerId : room.buyerId
+            return !blockedIds.includes(otherId)
+          })
+        : chatRooms
+
     const roomsWithUnread = await Promise.all(
-      chatRooms.map(async (room) => {
+      filteredRooms.map(async (room) => {
         const unreadCount = await this.countUnreadMessages(room.id, userId)
         return { ...room, unreadCount }
       })

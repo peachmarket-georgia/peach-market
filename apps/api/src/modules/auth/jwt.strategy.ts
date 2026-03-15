@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, UnauthorizedException } from '@nestjs/common'
 import { PassportStrategy } from '@nestjs/passport'
 import { ExtractJwt, Strategy } from 'passport-jwt'
 import { Request } from 'express'
 import { AppConfigService } from '../../core/config/config.service'
+import { PrismaService } from '../../core/database/prisma.service'
 
 function parseCookieFromHeader(cookieHeader: string | undefined, cookieName: string): string | null {
   if (!cookieHeader) return null
@@ -19,7 +20,10 @@ function parseCookieFromHeader(cookieHeader: string | undefined, cookieName: str
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private configService: AppConfigService) {
+  constructor(
+    private configService: AppConfigService,
+    private prisma: PrismaService
+  ) {
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
         (req: Request) => {
@@ -36,7 +40,14 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     })
   }
 
-  validate(payload: { sub: string; email: string }) {
+  async validate(payload: { sub: string; email: string }) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { isBlocked: true },
+    })
+    if (!user || user.isBlocked) {
+      throw new UnauthorizedException('차단된 계정입니다')
+    }
     return { userId: payload.sub, email: payload.email }
   }
 }

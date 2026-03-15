@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { use } from 'react'
 import { IconChevronLeft, IconLoader2, IconBan } from '@tabler/icons-react'
@@ -27,6 +28,10 @@ const REPORT_TYPE_LABEL: Record<string, string> = {
   SCAM: '사기',
   INAPPROPRIATE: '부적절한 행동',
   SPAM: '스팸',
+  NO_SHOW: '노쇼',
+  COMMERCIAL_SELLER: '업자',
+  PROFANITY: '욕설',
+  EXPLICIT_CONTENT: '음란물',
   BUG: '버그',
   OTHER: '기타',
 }
@@ -152,6 +157,26 @@ export default function AdminReportDetailPage({ params }: Props) {
             </div>
           )}
         </div>
+
+        {/* 신고된 상품 */}
+        {report.product && (
+          <div className="bg-muted/30 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground mb-2">신고된 상품</p>
+            <Link href={`/marketplace/${report.product.id}`} className="flex items-center gap-3 hover:opacity-80">
+              {report.product.images[0] && (
+                <img
+                  src={report.product.images[0]}
+                  alt={report.product.title}
+                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                />
+              )}
+              <div className="min-w-0">
+                <p className="font-medium text-sm truncate">{report.product.title}</p>
+                <p className="text-xs text-primary font-bold">${report.product.price.toLocaleString('en-US')}</p>
+              </div>
+            </Link>
+          </div>
+        )}
 
         {/* 설명 */}
         <div>
