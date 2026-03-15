@@ -76,6 +76,8 @@ export type ApiProduct = {
   status: ProductStatus
   images: string[]
   location: string
+  lat: number | null
+  lng: number | null
   viewCount: number
   createdAt: string
   updatedAt: string

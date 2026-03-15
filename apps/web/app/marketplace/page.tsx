@@ -327,7 +327,7 @@ const MarketplacePage = () => {
         {!loading && products && (
           <p className="text-sm font-medium text-fg-secondary">
             <span className="text-primary font-bold">{products.length}</span>개의 매물
-            {effectiveRadius != null && <span className="ml-1 text-fg-tertiary">· 반경 {savedRadiusMiles}mi 이내</span>}
+            {effectiveRadius != null && <span className="ml-1 text-fg-tertiary">· 반경 {sliderMiles}mi 이내</span>}
           </p>
         )}
 
