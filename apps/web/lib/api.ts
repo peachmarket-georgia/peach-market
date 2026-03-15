@@ -18,8 +18,10 @@ import {
   ReportResponseDto,
   AdminReportDto,
   AdminUserDto,
+  AdminUserDetailDto,
   AdminProductDto,
   AdminStatsDto,
+  UserBlockDto,
 } from '@/types/api'
 
 const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
@@ -52,6 +54,7 @@ export type RequestOptions = {
   method?: string
   body?: unknown
   headers?: HeadersInit
+  skipRedirect?: boolean
 }
 
 /**
@@ -90,30 +93,37 @@ export async function apiRequest<T>(
       data = null
     }
 
-    // 401 → refresh token 시도 후 재요청 (auth/me 엔드포인트 제외, 재시도 1회만)
+    // 401 → 차단된 계정이면 정지 페이지로, 아니면 refresh 시도
     // /api/users/me 는 비로그인 확인용이므로 redirect 제외
-    if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/') && endpoint !== '/api/users/me') {
-      let refreshed = false
-      try {
-        refreshed = await tryRefresh(apiUrl)
-      } catch {
-        // network error during refresh → treat as refresh failure
+    if (response.status === 401) {
+      const msg = (data as { message?: string })?.message
+      if (msg?.includes('차단된 계정') && typeof window !== 'undefined') {
+        window.location.href = '/blocked'
+        return { error: '계정이 정지되었습니다.', status: 401 }
       }
 
-      if (refreshed) {
-        const retryResult = await apiRequest<T>(endpoint, options, cookies, true)
-        // retry도 401이면 세션 만료로 로그인 페이지로 이동
-        if (retryResult.status === 401 && typeof window !== 'undefined') {
+      if (!_isRetry && !endpoint.startsWith('/api/auth/') && endpoint !== '/api/users/me') {
+        let refreshed = false
+        try {
+          refreshed = await tryRefresh(apiUrl)
+        } catch {
+          // network error during refresh → treat as refresh failure
+        }
+
+        if (refreshed) {
+          const retryResult = await apiRequest<T>(endpoint, options, cookies, true)
+          if (retryResult.status === 401 && typeof window !== 'undefined' && !options?.skipRedirect) {
+            window.location.href = '/login'
+          }
+          return retryResult
+        }
+
+        // refresh 실패 → 로그인 페이지로 이동 (skipRedirect가 아닌 경우)
+        if (typeof window !== 'undefined' && !options?.skipRedirect) {
           window.location.href = '/login'
         }
-        return retryResult
+        return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
       }
-
-      // refresh 실패 → 로그인 페이지로 이동
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login'
-      }
-      return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
     }
 
     if (!response.ok) {
@@ -235,7 +245,12 @@ export const userApi = {
    * 내 프로필 조회
    * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
    */
-  getMe: (cookies?: string) => apiRequest<UserProfileResponseDto>('/api/users/me', undefined, cookies),
+  getMe: (cookies?: string, options?: { skipRedirect?: boolean }) =>
+    apiRequest<UserProfileResponseDto>(
+      '/api/users/me',
+      options ? { skipRedirect: options.skipRedirect } : undefined,
+      cookies
+    ),
 
   /**
    * 이메일 중복 체크
@@ -263,6 +278,12 @@ export const userApi = {
       method: 'PATCH',
       body: data,
     }),
+
+  blockUser: (userId: string) => apiRequest<MessageResponseDto>(`/api/users/${userId}/block`, { method: 'POST' }),
+
+  unblockUser: (userId: string) => apiRequest<MessageResponseDto>(`/api/users/${userId}/block`, { method: 'DELETE' }),
+
+  getBlockedUsers: () => apiRequest<UserBlockDto[]>('/api/users/blocked'),
 }
 
 // ==================== Chat API ====================
@@ -347,21 +368,29 @@ export const uploadApi = {
         data = null
       }
 
-      // 401 → refresh 후 재시도
-      if (response.status === 401 && !_isRetry) {
-        let refreshed = false
-        try {
-          refreshed = await tryRefresh(apiUrl)
-        } catch {
-          // network error during refresh
+      // 401 → 차단 체크 후 refresh 재시도
+      if (response.status === 401) {
+        const msg = (data as { message?: string })?.message
+        if (msg?.includes('차단된 계정') && typeof window !== 'undefined') {
+          window.location.href = '/blocked'
+          return { error: '계정이 정지되었습니다.', status: 401 }
         }
-        if (refreshed) {
-          return uploadApi.uploadImages(files, true)
+
+        if (!_isRetry) {
+          let refreshed = false
+          try {
+            refreshed = await tryRefresh(apiUrl)
+          } catch {
+            // network error during refresh
+          }
+          if (refreshed) {
+            return uploadApi.uploadImages(files, true)
+          }
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+          }
+          return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
         }
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
-        }
-        return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
       }
 
       if (!response.ok) {
@@ -407,6 +436,8 @@ export const adminApi = {
   },
 
   getReport: (id: string) => apiRequest<AdminReportDto>(`/api/admin/reports/${id}`),
+
+  getUser: (id: string) => apiRequest<AdminUserDetailDto>(`/api/admin/users/${id}`),
 
   updateReport: (id: string, data: { status?: string; adminNote?: string }) =>
     apiRequest<AdminReportDto>(`/api/admin/reports/${id}`, { method: 'PATCH', body: data }),

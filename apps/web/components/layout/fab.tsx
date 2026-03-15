@@ -37,14 +37,15 @@ export function FAB({ href = '/marketplace/new', onClick, className, isAuthentic
   const buttonContent = (
     <div
       className={cn(
-        'fixed bottom-24 right-4 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg',
-        'flex items-center justify-center',
+        'fixed bottom-24 right-4 h-12 px-5 bg-primary text-primary-foreground rounded-full shadow-lg',
+        'flex items-center gap-2',
         'transition-all hover:scale-105 active:scale-[0.98]',
         'md:hidden z-40',
         className
       )}
     >
-      <IconPlus className="w-7 h-7" strokeWidth={2.5} />
+      <IconPlus className="w-5 h-5" strokeWidth={2.5} />
+      <span className="text-sm font-semibold">판매하기</span>
     </div>
   )
 

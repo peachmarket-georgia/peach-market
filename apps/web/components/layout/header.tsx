@@ -5,8 +5,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import {
-  IconSearch,
-  IconBell,
   IconPlus,
   IconUser,
   IconLogout,
@@ -136,42 +134,28 @@ export function Header({ initialUser }: HeaderProps) {
             </div>
           ) : user ? (
             <>
-              {/* 검색 */}
-              <Link href="/marketplace">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                  <IconSearch className="w-5 h-5" />
-                </Button>
-              </Link>
-
-              {/* 채팅 */}
-              <Link href="/chat">
+              {/* 채팅 (데스크톱만 - 모바일은 하단 네비에 있음) */}
+              <Link href="/chat" className="hidden md:block">
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className={`relative ${isActive('/chat') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                  size="sm"
+                  className={`relative gap-1 ${isActive('/chat') ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
                 >
-                  <IconMessage className="w-5 h-5" />
+                  <IconMessage className="w-4 h-4" />
+                  채팅
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center font-medium">
+                    <span className="ml-0.5 min-w-[18px] h-[18px] bg-primary text-primary-foreground text-[10px] rounded-full flex items-center justify-center font-medium px-1">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </Button>
               </Link>
 
-              {/* 알림 */}
-              {/* <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
-                <IconBell className="w-5 h-5" />
-              </Button> */}
-
-              {/* 상품 등록 */}
-              <Link href="/marketplace/new">
-                <Button size="sm" className="hidden sm:flex gap-1">
+              {/* 상품 등록 (데스크톱만 - 모바일은 FAB에 있음) */}
+              <Link href="/marketplace/new" className="hidden md:block">
+                <Button size="sm" className="gap-1">
                   <IconPlus className="w-4 h-4" />
                   판매하기
-                </Button>
-                <Button variant="ghost" size="icon" className="sm:hidden text-primary">
-                  <IconPlus className="w-5 h-5" />
                 </Button>
               </Link>
 

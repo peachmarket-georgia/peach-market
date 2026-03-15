@@ -33,6 +33,19 @@ export class ReportsService {
       if (!target) {
         throw new NotFoundException('피신고자를 찾을 수 없습니다')
       }
+
+      // 중복 신고 방지 (PENDING/REVIEWING 상태인 기존 신고가 있으면 차단)
+      const existingReport = await this.prisma.report.findFirst({
+        where: {
+          reporterId,
+          targetUserId: dto.targetUserId,
+          productId: dto.productId ?? null,
+          status: { in: ['PENDING', 'REVIEWING'] },
+        },
+      })
+      if (existingReport) {
+        throw new BadRequestException('이미 접수된 신고가 있습니다')
+      }
     }
 
     const report = await this.prisma.report.create({

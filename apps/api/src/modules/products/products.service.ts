@@ -2,6 +2,7 @@ import { Injectable, ForbiddenException, NotFoundException, BadRequestException 
 import { ProductStatus } from '@prisma/client'
 import { PrismaService } from '../../core/database/prisma.service'
 import { ChatGateway } from '../../chat/chat.gateway'
+import { UserBlocksService } from '../user-blocks/user-blocks.service'
 import { CreateProductDto } from './dto/create-product.dto'
 import { UpdateProductDto } from './dto/update-product.dto'
 
@@ -86,7 +87,8 @@ function formatProduct(product: ProductWithCount, isFavorited = false) {
 export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly chatGateway: ChatGateway
+    private readonly chatGateway: ChatGateway,
+    private readonly userBlocksService: UserBlocksService
   ) {}
 
   /** 상품 관련 모든 채팅방에 시스템 메시지 저장 + 소켓 브로드캐스트 */
@@ -133,6 +135,14 @@ export class ProductsService {
     userId?: string
   ) {
     const conditions: object[] = [{ seller: { isBlocked: false } }, { isHidden: false }]
+
+    // 차단한/차단된 사용자의 상품 필터링
+    if (userId) {
+      const blockedIds = await this.userBlocksService.getBlockedUserIds(userId)
+      if (blockedIds.length > 0) {
+        conditions.push({ sellerId: { notIn: blockedIds } })
+      }
+    }
 
     if (query.search) {
       conditions.push({

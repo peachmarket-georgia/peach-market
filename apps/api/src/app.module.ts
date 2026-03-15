@@ -16,6 +16,7 @@ import { ChatModule } from './chat/chat.module'
 import { UploadModule } from './modules/upload/upload.module'
 import { PushModule } from './modules/push/push.module'
 import { ReportsModule } from './modules/reports/reports.module'
+import { UserBlocksModule } from './modules/user-blocks/user-blocks.module'
 import { AdminModule } from './modules/admin/admin.module'
 
 @Module({
@@ -43,6 +44,7 @@ import { AdminModule } from './modules/admin/admin.module'
     UploadModule,
     PushModule,
     ReportsModule,
+    UserBlocksModule,
     AdminModule,
   ],
   controllers: [AppController],

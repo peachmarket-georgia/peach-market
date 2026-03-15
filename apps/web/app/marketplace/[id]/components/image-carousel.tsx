@@ -28,6 +28,12 @@ export const ImageCarousel = ({ images, alt, status }: Props) => {
     touchStartX.current = e.touches[0]?.clientX ?? null
   }
 
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return
+    const diff = Math.abs(touchStartX.current - (e.touches[0]?.clientX ?? 0))
+    if (diff > 10) e.preventDefault()
+  }
+
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return
     const diff = touchStartX.current - (e.changedTouches[0]?.clientX ?? 0)
@@ -47,8 +53,9 @@ export const ImageCarousel = ({ images, alt, status }: Props) => {
     <div className="space-y-3">
       {/* 메인 이미지 */}
       <div
-        className="relative aspect-square overflow-hidden rounded-2xl bg-muted group shadow-lg"
+        className="relative aspect-square overflow-hidden rounded-2xl bg-muted group shadow-lg touch-pan-y"
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         <Image
@@ -78,13 +85,13 @@ export const ImageCarousel = ({ images, alt, status }: Props) => {
           <>
             <button
               onClick={() => goTo(currentIndex - 1)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-foreground flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-lg active:scale-95"
+              className="absolute left-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 text-foreground flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-lg active:scale-95"
             >
               <IconChevronLeft className="h-5 w-5" />
             </button>
             <button
               onClick={() => goTo(currentIndex + 1)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 text-foreground flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-lg active:scale-95"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/90 text-foreground flex items-center justify-center opacity-70 md:opacity-0 md:group-hover:opacity-100 transition-all hover:bg-white hover:scale-110 shadow-lg active:scale-95"
             >
               <IconChevronRight className="h-5 w-5" />
             </button>
@@ -94,16 +101,18 @@ export const ImageCarousel = ({ images, alt, status }: Props) => {
         {/* 인디케이터 dots + 카운터 */}
         {hasMultiple && (
           <>
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-black/30 backdrop-blur-md px-3 py-2 rounded-full">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex bg-black/30 backdrop-blur-md px-1.5 py-1 rounded-full">
               {images.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentIndex(idx)}
-                  className={cn(
-                    'rounded-full transition-all',
-                    idx === currentIndex ? 'bg-white w-6 h-2.5 shadow-md' : 'bg-white/50 hover:bg-white/80 w-2.5 h-2.5'
-                  )}
-                />
+                <button key={idx} onClick={() => setCurrentIndex(idx)} className="flex items-center justify-center p-2">
+                  <span
+                    className={cn(
+                      'rounded-full transition-all',
+                      idx === currentIndex
+                        ? 'bg-white w-6 h-2.5 shadow-md'
+                        : 'bg-white/50 hover:bg-white/80 w-2.5 h-2.5'
+                    )}
+                  />
+                </button>
               ))}
             </div>
             <span className="absolute top-3 right-3 px-3 py-1.5 text-xs font-bold bg-black/60 text-white rounded-full backdrop-blur-sm shadow-lg">

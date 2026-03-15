@@ -1,7 +1,7 @@
 {
   "name": "피치마켓",
   "short_name": "피치마켓",
-  "description": "조지아 한인 중고거래 플랫폼",
+  "description": "조지아 중고거래 플랫폼",
   "start_url": "/marketplace",
   "display": "standalone",
   "background_color": "#FAFAFA",

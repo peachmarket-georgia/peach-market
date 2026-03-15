@@ -1,0 +1,724 @@
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { notFound, useRouter } from 'next/navigation'
+import { use } from 'react'
+import {
+  IconChevronLeft,
+  IconHeart,
+  IconHeartFilled,
+  IconMessageCircle,
+  IconEye,
+  IconShare,
+  IconLoader2,
+  IconMapPin,
+  IconClock,
+  IconPencil,
+  IconFlag,
+  IconMap,
+  IconEyeOff,
+  IconBan,
+} from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
+import { chatApi, checkAuth } from '@/lib/api'
+import { STATUS_LABEL } from '@/lib/product-types'
+import { cn } from '@/lib/utils'
+import { getProduct, toProduct, productApi } from '@/lib/products-api'
+import { userApi } from '@/lib/api'
+import type { Product, ProductStatus } from '@/lib/product-types'
+import { ImageCarousel } from './components/image-carousel'
+import { ReportDialog } from '@/components/report-dialog'
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function TradingLocationMap({ lat, lng, location }: { lat: number; lng: number; location: string }) {
+  const mapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    if (!apiKey || !mapRef.current) return
+
+    const initMap = () => {
+      if (!mapRef.current) return
+      const gmaps = (window as any).google.maps
+      const map = new gmaps.Map(mapRef.current, {
+        center: { lat, lng },
+        zoom: 14,
+        gestureHandling: 'greedy',
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        styles: [
+          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        ],
+      })
+      new gmaps.Marker({
+        position: { lat, lng },
+        map,
+        title: location,
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#FF6B35',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      })
+    }
+
+    if ((window as any).google?.maps) {
+      initMap()
+    } else {
+      const existingScript = document.querySelector('#gmaps-script') as HTMLScriptElement | null
+      if (existingScript) {
+        existingScript.addEventListener('load', initMap, { once: true })
+      } else {
+        const script = document.createElement('script')
+        script.id = 'gmaps-script'
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`
+        script.async = true
+        script.addEventListener('load', initMap, { once: true })
+        document.head.appendChild(script)
+      }
+    }
+  }, [lat, lng, location])
+
+  return (
+    <div className="space-y-3">
+      <div ref={mapRef} className="w-full h-80 rounded-xl" />
+      <p className="text-sm text-center text-muted-foreground flex items-center justify-center gap-1">
+        <IconMapPin className="h-4 w-4 text-primary" />
+        {location}
+      </p>
+    </div>
+  )
+}
+
+type ProductDetailPageProps = {
+  params: Promise<{ id: string }>
+}
+
+const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
+  const { id } = use(params)
+  const router = useRouter()
+  const [product, setProduct] = useState<Product | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [chatLoading, setChatLoading] = useState(false)
+
+  const handleChat = useCallback(async () => {
+    if (chatLoading) return
+    setChatLoading(true)
+    try {
+      const { isAuthenticated } = await checkAuth()
+      if (!isAuthenticated) {
+        router.push('/login')
+        return
+      }
+      const { data, error: chatError } = await chatApi.createRoom(id)
+      if (chatError) {
+        alert(chatError)
+        return
+      }
+      if (data) {
+        router.push(`/chat/${data.id}`)
+      }
+    } catch {
+      alert('채팅방을 생성할 수 없습니다.')
+    } finally {
+      setChatLoading(false)
+    }
+  }, [chatLoading, id, router])
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteCount, setFavoriteCount] = useState(0)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  const [statusLoading, setStatusLoading] = useState(false)
+  const [reportOpen, setReportOpen] = useState(false)
+  const [showLocationMap, setShowLocationMap] = useState(false)
+  const [isHidden, setIsHidden] = useState(false)
+  const [hiddenLoading, setHiddenLoading] = useState(false)
+  const [blockConfirm, setBlockConfirm] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
+
+  useEffect(() => {
+    getProduct(id)
+      .then((data) => {
+        setProduct(toProduct(data))
+        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean; isHidden?: boolean }
+        setFavoriteCount(raw.favoriteCount ?? 0)
+        setIsFavorited(raw.isFavorited ?? false)
+        setIsHidden(raw.isHidden ?? false)
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+
+    userApi.getMe().then(({ data }) => {
+      if (data) {
+        setCurrentUserId(data.id)
+        setIsAuthenticated(true)
+      } else {
+        setIsAuthenticated(false)
+      }
+    })
+  }, [id])
+
+  const handleStatusChange = async (newStatus: ProductStatus) => {
+    if (statusLoading || !product) return
+    setStatusLoading(true)
+    const { data } = await productApi.updateProductStatus(id, newStatus)
+    if (data) setProduct((prev) => (prev ? { ...prev, status: data.status as ProductStatus } : prev))
+    setStatusLoading(false)
+  }
+
+  const handleFavoriteToggle = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/marketplace/${id}`)
+      return
+    }
+    if (favoriteLoading) return
+    setFavoriteLoading(true)
+    const prev = isFavorited
+    setIsFavorited(!prev)
+    setFavoriteCount((c) => c + (prev ? -1 : 1))
+    const { data } = await productApi.toggleFavorite(id)
+    if (!data) {
+      setIsFavorited(prev)
+      setFavoriteCount((c) => c + (prev ? 1 : -1))
+    }
+    setFavoriteLoading(false)
+  }
+
+  const handleReportClick = () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/marketplace/${id}`)
+      return
+    }
+    setReportOpen(true)
+  }
+
+  const blockUserAction = async () => {
+    if (!product) return
+    const { error: blockError } = await userApi.blockUser(product.seller.id)
+    if (blockError) {
+      toast.error(blockError)
+      return
+    }
+    router.push('/marketplace')
+  }
+
+  const handleBlockUser = async () => {
+    if (!product || blockLoading) return
+    setBlockLoading(true)
+    await blockUserAction()
+    setBlockLoading(false)
+    setBlockConfirm(false)
+  }
+
+  const handleShare = async () => {
+    if (!product) return
+    const url = `${window.location.origin}/marketplace/${id}`
+    const shareData = {
+      title: `${product.title} - 피치마켓`,
+      text: `$${product.price.toLocaleString()} · ${product.location}`,
+      url,
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (err) {
+        if ((err as DOMException).name !== 'AbortError') {
+          await navigator.clipboard.writeText(url)
+          toast.success('링크가 복사되었습니다')
+        }
+      }
+    } else {
+      await navigator.clipboard.writeText(url)
+      toast.success('링크가 복사되었습니다')
+    }
+  }
+
+  const handleToggleHidden = async () => {
+    if (hiddenLoading) return
+    setHiddenLoading(true)
+    const { data } = await productApi.toggleHidden(id)
+    if (data) setIsHidden(data.isHidden)
+    setHiddenLoading(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
+  if (error || !product) {
+    notFound()
+  }
+
+  const isSold = product.status === 'ENDED' || product.status === 'CONFIRMED'
+  const isConfirmed = product.status === 'CONFIRMED'
+  const isOwner = !!(currentUserId && currentUserId === product.seller.id)
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 md:px-6 pb-36 md:pb-8 md:mt-10">
+      {/* 뒤로가기 + 액션 */}
+      <div className="mb-6 flex items-center justify-between">
+        <Link
+          href="/marketplace"
+          className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary transition-all hover:gap-0.5"
+        >
+          <IconChevronLeft className="h-4 w-4" />
+          목록으로
+        </Link>
+        {isOwner && (
+          <Link
+            href={`/marketplace/${id}/edit`}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            <IconPencil className="h-4 w-4" />
+            수정
+          </Link>
+        )}
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 md:gap-10">
+        {/* 이미지 캐러셀 */}
+        <ImageCarousel images={product.images} alt={product.title} status={product.status} />
+
+        {/* 상품 정보 */}
+        <div className="flex flex-col">
+          {/* 카테고리 + 상태 뱃지 */}
+          <div className="flex items-center gap-2 mb-4">
+            <Badge
+              variant="secondary"
+              className="text-xs font-medium px-3 py-1 bg-primary/10 text-primary border-primary/20 shadow-sm"
+            >
+              {product.category}
+            </Badge>
+            <Badge
+              className={cn(
+                'text-xs font-medium px-3 py-1 shadow-sm transition-all',
+                product.status === 'SELLING' && 'bg-success-subtle text-success',
+                product.status === 'RESERVED' && 'bg-warning-subtle text-warning',
+                product.status === 'CONFIRMED' && 'bg-success-subtle text-success',
+                product.status === 'ENDED' && 'bg-muted text-muted-foreground'
+              )}
+            >
+              {STATUS_LABEL[product.status]}
+            </Badge>
+          </div>
+
+          {/* 숨김 배너 (구매자에게 표시) */}
+          {isHidden && !isOwner && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted/60 border border-muted-foreground/20 mb-4">
+              <IconEyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm font-medium text-muted-foreground">판매자가 숨긴 상품입니다</span>
+            </div>
+          )}
+
+          {/* 제목 */}
+          <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">{product.title}</h1>
+
+          {/* 위치 · 시간 */}
+          <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
+            <span className="flex items-center gap-1">
+              <IconMapPin className="h-3.5 w-3.5" />
+              {product.location}
+            </span>
+            <span className="flex items-center gap-1">
+              <IconClock className="h-3.5 w-3.5" />
+              {product.timeAgo}
+            </span>
+          </div>
+
+          {/* 가격 */}
+          <div className="mb-6">
+            <p
+              className={cn(
+                'text-3xl md:text-4xl font-extrabold transition-colors',
+                isSold
+                  ? 'text-muted-foreground line-through'
+                  : 'text-transparent bg-linear-to-r from-peach to-peach-hover bg-clip-text'
+              )}
+            >
+              ${product.price.toLocaleString()}
+            </p>
+          </div>
+
+          {/* 통계 */}
+          <div className="flex items-center gap-5 text-sm pb-5 border-b border-border/50">
+            <span className="flex items-center gap-1.5 text-muted-foreground hover:text-blue-500 transition-colors cursor-default">
+              <IconEye className="h-4 w-4" />
+              <span className="font-medium">조회 {product.viewCount}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground hover:text-green-500 transition-colors cursor-default">
+              <IconMessageCircle className="h-4 w-4" />
+              <span className="font-medium">채팅 {product.chatCount}</span>
+            </span>
+            <span className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors cursor-default">
+              <IconHeart className="h-4 w-4" />
+              <span className="font-medium">관심 {favoriteCount}</span>
+            </span>
+          </div>
+
+          {/* 판매자 정보 */}
+          <div className="py-5 border-b border-border/50">
+            <div className="flex items-center gap-3 p-3 rounded-xl bg-linear-to-br from-background to-muted/20 hover:shadow-md transition-all cursor-pointer group">
+              {product.seller.avatarUrl ? (
+                <div className="relative w-12 h-12 rounded-full overflow-hidden bg-muted ring-2 ring-primary/20 shadow-md group-hover:ring-primary/40 transition-all">
+                  <Image
+                    src={product.seller.avatarUrl}
+                    alt={product.seller.nickname}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-linear-to-br from-peach to-peach-hover flex items-center justify-center text-white font-bold text-base shadow-md">
+                  {product.seller.nickname[0]}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground truncate group-hover:text-primary transition-colors">
+                  {product.seller.nickname}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 설명 */}
+          <div className="py-5 border-b border-border/50">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-linear-to-b from-peach to-peach-hover rounded-full" />
+              상품 설명
+            </h2>
+            <p className="text-sm text-foreground/90 whitespace-pre-wrap leading-relaxed pl-3">
+              {product.description || '등록된 상품 설명이 없습니다.'}
+            </p>
+          </div>
+
+          {/* 거래 희망 지역 */}
+          <div className="py-5 border-b border-border/50">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-linear-to-b from-peach to-peach-hover rounded-full" />
+              거래 희망 지역
+            </h2>
+            <div className="flex items-center justify-between pl-3">
+              <span className="flex items-center gap-1.5 text-sm text-foreground/90">
+                <IconMapPin className="h-4 w-4 text-primary shrink-0" />
+                {product.location}
+              </span>
+              {product.lat != null && product.lng != null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary"
+                  onClick={() => setShowLocationMap(true)}
+                >
+                  <IconMap className="h-4 w-4" />
+                  위치보기
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* 비로그인 안내 배너 */}
+          {isAuthenticated === false && !isOwner && (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-sm text-muted-foreground">로그인하면 찜하기·채팅이 가능해요</p>
+              <Link
+                href={`/login?redirect=/marketplace/${id}`}
+                className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                로그인
+              </Link>
+            </div>
+          )}
+
+          {/* 데스크톱 액션 버튼 */}
+          <div className="hidden md:flex flex-wrap gap-3 pt-6">
+            {isOwner ? (
+              <>
+                {isConfirmed ? (
+                  <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-[#F3E8FF]/60 border border-[#6B21A8]/20">
+                    <span className="text-sm font-semibold text-[#6B21A8]">판매 확정된 상품입니다</span>
+                  </div>
+                ) : (
+                  <>
+                    {product.status !== 'SELLING' && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handleStatusChange('SELLING')}
+                        disabled={statusLoading}
+                        className="gap-2 border-2 border-success/40 text-success bg-success-subtle/50 hover:bg-success-subtle hover:scale-105 transition-all shadow-sm"
+                      >
+                        판매중
+                      </Button>
+                    )}
+                    {product.status !== 'ENDED' && (
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => handleStatusChange('ENDED')}
+                        disabled={statusLoading}
+                        className="gap-2 border-2 border-border text-muted-foreground bg-muted/50 hover:bg-muted hover:scale-105 transition-all shadow-sm disabled:opacity-60"
+                      >
+                        판매종료
+                      </Button>
+                    )}
+                  </>
+                )}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleToggleHidden}
+                  disabled={hiddenLoading}
+                  className={cn(
+                    'gap-2 border-2 hover:scale-105 transition-all shadow-sm',
+                    isHidden
+                      ? 'border-primary/40 text-primary bg-primary/10 hover:bg-primary/20'
+                      : 'border-border text-muted-foreground bg-muted/50 hover:bg-muted'
+                  )}
+                >
+                  <IconEyeOff className="h-4 w-4" />
+                  {isHidden ? '숨김 해제' : '숨기기'}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className={cn(
+                    'gap-2 border-2 hover:scale-105 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:hover:scale-100',
+                    isFavorited
+                      ? 'border-primary bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary'
+                      : 'border-primary/30 text-primary hover:bg-primary/10 hover:border-primary'
+                  )}
+                  disabled={isSold || favoriteLoading}
+                  onClick={handleFavoriteToggle}
+                >
+                  {isFavorited ? <IconHeartFilled className="h-5 w-5" /> : <IconHeart className="h-5 w-5" />}
+                  <span className="font-semibold">관심 {favoriteCount}</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 border-2 hover:border-secondary/50 hover:bg-secondary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                  onClick={handleShare}
+                >
+                  <IconShare className="h-5 w-5" />
+                  <span className="font-semibold">공유</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                  onClick={handleReportClick}
+                >
+                  <IconFlag className="h-5 w-5" />
+                  <span className="font-semibold">신고</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                  onClick={() => setBlockConfirm(true)}
+                >
+                  <IconBan className="h-5 w-5" />
+                  <span className="font-semibold">차단</span>
+                </Button>
+                <Button
+                  size="lg"
+                  className="flex-1 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
+                  disabled={isSold || isHidden || chatLoading}
+                  onClick={handleChat}
+                >
+                  <IconMessageCircle className="h-5 w-5" />
+                  {chatLoading ? '연결 중...' : isHidden ? '숨김 상품' : '채팅하기'}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 거래 희망 지역 지도 */}
+      {product.lat != null && product.lng != null && (
+        <Dialog open={showLocationMap} onOpenChange={setShowLocationMap}>
+          <DialogContent className="sm:max-w-xl p-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <IconMapPin className="h-5 w-5 text-primary" />
+                거래 희망 지역
+              </DialogTitle>
+            </DialogHeader>
+            <TradingLocationMap lat={product.lat} lng={product.lng} location={product.location} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 신고 다이얼로그 */}
+      <ReportDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetUserId={product.seller.id}
+        targetUserNickname={product.seller.nickname}
+        productId={id}
+        reportType="user"
+        onBlockUser={blockUserAction}
+      />
+
+      {/* 차단 확인 다이얼로그 */}
+      <AlertDialog open={blockConfirm} onOpenChange={setBlockConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>사용자 차단</AlertDialogTitle>
+            <AlertDialogDescription>
+              {product.seller.nickname}님을 차단하시겠습니까? 차단하면 이 사용자의 상품이 보이지 않고 채팅도 불가합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBlockUser}
+              disabled={blockLoading}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              차단
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 모바일 하단 고정 액션바 - 하단 네비게이션(h-16=64px) 위에 배치 */}
+      <div className="fixed bottom-16 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        {isAuthenticated === false ? (
+          <>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs text-muted-foreground">로그인 후 거래 가능</span>
+              <p className="text-base font-bold truncate text-foreground">{product.title}</p>
+            </div>
+            <Link href={`/login?redirect=/marketplace/${id}`}>
+              <Button className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all">
+                로그인하기
+              </Button>
+            </Link>
+          </>
+        ) : isOwner ? (
+          <>
+            {isConfirmed ? (
+              <div className="flex-1 flex items-center justify-center px-3 py-2 rounded-xl bg-[#F3E8FF]/60 border border-[#6B21A8]/20">
+                <span className="text-sm font-semibold text-[#6B21A8]">판매 확정</span>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col min-w-0">
+                <span className="text-xs text-muted-foreground font-medium mb-1">상태 변경</span>
+                <div className="flex gap-2">
+                  {product.status !== 'SELLING' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStatusChange('SELLING')}
+                      disabled={statusLoading}
+                      className="flex-1 border-2 border-[#166534]/40 text-[#166534] bg-[#DCFCE7]/50 hover:bg-[#DCFCE7] active:scale-95 transition-all h-10"
+                    >
+                      판매중
+                    </Button>
+                  )}
+                  {product.status !== 'ENDED' && (
+                    <Button
+                      size="sm"
+                      onClick={() => handleStatusChange('ENDED')}
+                      disabled={statusLoading}
+                      className="flex-1 border-2 border-[#6B7280]/40 text-[#6B7280] bg-[#F3F4F6]/50 hover:bg-[#F3F4F6] active:scale-95 transition-all h-10"
+                    >
+                      판매완료
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggleHidden}
+              disabled={hiddenLoading}
+              className={cn(
+                'shrink-0 border-2 active:scale-95 transition-all h-10',
+                isHidden ? 'border-primary/40 text-primary bg-primary/10' : 'border-border text-muted-foreground'
+              )}
+            >
+              <IconEyeOff className="h-4 w-4 mr-1" />
+              {isHidden ? '숨김 해제' : '숨기기'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="outline"
+              className={cn(
+                'shrink-0 h-12 px-3 gap-1.5 border-2 text-primary active:scale-95 transition-all shadow-sm disabled:opacity-50',
+                isFavorited
+                  ? 'border-primary bg-primary/10 hover:bg-primary/20'
+                  : 'border-primary/40 hover:bg-primary/10 hover:border-primary'
+              )}
+              disabled={isSold || favoriteLoading}
+              onClick={handleFavoriteToggle}
+            >
+              {isFavorited ? <IconHeartFilled className="h-5 w-5" /> : <IconHeart className="h-5 w-5" />}
+              <span className="text-sm font-semibold">{isFavorited ? '찜완료' : '찜하기'}</span>
+            </Button>
+            <div className="border-l border-border/30 h-10 mx-0.5" />
+            <div className="flex-1 flex flex-col min-w-0 mr-2">
+              <span className="text-xs text-muted-foreground font-medium">판매가격</span>
+              <p
+                className={cn(
+                  'text-xl font-extrabold truncate',
+                  isSold
+                    ? 'text-muted-foreground line-through'
+                    : 'text-transparent bg-linear-to-r from-peach to-peach-hover bg-clip-text'
+                )}
+              >
+                ${product.price.toLocaleString()}
+              </p>
+            </div>
+            <Button
+              className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
+              disabled={isSold || isHidden || chatLoading}
+              onClick={handleChat}
+            >
+              <IconMessageCircle className="h-5 w-5" />
+              {chatLoading ? '연결 중...' : isHidden ? '숨김 상품' : '채팅하기'}
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default ProductDetailPage

@@ -61,6 +61,14 @@ export class AdminController {
     return this.adminService.findAllUsers({ search, blocked })
   }
 
+  @Get('users/:id')
+  @ApiOperation({ summary: '사용자 상세 조회', description: '사용자 상세 정보와 신고 이력을 조회합니다' })
+  @ApiResponse({ status: 200, description: '사용자 상세 반환' })
+  @ApiResponse({ status: 404, description: '사용자를 찾을 수 없음' })
+  findUserById(@Param('id') id: string) {
+    return this.adminService.findUserById(id)
+  }
+
   @Patch('users/:id/block')
   @ApiOperation({ summary: '사용자 차단', description: '사용자를 차단하고 모든 세션을 삭제합니다' })
   @ApiResponse({ status: 200, description: '차단 성공' })

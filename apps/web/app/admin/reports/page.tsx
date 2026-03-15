@@ -21,6 +21,10 @@ const REPORT_TYPE_LABEL: Record<string, string> = {
   SCAM: '사기',
   INAPPROPRIATE: '부적절',
   SPAM: '스팸',
+  NO_SHOW: '노쇼',
+  COMMERCIAL_SELLER: '업자',
+  PROFANITY: '욕설',
+  EXPLICIT_CONTENT: '음란물',
   BUG: '버그',
   OTHER: '기타',
 }
@@ -79,6 +83,10 @@ export default function AdminReportsPage() {
             <SelectItem value="SCAM">사기</SelectItem>
             <SelectItem value="INAPPROPRIATE">부적절</SelectItem>
             <SelectItem value="SPAM">스팸</SelectItem>
+            <SelectItem value="NO_SHOW">노쇼</SelectItem>
+            <SelectItem value="COMMERCIAL_SELLER">업자</SelectItem>
+            <SelectItem value="PROFANITY">욕설</SelectItem>
+            <SelectItem value="EXPLICIT_CONTENT">음란물</SelectItem>
             <SelectItem value="BUG">버그</SelectItem>
             <SelectItem value="OTHER">기타</SelectItem>
           </SelectContent>
