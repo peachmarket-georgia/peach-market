@@ -282,34 +282,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
-        <div className="flex items-center gap-1">
-          {!isOwner && (
-            <>
-              <button
-                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all"
-                aria-label="공유"
-              >
-                <IconShare className="h-5 w-5" />
-              </button>
-              <button
-                className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
-                onClick={handleReportClick}
-                aria-label="신고"
-              >
-                <IconFlag className="h-5 w-5" />
-              </button>
-            </>
-          )}
-          {isOwner && (
-            <Link
-              href={`/marketplace/${id}/edit`}
-              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              <IconPencil className="h-4 w-4" />
-              수정
-            </Link>
-          )}
-        </div>
+        {isOwner && (
+          <Link
+            href={`/marketplace/${id}/edit`}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            <IconPencil className="h-4 w-4" />
+            수정
+          </Link>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">

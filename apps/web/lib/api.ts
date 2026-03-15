@@ -54,6 +54,7 @@ export type RequestOptions = {
   method?: string
   body?: unknown
   headers?: HeadersInit
+  skipRedirect?: boolean
 }
 
 /**
@@ -111,14 +112,14 @@ export async function apiRequest<T>(
 
         if (refreshed) {
           const retryResult = await apiRequest<T>(endpoint, options, cookies, true)
-          if (retryResult.status === 401 && typeof window !== 'undefined') {
+          if (retryResult.status === 401 && typeof window !== 'undefined' && !options?.skipRedirect) {
             window.location.href = '/login'
           }
           return retryResult
         }
 
-        // refresh 실패 → 로그인 페이지로 이동
-        if (typeof window !== 'undefined') {
+        // refresh 실패 → 로그인 페이지로 이동 (skipRedirect가 아닌 경우)
+        if (typeof window !== 'undefined' && !options?.skipRedirect) {
           window.location.href = '/login'
         }
         return { error: '세션이 만료되었습니다. 다시 로그인해주세요.', status: 401 }
@@ -244,7 +245,12 @@ export const userApi = {
    * 내 프로필 조회
    * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
    */
-  getMe: (cookies?: string) => apiRequest<UserProfileResponseDto>('/api/users/me', undefined, cookies),
+  getMe: (cookies?: string, options?: { skipRedirect?: boolean }) =>
+    apiRequest<UserProfileResponseDto>(
+      '/api/users/me',
+      options ? { skipRedirect: options.skipRedirect } : undefined,
+      cookies
+    ),
 
   /**
    * 이메일 중복 체크
