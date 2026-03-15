@@ -134,14 +134,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
       }
       const { data, error: chatError } = await chatApi.createRoom(id)
       if (chatError) {
-        alert(chatError)
+        toast.error(chatError)
         return
       }
       if (data) {
         router.push(`/chat/${data.id}`)
       }
     } catch {
-      alert('채팅방을 생성할 수 없습니다.')
+      toast.error('채팅방을 생성할 수 없습니다.')
     } finally {
       setChatLoading(false)
     }
@@ -184,8 +184,13 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const handleStatusChange = async (newStatus: ProductStatus) => {
     if (statusLoading || !product) return
     setStatusLoading(true)
-    const { data } = await productApi.updateProductStatus(id, newStatus)
-    if (data) setProduct((prev) => (prev ? { ...prev, status: data.status as ProductStatus } : prev))
+    const { data, error: statusError } = await productApi.updateProductStatus(id, newStatus)
+    if (data) {
+      setProduct((prev) => (prev ? { ...prev, status: data.status as ProductStatus } : prev))
+      toast.success('상태가 변경되었습니다')
+    } else {
+      toast.error(statusError || '상태 변경에 실패했습니다')
+    }
     setStatusLoading(false)
   }
 
@@ -203,6 +208,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
     if (!data) {
       setIsFavorited(prev)
       setFavoriteCount((c) => c + (prev ? 1 : -1))
+      toast.error('관심 등록에 실패했습니다')
     }
     setFavoriteLoading(false)
   }
@@ -260,7 +266,12 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
     if (hiddenLoading) return
     setHiddenLoading(true)
     const { data } = await productApi.toggleHidden(id)
-    if (data) setIsHidden(data.isHidden)
+    if (data) {
+      setIsHidden(data.isHidden)
+      toast.success(data.isHidden ? '상품을 숨겼습니다' : '숨김을 해제했습니다')
+    } else {
+      toast.error('숨기기 처리에 실패했습니다')
+    }
     setHiddenLoading(false)
   }
 
