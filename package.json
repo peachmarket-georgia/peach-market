@@ -10,7 +10,15 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css,yaml,yml}\"",
     "check-types": "turbo run check-types",
     "prepare": "husky",
-    "swagger-to-type": "./scripts/swagger-to-type.sh"
+    "swagger-to-type": "./scripts/swagger-to-type.sh",
+    "install:web": "pnpm --filter web install",
+    "install:api": "pnpm --filter api install",
+    "install:all": "pnpm install",
+    "test": "pnpm --filter api test && pnpm --filter web test",
+    "test:api": "pnpm --filter api test",
+    "test:api:cov": "pnpm --filter api test:cov",
+    "test:api:e2e": "pnpm --filter api test:e2e",
+    "test:web": "pnpm --filter web test"
   },
   "devDependencies": {
     "husky": "^9.1.7",

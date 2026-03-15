@@ -18,6 +18,7 @@ import {
   IconPencil,
   IconFlag,
   IconMap,
+  IconEyeOff,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -137,23 +138,32 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const [favoriteCount, setFavoriteCount] = useState(0)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
   const [showLocationMap, setShowLocationMap] = useState(false)
+  const [isHidden, setIsHidden] = useState(false)
+  const [hiddenLoading, setHiddenLoading] = useState(false)
 
   useEffect(() => {
     getProduct(id)
       .then((data) => {
         setProduct(toProduct(data))
-        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean }
+        const raw = data as unknown as { favoriteCount: number; isFavorited: boolean; isHidden?: boolean }
         setFavoriteCount(raw.favoriteCount ?? 0)
         setIsFavorited(raw.isFavorited ?? false)
+        setIsHidden(raw.isHidden ?? false)
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
 
     userApi.getMe().then(({ data }) => {
-      if (data) setCurrentUserId(data.id)
+      if (data) {
+        setCurrentUserId(data.id)
+        setIsAuthenticated(true)
+      } else {
+        setIsAuthenticated(false)
+      }
     })
   }, [id])
 
@@ -166,6 +176,10 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   }
 
   const handleFavoriteToggle = async () => {
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=/marketplace/${id}`)
+      return
+    }
     if (favoriteLoading) return
     setFavoriteLoading(true)
     const prev = isFavorited
@@ -177,6 +191,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
       setFavoriteCount((c) => c + (prev ? 1 : -1))
     }
     setFavoriteLoading(false)
+  }
+
+  const handleToggleHidden = async () => {
+    if (hiddenLoading) return
+    setHiddenLoading(true)
+    const { data } = await productApi.toggleHidden(id)
+    if (data) setIsHidden(data.isHidden)
+    setHiddenLoading(false)
   }
 
   if (loading) {
@@ -196,8 +218,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const isOwner = !!(currentUserId && currentUserId === product.seller.id)
 
   return (
-    <div className="max-w-5xl mx-auto px-4 md:px-6 pb-24 md:pb-8 md:mt-10">
-      {/* 뒤로가기 + 수정 */}
+    <div className="max-w-5xl mx-auto px-4 md:px-6 pb-36 md:pb-8 md:mt-10">
+      {/* 뒤로가기 + 액션 */}
       <div className="mb-6 flex items-center justify-between">
         <Link
           href="/marketplace"
@@ -206,15 +228,34 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
-        {isOwner && (
-          <Link
-            href={`/marketplace/${id}/edit`}
-            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-          >
-            <IconPencil className="h-4 w-4" />
-            수정
-          </Link>
-        )}
+        <div className="flex items-center gap-1">
+          {!isOwner && (
+            <>
+              <button
+                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all"
+                aria-label="공유"
+              >
+                <IconShare className="h-5 w-5" />
+              </button>
+              <button
+                className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
+                onClick={() => setReportOpen(true)}
+                aria-label="신고"
+              >
+                <IconFlag className="h-5 w-5" />
+              </button>
+            </>
+          )}
+          {isOwner && (
+            <Link
+              href={`/marketplace/${id}/edit`}
+              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+            >
+              <IconPencil className="h-4 w-4" />
+              수정
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">
@@ -243,6 +284,14 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
               {STATUS_LABEL[product.status]}
             </Badge>
           </div>
+
+          {/* 숨김 배너 (구매자에게 표시) */}
+          {isHidden && !isOwner && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted/60 border border-muted-foreground/20 mb-4">
+              <IconEyeOff className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-sm font-medium text-muted-foreground">판매자가 숨긴 상품입니다</span>
+            </div>
+          )}
 
           {/* 제목 */}
           <h1 className="text-xl md:text-2xl font-bold text-foreground mb-1">{product.title}</h1>
@@ -351,6 +400,19 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </div>
           </div>
 
+          {/* 비로그인 안내 배너 */}
+          {isAuthenticated === false && !isOwner && (
+            <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-sm text-muted-foreground">로그인하면 찜하기·채팅이 가능해요</p>
+              <Link
+                href={`/login?redirect=/marketplace/${id}`}
+                className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white"
+              >
+                로그인
+              </Link>
+            </div>
+          )}
+
           {/* 데스크톱 액션 버튼 */}
           <div className="hidden md:flex gap-3 pt-6">
             {isOwner ? (
@@ -385,6 +447,21 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                     )}
                   </>
                 )}
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={handleToggleHidden}
+                  disabled={hiddenLoading}
+                  className={cn(
+                    'gap-2 border-2 hover:scale-105 transition-all shadow-sm',
+                    isHidden
+                      ? 'border-primary/40 text-primary bg-primary/10 hover:bg-primary/20'
+                      : 'border-border text-muted-foreground bg-muted/50 hover:bg-muted'
+                  )}
+                >
+                  <IconEyeOff className="h-4 w-4" />
+                  {isHidden ? '숨김 해제' : '숨기기'}
+                </Button>
               </>
             ) : (
               <>
@@ -423,11 +500,11 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 <Button
                   size="lg"
                   className="flex-1 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 transition-all disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
-                  disabled={isSold || chatLoading}
+                  disabled={isSold || isHidden || chatLoading}
                   onClick={handleChat}
                 >
                   <IconMessageCircle className="h-5 w-5" />
-                  {chatLoading ? '연결 중...' : '채팅하기'}
+                  {chatLoading ? '연결 중...' : isHidden ? '숨김 상품' : '채팅하기'}
                 </Button>
               </>
             )}
@@ -460,9 +537,21 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         reportType="user"
       />
 
-      {/* 모바일 하단 고정 액션바 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
-        {isOwner ? (
+      {/* 모바일 하단 고정 액션바 - 하단 네비게이션(h-16=64px) 위에 배치 */}
+      <div className="fixed bottom-16 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+        {isAuthenticated === false ? (
+          <>
+            <div className="flex-1 min-w-0">
+              <span className="text-xs text-muted-foreground">로그인 후 거래 가능</span>
+              <p className="text-base font-bold truncate text-foreground">{product.title}</p>
+            </div>
+            <Link href={`/login?redirect=/marketplace/${id}`}>
+              <Button className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all">
+                로그인하기
+              </Button>
+            </Link>
+          </>
+        ) : isOwner ? (
           <>
             {isConfirmed ? (
               <div className="flex-1 flex items-center justify-center px-3 py-2 rounded-xl bg-[#F3E8FF]/60 border border-[#6B21A8]/20">
@@ -496,14 +585,26 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 </div>
               </div>
             )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleToggleHidden}
+              disabled={hiddenLoading}
+              className={cn(
+                'shrink-0 border-2 active:scale-95 transition-all h-10',
+                isHidden ? 'border-primary/40 text-primary bg-primary/10' : 'border-border text-muted-foreground'
+              )}
+            >
+              <IconEyeOff className="h-4 w-4 mr-1" />
+              {isHidden ? '숨김 해제' : '숨기기'}
+            </Button>
           </>
         ) : (
           <>
             <Button
               variant="outline"
-              size="icon"
               className={cn(
-                'shrink-0 h-12 w-12 border-2 text-primary active:scale-95 transition-all shadow-sm disabled:opacity-50',
+                'shrink-0 h-12 px-3 gap-1.5 border-2 text-primary active:scale-95 transition-all shadow-sm disabled:opacity-50',
                 isFavorited
                   ? 'border-primary bg-primary/10 hover:bg-primary/20'
                   : 'border-primary/40 hover:bg-primary/10 hover:border-primary'
@@ -511,7 +612,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
               disabled={isSold || favoriteLoading}
               onClick={handleFavoriteToggle}
             >
-              {isFavorited ? <IconHeartFilled className="h-6 w-6" /> : <IconHeart className="h-6 w-6" />}
+              {isFavorited ? <IconHeartFilled className="h-5 w-5" /> : <IconHeart className="h-5 w-5" />}
+              <span className="text-sm font-semibold">{isFavorited ? '찜완료' : '찜하기'}</span>
             </Button>
             <div className="border-l border-border/30 h-10 mx-0.5" />
             <div className="flex-1 flex flex-col min-w-0 mr-2">
@@ -529,11 +631,11 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </div>
             <Button
               className="shrink-0 h-12 px-6 gap-2 bg-linear-to-r from-peach to-peach-hover text-white font-bold shadow-lg active:scale-95 transition-all disabled:opacity-60"
-              disabled={isSold || chatLoading}
+              disabled={isSold || isHidden || chatLoading}
               onClick={handleChat}
             >
               <IconMessageCircle className="h-5 w-5" />
-              {chatLoading ? '연결 중...' : '채팅하기'}
+              {chatLoading ? '연결 중...' : isHidden ? '숨김 상품' : '채팅하기'}
             </Button>
           </>
         )}
