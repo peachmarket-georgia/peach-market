@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import ProductDetailPage from './product-detail-page'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
+const getServerApiUrl = () => process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3003'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -9,13 +9,15 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params
+  const apiUrl = getServerApiUrl()
 
   try {
-    const res = await fetch(`${API_URL}/api/products/${id}`, {
+    const res = await fetch(`${apiUrl}/api/products/${id}`, {
       next: { revalidate: 60 },
     })
 
     if (!res.ok) {
+      console.error(`[OG] Product fetch failed: ${res.status} ${res.statusText} (${apiUrl}/api/products/${id})`)
       return { title: '매물 상세 | 피치마켓' }
     }
 
@@ -42,7 +44,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ...(thumbnail ? { images: [thumbnail] } : {}),
       },
     }
-  } catch {
+  } catch (error) {
+    console.error(`[OG] Product metadata error for ${id}:`, error)
     return { title: '매물 상세 | 피치마켓' }
   }
 }
