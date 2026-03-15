@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { ko } from 'date-fns/locale'
+import imageCompression from 'browser-image-compression'
 import {
   IconLoader2,
   IconMapPin,
@@ -21,6 +22,7 @@ import {
   IconMaximize,
   IconBan,
   IconChevronRight,
+  IconCamera,
 } from '@tabler/icons-react'
 import { usePushNotification } from '@/hooks/use-push-notification'
 import { Header } from '@/components/layout/header'
@@ -28,7 +30,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { ProductCard } from '@/app/marketplace/components/product-card'
-import { checkAuth, userApi } from '@/lib/api'
+import { checkAuth, userApi, uploadApi } from '@/lib/api'
 import { useGeolocation } from '@/hooks/use-geolocation'
 import { RadiusMap } from '@/components/radius-map'
 import { cn } from '@/lib/utils'
@@ -79,6 +81,10 @@ export default function MyPage() {
   const [editLocation, setEditLocation] = useState('')
   const [editLoading, setEditLoading] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarCompressing, setAvatarCompressing] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const { loading: locationLoading, error: locationError, getLocation } = useGeolocation()
 
@@ -240,9 +246,50 @@ export default function MyPage() {
     if (user) {
       setEditNickname(user.nickname)
       setEditLocation(user.location)
+      setAvatarFile(null)
+      setAvatarPreview(null)
       setEditError(null)
       setShowEditDialog(true)
     }
+  }
+
+  // 아바타 파일 선택 핸들러
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      setEditError('JPG, PNG, WebP 형식의 이미지만 업로드 가능합니다.')
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setEditError('이미지 크기는 10MB 이하여야 합니다.')
+      return
+    }
+
+    setAvatarCompressing(true)
+    setEditError(null)
+
+    try {
+      const compressed = await imageCompression(file, {
+        maxSizeMB: 2,
+        maxWidthOrHeight: 1024,
+        useWebWorker: true,
+        fileType: 'image/webp',
+        initialQuality: 0.85,
+      })
+      setAvatarFile(compressed)
+      setAvatarPreview(URL.createObjectURL(compressed))
+    } catch {
+      setEditError('이미지 처리 중 오류가 발생했습니다.')
+    } finally {
+      setAvatarCompressing(false)
+    }
+
+    // input 초기화 (같은 파일 재선택 허용)
+    e.target.value = ''
   }
 
   // 프로필 수정 제출
@@ -255,9 +302,22 @@ export default function MyPage() {
     setEditLoading(true)
     setEditError(null)
 
+    // 아바타 이미지 업로드
+    let avatarUrl: string | undefined
+    if (avatarFile) {
+      const { data: uploadData, error: uploadError } = await uploadApi.uploadImages([avatarFile])
+      if (uploadError || !uploadData) {
+        setEditError(uploadError || '이미지 업로드에 실패했습니다.')
+        setEditLoading(false)
+        return
+      }
+      avatarUrl = uploadData.images[0].url
+    }
+
     const { data, error } = await userApi.updateProfile({
       nickname: editNickname.trim(),
       location: editLocation.trim(),
+      ...(avatarUrl && { avatarUrl }),
     })
 
     setEditLoading(false)
@@ -782,6 +842,43 @@ export default function MyPage() {
               </div>
             )}
 
+            {/* 아바타 변경 */}
+            <div className="flex flex-col items-center gap-2">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarCompressing}
+                className="relative w-24 h-24 rounded-full overflow-hidden bg-muted group focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                {avatarPreview || user.avatarUrl ? (
+                  <img
+                    src={avatarPreview || user.avatarUrl!}
+                    alt={user.nickname}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="w-full h-full flex items-center justify-center text-4xl font-medium text-muted-foreground">
+                    {user.nickname.charAt(0)}
+                  </span>
+                )}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {avatarCompressing ? (
+                    <IconLoader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <IconCamera className="w-6 h-6 text-white" />
+                  )}
+                </div>
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+              <p className="text-xs text-muted-foreground">사진을 클릭하여 변경</p>
+            </div>
+
             <div className="space-y-2">
               <label htmlFor="nickname" className="text-sm font-medium">
                 닉네임
@@ -803,8 +900,9 @@ export default function MyPage() {
                 <Input
                   id="location"
                   value={editLocation}
-                  onChange={(e) => setEditLocation(e.target.value)}
-                  placeholder="예: Duluth, GA"
+                  readOnly
+                  placeholder="위치 버튼을 눌러 설정해주세요"
+                  className="cursor-default bg-muted/50"
                 />
                 <Button
                   type="button"
