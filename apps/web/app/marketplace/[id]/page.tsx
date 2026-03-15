@@ -19,10 +19,22 @@ import {
   IconFlag,
   IconMap,
   IconEyeOff,
+  IconBan,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { toast } from 'sonner'
 import { chatApi, checkAuth } from '@/lib/api'
 import { STATUS_LABEL } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
@@ -144,6 +156,8 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const [showLocationMap, setShowLocationMap] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
   const [hiddenLoading, setHiddenLoading] = useState(false)
+  const [blockConfirm, setBlockConfirm] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
 
   useEffect(() => {
     getProduct(id)
@@ -201,6 +215,38 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
     setReportOpen(true)
   }
 
+  const blockUserAction = async () => {
+    if (!product) return
+    const { error: blockError } = await userApi.blockUser(product.seller.id)
+    if (blockError) {
+      toast.error(blockError)
+      return
+    }
+    router.push('/marketplace')
+  }
+
+  const handleBlockUser = async () => {
+    if (!product || blockLoading) return
+    setBlockLoading(true)
+    await blockUserAction()
+    setBlockLoading(false)
+    setBlockConfirm(false)
+  }
+
+  const handleShare = async () => {
+    const url = window.location.href
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: product?.title ?? '', url })
+      } catch {
+        // 사용자가 공유 취소한 경우 무시
+      }
+    } else {
+      await navigator.clipboard.writeText(url)
+      toast.success('링크가 복사되었습니다')
+    }
+  }
+
   const handleToggleHidden = async () => {
     if (hiddenLoading) return
     setHiddenLoading(true)
@@ -236,34 +282,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           <IconChevronLeft className="h-4 w-4" />
           목록으로
         </Link>
-        <div className="flex items-center gap-1">
-          {!isOwner && (
-            <>
-              <button
-                className="p-2 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/60 active:scale-95 transition-all"
-                aria-label="공유"
-              >
-                <IconShare className="h-5 w-5" />
-              </button>
-              <button
-                className="p-2 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:scale-95 transition-all"
-                onClick={handleReportClick}
-                aria-label="신고"
-              >
-                <IconFlag className="h-5 w-5" />
-              </button>
-            </>
-          )}
-          {isOwner && (
-            <Link
-              href={`/marketplace/${id}/edit`}
-              className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
-            >
-              <IconPencil className="h-4 w-4" />
-              수정
-            </Link>
-          )}
-        </div>
+        {isOwner && (
+          <Link
+            href={`/marketplace/${id}/edit`}
+            className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
+          >
+            <IconPencil className="h-4 w-4" />
+            수정
+          </Link>
+        )}
       </div>
 
       <div className="grid md:grid-cols-2 gap-6 md:gap-10">
@@ -422,7 +449,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           )}
 
           {/* 데스크톱 액션 버튼 */}
-          <div className="hidden md:flex gap-3 pt-6">
+          <div className="hidden md:flex flex-wrap gap-3 pt-6">
             {isOwner ? (
               <>
                 {isConfirmed ? (
@@ -492,6 +519,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                   variant="outline"
                   size="lg"
                   className="gap-2 border-2 hover:border-secondary/50 hover:bg-secondary/10 hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                  onClick={handleShare}
                 >
                   <IconShare className="h-5 w-5" />
                   <span className="font-semibold">공유</span>
@@ -504,6 +532,15 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
                 >
                   <IconFlag className="h-5 w-5" />
                   <span className="font-semibold">신고</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2 border-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive hover:scale-105 transition-all shadow-sm hover:shadow-md"
+                  onClick={() => setBlockConfirm(true)}
+                >
+                  <IconBan className="h-5 w-5" />
+                  <span className="font-semibold">차단</span>
                 </Button>
                 <Button
                   size="lg"
@@ -543,7 +580,30 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
         targetUserNickname={product.seller.nickname}
         productId={id}
         reportType="user"
+        onBlockUser={blockUserAction}
       />
+
+      {/* 차단 확인 다이얼로그 */}
+      <AlertDialog open={blockConfirm} onOpenChange={setBlockConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>사용자 차단</AlertDialogTitle>
+            <AlertDialogDescription>
+              {product.seller.nickname}님을 차단하시겠습니까? 차단하면 이 사용자의 상품이 보이지 않고 채팅도 불가합니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBlockUser}
+              disabled={blockLoading}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              차단
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 모바일 하단 고정 액션바 - 하단 네비게이션(h-16=64px) 위에 배치 */}
       <div className="fixed bottom-16 left-0 right-0 bg-white/98 backdrop-blur-md border-t-2 border-primary/10 px-4 py-3 flex items-center gap-3 md:hidden z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">

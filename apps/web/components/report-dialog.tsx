@@ -12,6 +12,10 @@ import type { ReportType } from '@/types/api'
 
 const USER_REPORT_TYPES: { value: ReportType; label: string }[] = [
   { value: 'SCAM', label: '사기' },
+  { value: 'NO_SHOW', label: '노쇼' },
+  { value: 'COMMERCIAL_SELLER', label: '업자' },
+  { value: 'PROFANITY', label: '욕설' },
+  { value: 'EXPLICIT_CONTENT', label: '음란물' },
   { value: 'INAPPROPRIATE', label: '부적절한 행동' },
   { value: 'SPAM', label: '스팸' },
   { value: 'OTHER', label: '기타' },
@@ -26,6 +30,7 @@ type ReportDialogProps = {
   targetUserNickname?: string
   productId?: string
   reportType?: 'user' | 'bug'
+  onBlockUser?: () => Promise<void>
 }
 
 export function ReportDialog({
@@ -35,12 +40,14 @@ export function ReportDialog({
   targetUserNickname,
   productId,
   reportType = 'user',
+  onBlockUser,
 }: ReportDialogProps) {
   const [type, setType] = useState<ReportType | ''>('')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState<File[]>([])
   const [previews, setPreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [blockUser, setBlockUser] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const reportTypes = reportType === 'bug' ? BUG_REPORT_TYPES : USER_REPORT_TYPES
@@ -101,7 +108,11 @@ export function ReportDialog({
       return
     }
 
-    toast.success('신고가 접수되었습니다')
+    if (blockUser && onBlockUser) {
+      await onBlockUser()
+    }
+
+    toast.success(blockUser ? '신고 접수 및 사용자를 차단했습니다' : '신고가 접수되었습니다')
     resetForm()
     onOpenChange(false)
   }
@@ -109,6 +120,7 @@ export function ReportDialog({
   const resetForm = () => {
     setType('')
     setDescription('')
+    setBlockUser(false)
     previews.forEach((url) => URL.revokeObjectURL(url))
     setImages([])
     setPreviews([])
@@ -198,6 +210,18 @@ export function ReportDialog({
             )}
           </div>
         </div>
+
+        {reportType === 'user' && onBlockUser && (
+          <label className="flex items-center gap-2 cursor-pointer select-none rounded-lg border border-border px-3 py-2.5 hover:bg-muted/50 transition-colors">
+            <input
+              type="checkbox"
+              checked={blockUser}
+              onChange={(e) => setBlockUser(e.target.checked)}
+              className="accent-destructive w-4 h-4"
+            />
+            <span className="text-sm text-foreground">이 사용자를 차단하기</span>
+          </label>
+        )}
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>

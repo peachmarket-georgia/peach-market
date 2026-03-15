@@ -171,7 +171,7 @@ export default function SignupPage() {
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center">회원가입</CardTitle>
-          <p className="text-sm text-muted-foreground text-center mt-2">조지아 한인 중고거래</p>
+          <p className="text-sm text-muted-foreground text-center mt-2">조지아 중고거래</p>
         </CardHeader>
 
         <CardContent className="space-y-6">

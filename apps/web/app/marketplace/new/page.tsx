@@ -212,7 +212,7 @@ const ProductCreatePage = (): React.JSX.Element => {
           목록으로
         </Link>
         <h1 className="text-2xl font-extrabold text-foreground">상품 등록</h1>
-        <p className="text-sm text-fg-tertiary mt-0.5">조지아 한인 중고마켓에 올려보세요 🍑</p>
+        <p className="text-sm text-fg-tertiary mt-0.5">조지아 중고마켓에 올려보세요 🍑</p>
       </div>
 
       {/* Step Indicator */}

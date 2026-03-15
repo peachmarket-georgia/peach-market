@@ -11,8 +11,8 @@ import { FeedbackButton } from '@/components/feedback-button'
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' })
 
 export const metadata: Metadata = {
-  title: '피치마켓 | 조지아 한인 중고거래',
-  description: '조지아주 한인 커뮤니티를 위한 안전한 중고거래 플랫폼',
+  title: '피치마켓 | 조지아 중고거래',
+  description: '조지아 안전한 중고거래 플랫폼',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, statusBarStyle: 'default', title: '피치마켓' },
   icons: {

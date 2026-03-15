@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common'
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
 import { v4 as uuidv4 } from 'uuid'
 import { AppConfigService } from '../config/config.service'
@@ -21,11 +21,17 @@ export type UploadedImage = {
 
 @Injectable()
 export class StorageService {
-  private supabase: SupabaseClient
+  private supabase: ReturnType<typeof createClient>
   private readonly bucketName = 'product-images'
 
+  // 서버 사이드: 세션 관리 비활성화하여 service role key로 직접 인증 (RLS 우회)
   constructor(private config: AppConfigService) {
-    this.supabase = createClient(this.config.supabaseUrl, this.config.supabaseServiceRoleKey)
+    this.supabase = createClient(this.config.supabaseUrl, this.config.supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
   }
 
   private validateMagicBytes(buffer: Buffer, mimeType: string): boolean {

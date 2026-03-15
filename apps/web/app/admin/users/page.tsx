@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { IconLoader2, IconSearch, IconBan, IconCircleCheck, IconShield, IconShieldOff } from '@tabler/icons-react'
+import Link from 'next/link'
+import {
+  IconLoader2,
+  IconSearch,
+  IconBan,
+  IconCircleCheck,
+  IconShield,
+  IconShieldOff,
+  IconFlag,
+} from '@tabler/icons-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -130,11 +139,19 @@ export default function AdminUsersPage() {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm truncate">{user.nickname}</p>
+                  <Link href={`/admin/users/${user.id}`} className="font-medium text-sm truncate hover:underline">
+                    {user.nickname}
+                  </Link>
                   {user.role === 'ADMIN' && <Badge className="text-xs bg-primary/20 text-primary">관리자</Badge>}
                   {user.isBlocked && (
                     <Badge variant="destructive" className="text-xs">
                       차단됨
+                    </Badge>
+                  )}
+                  {user.reportCount > 0 && (
+                    <Badge variant="outline" className="text-xs gap-0.5 text-orange-600 border-orange-200">
+                      <IconFlag className="w-3 h-3" />
+                      신고 {user.reportCount}
                     </Badge>
                   )}
                 </div>

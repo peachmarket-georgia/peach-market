@@ -16,6 +16,7 @@ const REPORT_DETAIL_SELECT = {
   updatedAt: true,
   reporter: { select: { id: true, nickname: true, email: true, avatarUrl: true } },
   targetUser: { select: { id: true, nickname: true, email: true, avatarUrl: true, isBlocked: true } },
+  product: { select: { id: true, title: true, price: true, images: true, status: true } },
 } as const
 
 const ADMIN_PRODUCT_SELECT = {
@@ -62,6 +63,7 @@ export class AdminService {
       pendingReports,
       reviewingReports,
       recentReports,
+      totalUserBlocks,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.user.count({ where: { createdAt: { gte: sevenDaysAgo } } }),
@@ -76,12 +78,14 @@ export class AdminService {
         orderBy: { createdAt: 'desc' },
         select: REPORT_DETAIL_SELECT,
       }),
+      this.prisma.userBlock.count(),
     ])
 
     return {
       users: { total: totalUsers, newLast7Days: newUsersLast7Days, blocked: blockedUsers },
       products: { total: totalProducts, active: activeProducts },
       reports: { total: totalReports, pending: pendingReports, reviewing: reviewingReports },
+      userBlocks: { total: totalUserBlocks },
       recentReports,
     }
   }
@@ -148,11 +152,50 @@ export class AdminService {
       where.isBlocked = false
     }
 
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      select: USER_SELECT,
+      select: {
+        ...USER_SELECT,
+        _count: { select: { reportsReceived: true } },
+      },
     })
+
+    return users.map(({ _count, ...rest }) => ({
+      ...rest,
+      reportCount: _count.reportsReceived,
+    }))
+  }
+
+  async findUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        ...USER_SELECT,
+        mannerScore: true,
+        _count: { select: { reportsReceived: true, products: true, blocksReceived: true } },
+      },
+    })
+
+    if (!user) {
+      throw new NotFoundException('사용자를 찾을 수 없습니다')
+    }
+
+    const reportsReceived = await this.prisma.report.findMany({
+      where: { targetUserId: id },
+      take: 20,
+      orderBy: { createdAt: 'desc' },
+      select: REPORT_DETAIL_SELECT,
+    })
+
+    const { _count, ...rest } = user
+    return {
+      ...rest,
+      reportCount: _count.reportsReceived,
+      productCount: _count.products,
+      blockCount: _count.blocksReceived,
+      reportsReceived,
+    }
   }
 
   async blockUser(userId: string) {

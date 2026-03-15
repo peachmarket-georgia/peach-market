@@ -273,7 +273,16 @@ export interface ProductQueryParams {
 
 // ==================== Report Types ====================
 
-export type ReportType = 'SCAM' | 'INAPPROPRIATE' | 'SPAM' | 'BUG' | 'OTHER'
+export type ReportType =
+  | 'SCAM'
+  | 'INAPPROPRIATE'
+  | 'SPAM'
+  | 'NO_SHOW'
+  | 'COMMERCIAL_SELLER'
+  | 'PROFANITY'
+  | 'EXPLICIT_CONTENT'
+  | 'BUG'
+  | 'OTHER'
 export type ReportStatus = 'PENDING' | 'REVIEWING' | 'RESOLVED' | 'DISMISSED'
 
 export interface CreateReportDto {
@@ -304,6 +313,7 @@ export interface AdminReportDto extends ReportResponseDto {
   resolvedAt: string | null
   reporter: { id: string; nickname: string; email: string; avatarUrl: string | null }
   targetUser: { id: string; nickname: string; email: string; avatarUrl: string | null; isBlocked: boolean } | null
+  product: { id: string; title: string; price: number; images: string[]; status: string } | null
 }
 
 export interface AdminUserDto {
@@ -315,6 +325,14 @@ export interface AdminUserDto {
   role: UserRole
   isBlocked: boolean
   createdAt: string
+  reportCount: number
+}
+
+export interface AdminUserDetailDto extends AdminUserDto {
+  mannerScore: number
+  productCount: number
+  blockCount: number
+  reportsReceived: AdminReportDto[]
 }
 
 export interface AdminProductDto {
@@ -337,5 +355,12 @@ export interface AdminStatsDto {
   users: { total: number; newLast7Days: number; blocked: number }
   products: { total: number; active: number }
   reports: { total: number; pending: number; reviewing: number }
+  userBlocks: { total: number }
   recentReports: AdminReportDto[]
+}
+
+export interface UserBlockDto {
+  id: string
+  createdAt: string
+  blocked: { id: string; nickname: string; avatarUrl: string | null }
 }

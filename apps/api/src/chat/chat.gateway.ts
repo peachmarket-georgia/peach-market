@@ -9,6 +9,7 @@ import {
 import { Server, Socket } from 'socket.io'
 import { ChatService } from './chat.service'
 import { PushService } from '../modules/push/push.service'
+import { UserBlocksService } from '../modules/user-blocks/user-blocks.service'
 import { Logger } from '@nestjs/common'
 
 /**
@@ -51,7 +52,8 @@ export class ChatGateway implements OnGatewayInit {
 
   constructor(
     private readonly chatService: ChatService,
-    private readonly pushService: PushService
+    private readonly pushService: PushService,
+    private readonly userBlocksService: UserBlocksService
   ) {}
 
   afterInit() {
@@ -88,11 +90,20 @@ export class ChatGateway implements OnGatewayInit {
       content: string
     }
   ) {
+    // 차단 관계 확인
+    const room = await this.chatService.findChatRoomById(data.chatRoomId)
+    if (room) {
+      const otherUserId = room.buyerId === data.senderId ? room.sellerId : room.buyerId
+      const isBlocked = await this.userBlocksService.isBlocked(data.senderId, otherUserId)
+      if (isBlocked) {
+        return { error: '차단된 사용자에게 메시지를 보낼 수 없습니다' }
+      }
+    }
+
     const savedMessage = await this.chatService.saveMessage(data.chatRoomId, data.senderId, data.content)
     this.server.to(data.chatRoomId).emit('newMessage', savedMessage)
 
-    // 3. 수신자의 개인 채널에 안읽은 메시지 알림 + PWA push
-    const room = await this.chatService.findChatRoomById(data.chatRoomId)
+    // 수신자의 개인 채널에 안읽은 메시지 알림 + PWA push
     if (room) {
       const recipientId = room.buyerId === data.senderId ? room.sellerId : room.buyerId
       this.server.to(`user:${recipientId}`).emit('newUnreadMessage', { chatRoomId: data.chatRoomId })
