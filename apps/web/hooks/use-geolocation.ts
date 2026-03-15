@@ -13,20 +13,9 @@ export type GeolocationResult = {
   lng: number
 }
 
-async function reverseGeocode(lat: number, lng: number): Promise<GeolocationResult> {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-  if (!apiKey) throw new Error('Google Maps API 키가 설정되지 않았습니다')
-
-  const res = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&language=en&region=US`
-  )
-  const data = await res.json()
-
-  if (data.status !== 'OK' || !data.results?.length) {
-    throw new Error('주소를 가져올 수 없습니다')
-  }
-
-  // city, state 추출 (여러 타입 fallback 적용)
+function extractCityState(data: {
+  results: { address_components: { long_name: string; short_name: string; types: string[] }[] }[]
+}) {
   const CITY_TYPES = [
     'locality',
     'sublocality_level_1',
@@ -45,17 +34,41 @@ async function reverseGeocode(lat: number, lng: number): Promise<GeolocationResu
         city = component.long_name
       }
       if (!state && component.types.includes('administrative_area_level_1')) {
-        state = component.short_name // "GA"
+        state = component.short_name
       }
     }
     if (city && state) break
   }
 
-  // state만 있어도 반환, 둘 다 없으면 에러
-  if (!state) throw new Error('위치 정보를 가져올 수 없습니다')
+  return { city, state }
+}
 
-  const formatted = city ? `${city}, ${state}` : state
-  return { formatted, lat, lng }
+async function reverseGeocode(lat: number, lng: number): Promise<GeolocationResult> {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+  if (!apiKey) throw new Error('Google Maps API 키가 설정되지 않았습니다')
+
+  const base = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}&region=US`
+
+  const [enRes, koRes] = await Promise.all([fetch(`${base}&language=en`), fetch(`${base}&language=ko`)])
+  const [enData, koData] = await Promise.all([enRes.json(), koRes.json()])
+
+  if (enData.status !== 'OK' || !enData.results?.length) {
+    throw new Error('주소를 가져올 수 없습니다')
+  }
+
+  const en = extractCityState(enData)
+  const ko = koData.status === 'OK' ? extractCityState(koData) : { city: '', state: '' }
+
+  if (!en.state) throw new Error('위치 정보를 가져올 수 없습니다')
+
+  const enFormatted = en.city ? `${en.city}, ${en.state}` : en.state
+
+  // 한글 도시명이 있고 영어와 다르면 병렬 표기: 둘루스(Duluth, GA)
+  if (ko.city && ko.city !== en.city) {
+    return { formatted: `${ko.city}(${enFormatted})`, lat, lng }
+  }
+
+  return { formatted: enFormatted, lat, lng }
 }
 
 export function useGeolocation() {
