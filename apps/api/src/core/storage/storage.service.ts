@@ -25,7 +25,12 @@ export class StorageService {
   private readonly bucketName = 'product-images'
 
   constructor(private config: AppConfigService) {
-    this.supabase = createClient(this.config.supabaseUrl, this.config.supabaseServiceRoleKey)
+    this.supabase = createClient(this.config.supabaseUrl, this.config.supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
   }
 
   private validateMagicBytes(buffer: Buffer, mimeType: string): boolean {

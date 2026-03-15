@@ -31,17 +31,20 @@
 
 **모든 UI 컴포넌트에 일관되게 적용**해야 합니다:
 
-| 역할           | 색상        | Hex       | Tailwind 클래스  | 용도                |
-| -------------- | ----------- | --------- | ---------------- | ------------------- |
-| Primary        | 피치 오렌지 | `#FF6B35` | `bg-primary`     | CTA 버튼, 강조 요소 |
-| Secondary      | 라이트 피치 | `#FFB347` | `bg-secondary`   | 보조 요소, 호버     |
-| Success        | 그린        | `#4CAF50` | `bg-success`     | 판매중 상태         |
-| Warning        | 옐로우      | `#FFC107` | `bg-warning`     | 예약중 상태         |
-| Muted          | 그레이      | `#9E9E9E` | `bg-muted`       | 판매완료 상태       |
-| Background     | 오프화이트  | `#FAFAFA` | `bg-background`  | 페이지 배경         |
-| Surface        | 화이트      | `#FFFFFF` | `bg-surface`     | 카드 배경           |
-| Text Primary   | 블랙        | `#212121` | `text-primary`   | 제목, 본문          |
-| Text Secondary | 그레이      | `#757575` | `text-secondary` | 보조 텍스트         |
+| 역할           | 색상        | Hex       | Tailwind 클래스           | 용도                  |
+| -------------- | ----------- | --------- | ------------------------- | --------------------- |
+| Primary        | 피치        | `#f97272` | `bg-peach` / `bg-primary` | CTA 버튼, 강조 요소   |
+| Peach Hover    | 피치 호버   | `#D4572F` | `bg-peach-hover`          | 호버 상태             |
+| Peach Subtle   | 피치 서틀   | `#FDF0EC` | `bg-peach-subtle`         | 뱃지 배경, 하이라이트 |
+| Success        | 그린        | `#16A34A` | `bg-success`              | 거래완료 상태         |
+| Warning        | 옐로우      | `#D97706` | `bg-warning`              | 예약중 상태           |
+| Error          | 레드        | `#DC2626` | `bg-error`                | 에러, 삭제            |
+| Background     | 페이지 배경 | `#FAFAFA` | `bg-background`           | 페이지 배경           |
+| Surface        | 카드 배경   | `#FFFFFF` | `bg-surface-primary`      | 카드, 모달 배경       |
+| Text Primary   | 본문        | `#171717` | `text-foreground`         | 제목, 본문            |
+| Text Secondary | 보조 텍스트 | `#737373` | `text-fg-secondary`       | 보조 텍스트           |
+
+> 전체 컬러 시스템은 [docs/Color-system.md](docs/Color-system.md) 참조
 
 #### 반응형 디자인 우선순위
 
@@ -98,7 +101,8 @@
 peach-market/
 ├── apps/
 │   ├── web/              # Next.js 16 (React 19, Tailwind CSS 4)
-│   └── api/              # NestJS 11 (PostgreSQL, Prisma 7)
+│   ├── api/              # NestJS 11 (PostgreSQL, Prisma 7)
+│   └── mobile/           # React Native (Expo 54) 모바일 앱
 ├── packages/
 │   ├── shared/           # 공유 타입 및 유틸리티
 │   ├── eslint-config/    # ESLint 공유 설정
@@ -106,7 +110,8 @@ peach-market/
 ├── docker/
 │   └── docker-compose.local.yml
 ├── docs/
-│   └── PRD.md            # Product Requirements Document
+│   ├── PRD.md            # Product Requirements Document
+│   └── Color-system.md   # 컬러 시스템 가이드
 └── CLAUDE.md             # 이 파일
 ```
 
@@ -129,6 +134,12 @@ peach-market/
 - **Authentication**: JWT + bcrypt, Google OAuth 2.0
 - **File Storage**: Supabase Storage
 - **Testing**: Jest
+
+### Mobile (apps/mobile)
+
+- **Framework**: React Native (Expo 54, Expo Router)
+- **Language**: TypeScript
+- **Architecture**: WebView 기반 (Next.js 웹앱 로드)
 
 ### Deployment
 
@@ -156,11 +167,12 @@ peach-market/
 ## 📚 추가 참고 자료
 
 - [PRD 문서](docs/PRD.md) - **가장 중요**
+- [컬러 시스템](docs/Color-system.md)
 - [Frontend README](apps/web/README.md)
 - [Backend README](apps/api/README.md)
 - [Root README](README.md)
 
 ---
 
-**최종 업데이트**: 2026-02-15
-**문서 버전**: 1.0
+**최종 업데이트**: 2026-03-15
+**문서 버전**: 1.1

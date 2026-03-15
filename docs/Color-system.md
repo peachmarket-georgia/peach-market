@@ -8,13 +8,13 @@
 
 ## Brand
 
-메인 컬러는 `#EE6E42`. 당근마켓 `#FF6F0F`가 순수 오렌지라면, 이건 빨간기가 살짝 섞인 코럴-피치 톤입니다.
+메인 컬러는 `#f97272`. 당근마켓 `#FF6F0F`가 순수 오렌지라면, 이건 빨간기가 섞인 코럴-핑크 톤입니다.
 
 복숭아라고 인식되면서도 당근과 확실히 구별됩니다.
 
 | Token         | Hex       | Usage                                      |
 | ------------- | --------- | ------------------------------------------ |
-| peach         | `#EE6E42` | CTA 버튼, 로고, FAB, 하단 네비 활성 아이콘 |
+| peach         | `#f97272` | CTA 버튼, 로고, FAB, 하단 네비 활성 아이콘 |
 | peach-hover   | `#D4572F` | 버튼 호버, 브랜드 텍스트 링크              |
 | peach-pressed | `#B94A28` | 프레스 / 액티브 상태                       |
 | peach-subtle  | `#FDF0EC` | 뱃지 배경, 선택된 카테고리 하이라이트      |
@@ -81,7 +81,7 @@ const config: Config = {
     extend: {
       colors: {
         peach: {
-          DEFAULT: '#EE6E42',
+          DEFAULT: '#f97272',
           hover: '#D4572F',
           pressed: '#B94A28',
           subtle: '#FDF0EC',
@@ -136,31 +136,31 @@ export default config
 ```css
 :root {
   /* Brand */
-  --color-peach: #ee6e42;
-  --color-peach-hover: #d4572f;
-  --color-peach-pressed: #b94a28;
-  --color-peach-subtle: #fdf0ec;
-  --color-peach-muted: #fcddd3;
+  --peach: #f97272;
+  --peach-hover: #d4572f;
+  --peach-pressed: #b94a28;
+  --peach-subtle: #fdf0ec;
+  --peach-muted: #fcddd3;
 
   /* Foreground */
-  --color-fg: #171717;
-  --color-fg-secondary: #737373;
-  --color-fg-tertiary: #a3a3a3;
+  --foreground: #171717;
+  --fg-secondary: #737373;
+  --fg-tertiary: #a3a3a3;
 
   /* Background */
-  --color-bg: #ffffff;
-  --color-bg-page: #fafafa;
-  --color-bg-secondary: #f5f5f5;
+  --background: #fafafa;
+  --surface-primary: #ffffff;
+  --surface-secondary: #f5f5f5;
 
   /* Border */
-  --color-border: #e5e5e5;
-  --color-border-subtle: #f0f0f0;
-  --color-border-strong: #d4d4d4;
+  --border: #e5e5e5;
+  --border-subtle: #f0f0f0;
+  --border-strong: #d4d4d4;
 
   /* Status */
-  --color-success: #16a34a;
-  --color-error: #dc2626;
-  --color-warning: #d97706;
-  --color-info: #2563eb;
+  --success: #16a34a;
+  --error: #dc2626;
+  --warning: #d97706;
+  --info: #2563eb;
 }
 ```
