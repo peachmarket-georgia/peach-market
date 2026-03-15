@@ -27,7 +27,7 @@ const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:300
 // 동시 refresh 방지 mutex
 let refreshingPromise: Promise<boolean> | null = null
 
-async function tryRefresh(apiUrl: string): Promise<boolean> {
+export async function tryRefresh(apiUrl: string): Promise<boolean> {
   if (refreshingPromise) return refreshingPromise
 
   refreshingPromise = fetch(`${apiUrl}/api/auth/refresh`, {

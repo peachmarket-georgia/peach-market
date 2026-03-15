@@ -25,6 +25,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { checkAuth, authApi, chatApi } from '@/lib/api'
+import { useSessionKeepAlive } from '@/hooks/use-session-keep-alive'
 import { UserProfileResponseDto } from '@/types/api'
 import { useSocket } from '@/context/socket-provider'
 import { ReportDialog } from '@/components/report-dialog'
@@ -43,7 +44,7 @@ export function Header({ initialUser }: HeaderProps) {
   const initialUserRef = useRef(initialUser)
   const router = useRouter()
   const pathname = usePathname()
-  const { socket } = useSocket()
+  const { socket, connect } = useSocket()
 
   const handleFeedbackClick = () => {
     const btn = feedbackRef.current?.querySelector('button')
@@ -66,6 +67,16 @@ export function Header({ initialUser }: HeaderProps) {
       })
     }
   }, [])
+
+  // PWA 백그라운드 복귀 시 세션 자동 갱신
+  useSessionKeepAlive({
+    onSessionRestored: (restoredUser) => {
+      setUser(restoredUser)
+      connect()
+    },
+    onSessionExpired: () => setUser(null),
+    enabled: !!user,
+  })
 
   // 안읽은 채팅 메시지 수 초기 조회
   useEffect(() => {
