@@ -38,6 +38,8 @@ export type Product = {
   thumbnailUrl: string
   images: string[]
   location: string
+  lat: number | null
+  lng: number | null
   timeAgo: string
   viewCount: number
   chatCount: number

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound, useRouter } from 'next/navigation'
@@ -17,10 +17,12 @@ import {
   IconClock,
   IconPencil,
   IconFlag,
+  IconMap,
   IconEyeOff,
 } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { chatApi, checkAuth } from '@/lib/api'
 import { STATUS_LABEL } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
@@ -29,6 +31,73 @@ import { userApi } from '@/lib/api'
 import type { Product, ProductStatus } from '@/lib/product-types'
 import { ImageCarousel } from './components/image-carousel'
 import { ReportDialog } from '@/components/report-dialog'
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function TradingLocationMap({ lat, lng, location }: { lat: number; lng: number; location: string }) {
+  const mapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+    if (!apiKey || !mapRef.current) return
+
+    const initMap = () => {
+      if (!mapRef.current) return
+      const gmaps = (window as any).google.maps
+      const map = new gmaps.Map(mapRef.current, {
+        center: { lat, lng },
+        zoom: 14,
+        gestureHandling: 'greedy',
+        zoomControl: true,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+        styles: [
+          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        ],
+      })
+      new gmaps.Marker({
+        position: { lat, lng },
+        map,
+        title: location,
+        icon: {
+          path: gmaps.SymbolPath.CIRCLE,
+          scale: 10,
+          fillColor: '#FF6B35',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 2,
+        },
+      })
+    }
+
+    if ((window as any).google?.maps) {
+      initMap()
+    } else {
+      const existingScript = document.querySelector('#gmaps-script') as HTMLScriptElement | null
+      if (existingScript) {
+        existingScript.addEventListener('load', initMap, { once: true })
+      } else {
+        const script = document.createElement('script')
+        script.id = 'gmaps-script'
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`
+        script.async = true
+        script.addEventListener('load', initMap, { once: true })
+        document.head.appendChild(script)
+      }
+    }
+  }, [lat, lng, location])
+
+  return (
+    <div className="space-y-3">
+      <div ref={mapRef} className="w-full h-80 rounded-xl" />
+      <p className="text-sm text-center text-muted-foreground flex items-center justify-center gap-1">
+        <IconMapPin className="h-4 w-4 text-primary" />
+        {location}
+      </p>
+    </div>
+  )
+}
 
 type ProductDetailPageProps = {
   params: Promise<{ id: string }>
@@ -72,6 +141,7 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const [statusLoading, setStatusLoading] = useState(false)
   const [reportOpen, setReportOpen] = useState(false)
+  const [showLocationMap, setShowLocationMap] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
   const [hiddenLoading, setHiddenLoading] = useState(false)
 
@@ -305,6 +375,31 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
             </p>
           </div>
 
+          {/* 거래 희망 지역 */}
+          <div className="py-5 border-b border-border/50">
+            <h2 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+              <span className="w-1 h-4 bg-linear-to-b from-peach to-peach-hover rounded-full" />
+              거래 희망 지역
+            </h2>
+            <div className="flex items-center justify-between pl-3">
+              <span className="flex items-center gap-1.5 text-sm text-foreground/90">
+                <IconMapPin className="h-4 w-4 text-primary shrink-0" />
+                {product.location}
+              </span>
+              {product.lat != null && product.lng != null && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary"
+                  onClick={() => setShowLocationMap(true)}
+                >
+                  <IconMap className="h-4 w-4" />
+                  위치보기
+                </Button>
+              )}
+            </div>
+          </div>
+
           {/* 비로그인 안내 배너 */}
           {isAuthenticated === false && !isOwner && (
             <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
@@ -416,6 +511,21 @@ const ProductDetailPage = ({ params }: ProductDetailPageProps) => {
           </div>
         </div>
       </div>
+
+      {/* 거래 희망 지역 지도 */}
+      {product.lat != null && product.lng != null && (
+        <Dialog open={showLocationMap} onOpenChange={setShowLocationMap}>
+          <DialogContent className="sm:max-w-xl p-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <IconMapPin className="h-5 w-5 text-primary" />
+                거래 희망 지역
+              </DialogTitle>
+            </DialogHeader>
+            <TradingLocationMap lat={product.lat} lng={product.lng} location={product.location} />
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* 신고 다이얼로그 */}
       <ReportDialog

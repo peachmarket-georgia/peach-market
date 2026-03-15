@@ -15,12 +15,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
 import { createProduct } from '@/lib/products-api'
 import { ImageUpload } from '@/components/product/image-upload'
 // import { StepIndicator } from '@/components/ui/step-indicator'
-import { useGeolocation } from '@/hooks/use-geolocation'
+import { LocationPickerMap } from '@/components/location-picker-map'
 import type { ImageItem } from '@/components/product/image-upload'
 import type { Category } from '@/lib/product-types'
 
@@ -82,8 +83,7 @@ const ProductCreatePage = (): React.JSX.Element => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
-
-  const { loading: locationLoading, getLocation } = useGeolocation()
+  const [showLocationPicker, setShowLocationPicker] = useState(false)
 
   const imagesRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -117,16 +117,6 @@ const ProductCreatePage = (): React.JSX.Element => {
     if (!category) return focusField('category')
     if (!price) return focusField('price')
     if (!location.trim()) return focusField('location')
-  }
-
-  const handleGetLocation = async () => {
-    const result = await getLocation()
-    if (result) {
-      setLocation(result.formatted)
-      setLat(result.lat)
-      setLng(result.lng)
-      setFieldErrors((prev) => ({ ...prev, location: undefined }))
-    }
   }
 
   const numericPrice = Number(price.replaceAll(',', ''))
@@ -375,16 +365,11 @@ const ProductCreatePage = (): React.JSX.Element => {
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={handleGetLocation}
-                disabled={locationLoading}
-                title="현재 위치 가져오기"
+                onClick={() => setShowLocationPicker(true)}
+                title="지도에서 위치 선택"
                 className="shrink-0 h-11 w-11 rounded-xl border-2 border-peach-muted"
               >
-                {locationLoading ? (
-                  <IconLoader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <IconCurrentLocation className={cn('h-4 w-4', lat != null ? 'text-primary' : '')} />
-                )}
+                <IconCurrentLocation className={cn('h-4 w-4', lat != null ? 'text-primary' : '')} />
               </Button>
             </div>
             {fieldErrors.location && <span className="text-xs text-destructive">{fieldErrors.location}</span>}
@@ -437,6 +422,29 @@ const ProductCreatePage = (): React.JSX.Element => {
             </button>
           ))}
         </div>
+
+        {/* 거래 희망 지역 지도 선택 모달 */}
+        <Dialog open={showLocationPicker} onOpenChange={setShowLocationPicker}>
+          <DialogContent className="sm:max-w-xl p-4">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base">
+                <IconCurrentLocation className="h-5 w-5 text-primary" />
+                거래 희망 지역 선택
+              </DialogTitle>
+            </DialogHeader>
+            <LocationPickerMap
+              initialLat={lat}
+              initialLng={lng}
+              onConfirm={({ lat: pickedLat, lng: pickedLng, formatted }) => {
+                setLocation(formatted)
+                setLat(pickedLat)
+                setLng(pickedLng)
+                setFieldErrors((prev) => ({ ...prev, location: undefined }))
+                setShowLocationPicker(false)
+              }}
+            />
+          </DialogContent>
+        </Dialog>
 
         {/* 등록 버튼 */}
         <Button

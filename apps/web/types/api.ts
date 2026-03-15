@@ -102,6 +102,12 @@ export interface UserProfileResponseDto {
   /** @example "https://example.com/avatar.jpg" */
   avatarUrl?: string | null
   role: UserRole
+  /** GPS 위도 */
+  lat?: number | null
+  /** GPS 경도 */
+  lng?: number | null
+  /** 검색 반경 (miles, null=거리무관) */
+  searchRadiusMiles?: number | null
   /**
    * @format date-time
    * @example "2024-01-01T00:00:00.000Z"
@@ -232,6 +238,9 @@ export interface UpdateUserDto {
   nickname?: string
   location?: string
   avatarUrl?: string
+  lat?: number
+  lng?: number
+  searchRadiusMiles?: number
 }
 
 // ==================== Upload Types ====================
