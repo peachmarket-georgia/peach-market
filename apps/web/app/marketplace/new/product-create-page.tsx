@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CATEGORIES } from '@/lib/product-types'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { createProduct } from '@/lib/products-api'
 import { ImageUpload } from '@/components/product/image-upload'
 // import { StepIndicator } from '@/components/ui/step-indicator'
@@ -194,7 +195,9 @@ const ProductCreatePage = (): React.JSX.Element => {
       )
       router.push('/marketplace')
     } catch (e) {
-      setError(e instanceof Error ? e.message : '등록에 실패했습니다')
+      const msg = e instanceof Error ? e.message : '등록에 실패했습니다'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
