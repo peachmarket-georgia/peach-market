@@ -20,6 +20,7 @@ import { ProductStatus } from '@prisma/client'
 import { JwtAuthGuard } from '../auth/jwt-auth.guard'
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard'
 import { CurrentUser, type JwtUser } from '../auth/current-user.decorator'
+import { Public } from '../../core/decorators/public.decorator'
 import { ProductsService } from './products.service'
 import { StorageService } from '../../core/storage/storage.service'
 import { CreateProductDto } from './dto/create-product.dto'
@@ -35,6 +36,7 @@ export class ProductsController {
   ) {}
 
   @Get()
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: '상품 목록 조회', description: '검색, 카테고리, 상태 필터 및 정렬 지원' })
   @ApiQuery({ name: 'search', required: false, description: '검색어 (제목, 설명)' })
@@ -72,6 +74,7 @@ export class ProductsController {
   }
 
   @Get(':id')
+  @Public()
   @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({
     summary: '상품 상세 조회',

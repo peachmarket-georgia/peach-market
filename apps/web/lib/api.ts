@@ -27,7 +27,7 @@ const getApiUrl = () => process.env.NEXT_PUBLIC_API_URL || 'http://localhost:300
 // 동시 refresh 방지 mutex
 let refreshingPromise: Promise<boolean> | null = null
 
-async function tryRefresh(apiUrl: string): Promise<boolean> {
+export async function tryRefresh(apiUrl: string): Promise<boolean> {
   if (refreshingPromise) return refreshingPromise
 
   refreshingPromise = fetch(`${apiUrl}/api/auth/refresh`, {
@@ -90,8 +90,9 @@ export async function apiRequest<T>(
       data = null
     }
 
-    // 401 → refresh token 시도 후 재요청 (auth 엔드포인트 제외, 재시도 1회만)
-    if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/')) {
+    // 401 → refresh token 시도 후 재요청 (auth/me 엔드포인트 제외, 재시도 1회만)
+    // /api/users/me 는 비로그인 확인용이므로 redirect 제외
+    if (response.status === 401 && !_isRetry && !endpoint.startsWith('/api/auth/') && endpoint !== '/api/users/me') {
       let refreshed = false
       try {
         refreshed = await tryRefresh(apiUrl)
@@ -305,6 +306,15 @@ export const chatApi = {
    * @param cookies - 서버 컴포넌트에서 쿠키 전달 (선택)
    */
   getUnreadCount: (cookies?: string) => apiRequest<UnreadCountDto>('/api/chat/unread-count', undefined, cookies),
+
+  /**
+   * 채팅방 나가기
+   * @param roomId - 채팅방 ID
+   */
+  leaveRoom: (roomId: string) =>
+    apiRequest<MessageResponseDto>(`/api/chat/rooms/${roomId}`, {
+      method: 'DELETE',
+    }),
 }
 
 // ==================== Upload API ====================

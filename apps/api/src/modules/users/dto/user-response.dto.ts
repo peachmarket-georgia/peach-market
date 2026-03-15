@@ -19,6 +19,15 @@ export class UserProfileResponseDto {
   @ApiProperty({ example: true })
   isEmailVerified: boolean
 
+  @ApiProperty({ example: 33.9462, nullable: true })
+  lat: number | null
+
+  @ApiProperty({ example: -84.2132, nullable: true })
+  lng: number | null
+
+  @ApiProperty({ example: 10, nullable: true })
+  searchRadiusMiles: number | null
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   createdAt: Date
 

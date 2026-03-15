@@ -113,6 +113,12 @@ export class ChatGateway implements OnGatewayInit {
     return savedMessage
   }
 
+  notifyUserLeft(roomId: string, otherUserId: string) {
+    this.server.to(roomId).emit('userLeft', { roomId })
+    this.server.to(`user:${otherUserId}`).emit('userLeft', { roomId })
+    this.logger.log(`User left room ${roomId}, notified user ${otherUserId}`)
+  }
+
   @SubscribeMessage('productStatusUpdate')
   handleProductStatusUpdate(
     @MessageBody() data: { chatRoomId: string; status: string },

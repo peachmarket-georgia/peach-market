@@ -48,26 +48,20 @@ const MarketplacePage = () => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [showPushBanner, setShowPushBanner] = useState(false)
-
-  // 저장된 반경 설정 (마이페이지에서 설정)
-  const [savedRadiusMiles, setSavedRadiusMiles] = useState(0)
-  const [savedLat, setSavedLat] = useState<number | null>(null)
-  const [savedLng, setSavedLng] = useState<number | null>(null)
-
+  const [userLat, setUserLat] = useState<number | null>(null)
+  const [userLng, setUserLng] = useState<number | null>(null)
+  const [sliderMiles, setSliderMiles] = useState(0) // 0=거리무관, 1~30=miles
+  const [distanceUnit, setDistanceUnit] = useState<'miles' | 'km'>('miles')
   const { permission, isSupported, subscribe } = usePushNotification()
 
-  // localStorage에서 저장된 반경 및 위치 불러오기
+  // localStorage에서 거리 단위 불러오기
   useEffect(() => {
-    const miles = localStorage.getItem('distance-radius-miles')
-    const lat = localStorage.getItem('user-location-lat')
-    const lng = localStorage.getItem('user-location-lng')
-    if (miles) setSavedRadiusMiles(Number(miles))
-    if (lat) setSavedLat(Number(lat))
-    if (lng) setSavedLng(Number(lng))
+    const saved = localStorage.getItem('distance-unit')
+    if (saved === 'miles' || saved === 'km') setDistanceUnit(saved)
   }, [])
 
   // 슬라이더 값(miles) → 실제 반경(km, GPS 없으면 null)
-  const effectiveRadius = savedRadiusMiles > 0 && savedLat != null ? savedRadiusMiles * MILES_TO_KM : null
+  const effectiveRadius = sliderMiles > 0 && userLat != null ? sliderMiles * MILES_TO_KM : null
 
   const fetchProducts = useCallback(async () => {
     setLoading(true)
@@ -77,8 +71,8 @@ const MarketplacePage = () => {
         category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
         status: selectedStatus !== 'ALL' ? selectedStatus : undefined,
         sort: sortBy,
-        lat: effectiveRadius != null ? (savedLat ?? undefined) : undefined,
-        lng: effectiveRadius != null ? (savedLng ?? undefined) : undefined,
+        lat: effectiveRadius != null ? (userLat ?? undefined) : undefined,
+        lng: effectiveRadius != null ? (userLng ?? undefined) : undefined,
         radius: effectiveRadius ?? undefined,
       })
       if (error || !data) throw new Error(error)
@@ -88,7 +82,7 @@ const MarketplacePage = () => {
     } finally {
       setLoading(false)
     }
-  }, [searchQuery, selectedCategory, selectedStatus, sortBy, effectiveRadius, savedLat, savedLng])
+  }, [searchQuery, selectedCategory, selectedStatus, sortBy, effectiveRadius, userLat, userLng])
 
   useEffect(() => {
     const timer = setTimeout(fetchProducts, 300)
@@ -100,6 +94,10 @@ const MarketplacePage = () => {
       if (data) {
         setCurrentUserId(data.id)
         setIsAuthenticated(true)
+        // DB에 저장된 위치 및 반경 불러오기
+        if (data.lat != null) setUserLat(data.lat)
+        if (data.lng != null) setUserLng(data.lng)
+        if (data.searchRadiusMiles != null) setSliderMiles(data.searchRadiusMiles)
       }
     })
   }, [])
@@ -127,6 +125,7 @@ const MarketplacePage = () => {
     setSelectedCategory('ALL')
     setSelectedStatus('ALL')
     setSortBy('latest')
+    setSliderMiles(0)
   }
 
   const handleFavoriteToggle = async (id: string) => {
@@ -225,12 +224,12 @@ const MarketplacePage = () => {
       </div>
 
       {/* 카테고리 필터 - full width scrollable */}
-      <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide">
+      <div className="container mx-auto max-w-5xl overflow-x-auto scrollbar-hide text-sm sm:text-base font-semibold">
         <div className="inline-flex items-center gap-2.5 px-4 md:px-6 pb-1">
           <button
             onClick={() => setSelectedCategory('ALL')}
             className={cn(
-              'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-base font-semibold transition-all',
+              'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full transition-all',
               selectedCategory === 'ALL'
                 ? 'bg-primary text-white shadow-md shadow-primary/30'
                 : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -243,7 +242,7 @@ const MarketplacePage = () => {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full text-base font-semibold transition-all',
+                'shrink-0 whitespace-nowrap px-5 py-2.5 rounded-full  transition-all',
                 selectedCategory === cat
                   ? 'bg-primary text-white shadow-md shadow-primary/30'
                   : 'bg-white border-2 border-peach-muted text-fg-secondary hover:border-primary/40 hover:text-primary'
@@ -328,7 +327,7 @@ const MarketplacePage = () => {
         {!loading && products && (
           <p className="text-sm font-medium text-fg-secondary">
             <span className="text-primary font-bold">{products.length}</span>개의 매물
-            {effectiveRadius != null && <span className="ml-1 text-fg-tertiary">· 반경 {savedRadiusMiles}mi 이내</span>}
+            {effectiveRadius != null && <span className="ml-1 text-fg-tertiary">· 반경 {sliderMiles}mi 이내</span>}
           </p>
         )}
 
