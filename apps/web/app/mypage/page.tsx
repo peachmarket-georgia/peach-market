@@ -311,7 +311,7 @@ export default function MyPage() {
         setEditLoading(false)
         return
       }
-      avatarUrl = uploadData.images[0].url
+      avatarUrl = uploadData.images?.[0]?.url
     }
 
     const { data, error } = await userApi.updateProfile({
